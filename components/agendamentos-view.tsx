@@ -592,8 +592,6 @@ export function AgendamentosView() {
   }, [atividades])
 
   // Drag & Drop com linha indicadora
-  const [dragIndicator, setDragIndicator] = useState<{ diaIndex: number; hora: number; y: number } | null>(null)
-
   const handleDragStart = useCallback((e: React.DragEvent, atividade: Atividade) => {
     setDraggedAtividade(atividade)
     e.dataTransfer.effectAllowed = "move"
