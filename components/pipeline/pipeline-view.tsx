@@ -1,7 +1,24 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Plus, Search, SlidersHorizontal, GripVertical } from "lucide-react"
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  MoreHorizontal, 
+  ChevronDown, 
+  LayoutGrid, 
+  List, 
+  RotateCcw,
+  TrendingUp,
+  User,
+  Phone,
+  Mail,
+  Edit3,
+  CheckCircle2,
+  XCircle,
+  AlertCircle
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,8 +32,9 @@ interface PipelineStageConfig {
   label: string
   color: string
   bgColor: string
-  borderColor: string
 }
+
+type DealStatus = "open" | "won" | "lost"
 
 interface Deal {
   id: number
@@ -31,64 +49,50 @@ interface Deal {
   dias: number
   stage: string
   stageLabel?: string
-  tags?: string[]
+  status: DealStatus
   // Link to contact
   contactId?: string
 }
 
-// ─── Purple Theme Config ─────────────────────────────────────────────────────
+// ─── Theme Config ────────────────────────────────────────────────────────────
 
-const PURPLE_STAGES: PipelineStageConfig[] = [
-  { key: "novo", label: "Novo", color: "text-[#6b69c9]", bgColor: "bg-[#f8f7fc]", borderColor: "border-[#e8e6f5]" },
-  { key: "qualificado", label: "Qualificado", color: "text-[#7b79c4]", bgColor: "bg-[#f5f4fa]", borderColor: "border-[#e5e3f0]" },
-  { key: "proposta", label: "Proposta", color: "text-[#8b89c9]", bgColor: "bg-[#f2f1f8]", borderColor: "border-[#e2e0ed]" },
-  { key: "fechamento", label: "Fechamento", color: "text-[#9b99ce]", bgColor: "bg-[#efeef6]", borderColor: "border-[#dfdeea]" },
+const STAGES: PipelineStageConfig[] = [
+  { key: "qualified", label: "Qualificado", color: "#9795e4", bgColor: "bg-[#f8f7fc]" },
+  { key: "contact", label: "Contato Realizado", color: "#7b79c4", bgColor: "bg-[#f5f4fa]" },
+  { key: "demo", label: "Demo Agendada", color: "#6b69c9", bgColor: "bg-[#f2f1f8]" },
+  { key: "proposal", label: "Proposta Enviada", color: "#5b59be", bgColor: "bg-[#efeef6]" },
 ]
 
-// Link deals to existing contacts by name/empresa similarity
 const INITIAL_DEALS: Deal[] = [
-  { id: 1, titulo: "Vinicius Santos", empresa: "TechCorp Brasil", valor: 48000, avatar: "VS", responsavel: "Vinicius Santos", email: "vinicius@techcorp.com", prioridade: "alta", dias: 2, stage: "novo", stageLabel: "Novo", contactId: "cont-001" },
-  { id: 2, titulo: "Marissia Lima", empresa: "Costa & Associados", valor: 32000, avatar: "ML", responsavel: "Marissia Lima", email: "marissia@costa.com", prioridade: "media", dias: 6, stage: "novo", stageLabel: "Novo", contactId: "cont-002" },
-  { id: 3, titulo: "Fábio Vitorino", empresa: "Vendas Express", valor: 15000, avatar: "FV", responsavel: "Fábio Vitorino", email: "fabio@vendas.com", prioridade: "alta", dias: 8, stage: "novo", stageLabel: "Novo", contactId: "cont-003" },
-  { id: 4, titulo: "Cristiano Nascimento", empresa: "DataFlow Systems", valor: 85000, avatar: "CN", responsavel: "Cristiano Nascimento", email: "cristiano@dataflow.com", prioridade: "baixa", dias: 17, stage: "novo", stageLabel: "Novo", tags: ["enterprise"] },
-  { id: 5, titulo: "Railson Almeida", empresa: "codirect.com.br", valor: 12000, avatar: "RA", responsavel: "Railson Almeida", email: "railson@codirect.com", prioridade: "alta", dias: 7, stage: "qualificado", stageLabel: "Qualificado", tags: ["direct"] },
-  { id: 6, titulo: "Kelvin Kirst", empresa: "Eventos Internos", valor: 18000, avatar: "KK", responsavel: "Kelvin Kirst", email: "kelvin@eventos.com", prioridade: "media", dias: 17, stage: "qualificado", stageLabel: "Qualificado", tags: ["evento"] },
-  { id: 7, titulo: "Miguel Neto", empresa: "Organic Bio", valor: 35000, avatar: "MN", responsavel: "Miguel Alves", email: "miguel@organic.com", prioridade: "alta", dias: 9, stage: "proposta", stageLabel: "Proposta" },
-  { id: 8, titulo: "Ingrid Kezia", empresa: "FinTrack", valor: 67000, avatar: "IK", responsavel: "Ingrid Kezia", email: "ingrid@fintrack.com", prioridade: "media", dias: 2, stage: "proposta", stageLabel: "Proposta" },
-  { id: 9, titulo: "Gislaine Souza", empresa: "Startup Hub", valor: 45000, avatar: "GS", responsavel: "Gislaine Souza", email: "gislaine@startup.com", prioridade: "alta", dias: 17, stage: "fechamento", stageLabel: "Fechamento" },
-  { id: 10, titulo: "Matheus Buneo", empresa: "GrowthLab", valor: 42000, avatar: "MB", responsavel: "Matheus Buneo", email: "matheus@growth.com", prioridade: "alta", dias: 25, stage: "fechamento", stageLabel: "Fechamento" },
+  { id: 1, titulo: "Willamette Co deal", empresa: "Willamette Co", valor: 1500, avatar: "WC", responsavel: "Willamette", prioridade: "alta", dias: 3, stage: "qualified", status: "open", contactId: "cont-001" },
+  { id: 2, titulo: "Park Place deal", empresa: "Park Place", valor: 4500, avatar: "PP", responsavel: "Park", prioridade: "media", dias: 5, stage: "qualified", status: "open", contactId: "cont-002" },
+  { id: 3, titulo: "Dream college deal", empresa: "Dream college", valor: 3700, avatar: "DC", responsavel: "Dream", prioridade: "alta", dias: 7, stage: "qualified", status: "open" },
+  { id: 4, titulo: "Pet insurance deal", empresa: "Pet insurance", valor: 1000, avatar: "PI", responsavel: "Pet", prioridade: "baixa", dias: 2, stage: "qualified", status: "open" },
+  
+  { id: 5, titulo: "Tim and sons logistics", empresa: "Tim and sons logistics", valor: 2300, avatar: "TS", responsavel: "Tim", prioridade: "alta", dias: 3, stage: "contact", status: "open" },
+  { id: 6, titulo: "Fantastic hotels LTD deal", empresa: "Fantastic hotels LTD", valor: 1900, avatar: "FH", responsavel: "Fantastic", prioridade: "media", dias: 8, stage: "contact", status: "open", contactId: "cont-003" },
+  { id: 7, titulo: "JD manufacturing deal", empresa: "JD manufacturing", valor: 1150, avatar: "JD", responsavel: "JD", prioridade: "baixa", dias: 12, stage: "contact", status: "open" },
+  
+  { id: 8, titulo: "Bringit media agency deal", empresa: "Bringit media agency", valor: 1400, avatar: "BM", responsavel: "Bringit", prioridade: "media", dias: 4, stage: "demo", status: "open" },
+  { id: 9, titulo: "We heart trees non-profit", empresa: "We heart trees", valor: 1700, avatar: "WH", responsavel: "Trees", prioridade: "alta", dias: 6, stage: "demo", status: "open" },
+  { id: 10, titulo: "Bringit media agency", empresa: "Bringit media", valor: 1200, avatar: "BM", responsavel: "Bringit", prioridade: "media", dias: 2, stage: "demo", status: "open" },
+  
+  { id: 11, titulo: "Rio housing deal", empresa: "Rio housing", valor: 2700, avatar: "RH", responsavel: "Rio", prioridade: "alta", dias: 1, stage: "proposal", status: "open" },
+  
+  { id: 12, titulo: "Maria M. retail LTD", empresa: "Maria M. retail", valor: 2600, avatar: "MR", responsavel: "Maria", prioridade: "media", dias: 5, stage: "proposal", status: "lost" },
+  { id: 13, titulo: "Trip abroad LTD", empresa: "Trip abroad", valor: 3750, avatar: "TA", responsavel: "Trip", prioridade: "alta", dias: 0, stage: "proposal", status: "won" },
 ]
-
-const PRIORIDADE_CONFIG = {
-  alta: { bg: "bg-[#9795e4]", text: "text-white", label: "Alta" },
-  media: { bg: "bg-[#b8b6ec]", text: "text-white", label: "Média" },
-  baixa: { bg: "bg-[#e0dff5]", text: "text-[#6b69c9]", label: "Baixa" },
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatCurrency(val: number) {
-  if (val === 0) return "R$ 0"
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(val)
-}
-
-function avatarColor(initials: string): string {
-  const colors = [
-    "bg-[#9795e4] text-white",
-    "bg-[#b8b6ec] text-white", 
-    "bg-[#7b79c4] text-white",
-    "bg-[#6b69c9] text-white",
-    "bg-[#8b89c9] text-white",
-  ]
-  const idx = (initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % colors.length
-  return colors[idx]
 }
 
 function findContactByDeal(deal: Deal): Contact | undefined {
   if (deal.contactId) {
     return MOCK_CONTACTS.find(c => c.id === deal.contactId)
   }
-  // Try to find by name or empresa
   return MOCK_CONTACTS.find(c => 
     deal.titulo.toLowerCase().includes(c.nome.toLowerCase()) ||
     deal.empresa.toLowerCase().includes(c.empresa.toLowerCase())
@@ -106,8 +110,8 @@ interface DealCardProps {
 }
 
 function DealCard({ deal, isDragging, onDragStart, onClick, isSelected }: DealCardProps) {
-  const pri = PRIORIDADE_CONFIG[deal.prioridade]
-  const avatarClass = avatarColor(deal.avatar)
+  const isWon = deal.status === "won"
+  const isLost = deal.status === "lost"
 
   return (
     <div
@@ -115,52 +119,72 @@ function DealCard({ deal, isDragging, onDragStart, onClick, isSelected }: DealCa
       onDragStart={(e) => onDragStart(e, deal.id)}
       onClick={onClick}
       className={cn(
-        "group cursor-grab rounded-xl border bg-white p-3 transition-all hover:shadow-md",
-        isDragging && "opacity-50 rotate-2",
-        isSelected ? "border-[#9795e4] ring-2 ring-[#9795e4]/20" : "border-border hover:border-[#9795e4]/40"
+        "group cursor-grab rounded-lg border p-3 transition-all hover:shadow-md",
+        isDragging && "opacity-50 rotate-1",
+        isWon && "bg-emerald-50/50 border-emerald-200",
+        isLost && "bg-red-50/50 border-red-200",
+        isSelected ? "border-[#9795e4] ring-2 ring-[#9795e4]/20" : 
+          !isWon && !isLost && "border-border bg-white hover:border-[#9795e4]/40"
       )}
     >
-      {/* Tags */}
-      {deal.tags && deal.tags.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-1">
-          {deal.tags.slice(0, 2).map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-[#e0dff5] text-[#6b69c9]"
-            >
-              {tag}
-            </span>
-          ))}
-          {deal.tags.length > 2 && (
-            <span className="text-[10px] text-muted-foreground">+{deal.tags.length - 2}</span>
+      {/* Header: Title + Arrow */}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h4 className={cn(
+          "text-sm font-semibold leading-tight",
+          isWon && "text-emerald-700",
+          isLost && "text-red-700"
+        )}>
+          {deal.titulo}
+        </h4>
+        <button 
+          className={cn(
+            "flex-shrink-0 rounded-full p-1 transition-colors",
+            isWon && "text-emerald-500 hover:bg-emerald-100",
+            isLost && "text-red-500 hover:bg-red-100",
+            !isWon && !isLost && "text-gray-400 hover:bg-gray-100 hover:text-[#9795e4]"
           )}
+        >
+          <ChevronDown className="h-3.5 w-3.5 rotate-[-90deg]" />
+        </button>
+      </div>
+
+      {/* Company */}
+      <p className="text-xs text-muted-foreground mb-2">{deal.empresa}</p>
+
+      {/* Status Badge (if won/lost) */}
+      {(isWon || isLost) && (
+        <div className="mb-2">
+          <span className={cn(
+            "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase",
+            isWon && "bg-emerald-500 text-white",
+            isLost && "bg-red-500 text-white"
+          )}>
+            {isWon ? (
+              <><CheckCircle2 className="h-3 w-3" /> Won</>
+            ) : (
+              <><XCircle className="h-3 w-3" /> Lost</>
+            )}
+          </span>
         </div>
       )}
 
-      {/* Title */}
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <h4 className="text-sm font-semibold text-foreground leading-tight">{deal.titulo}</h4>
-        <GripVertical className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
-      </div>
-
-      {/* Value */}
-      <div className="mb-2 text-xs text-muted-foreground">{formatCurrency(deal.valor)}</div>
-
-      {/* Footer: Avatar + Priority + Days */}
+      {/* Footer: Avatar + Value */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {/* Avatar */}
-          <div className={cn("flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold", avatarClass)}>
+          <div className={cn(
+            "flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold text-white",
+            deal.prioridade === "alta" ? "bg-red-400" : 
+            deal.prioridade === "media" ? "bg-amber-400" : "bg-gray-400"
+          )}>
             {deal.avatar.slice(0, 2)}
           </div>
-          {/* Priority Badge */}
-          <span className={cn("h-2 w-2 rounded-full", pri.bg)} />
+          <span className="text-xs font-medium text-foreground">{formatCurrency(deal.valor)}</span>
         </div>
         
-        {/* Days indicator */}
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <span>{deal.dias}d</span>
-        </div>
+        {/* Warning icon for old deals */}
+        {deal.dias > 7 && deal.status === "open" && (
+          <AlertCircle className="h-4 w-4 text-amber-500" title="Deal antigo" />
+        )}
       </div>
     </div>
   )
@@ -188,29 +212,36 @@ function PipelineColumn({
   selectedDealId,
 }: PipelineColumnProps) {
   const totalValue = deals.reduce((sum, d) => sum + d.valor, 0)
+  const openDeals = deals.filter(d => d.status === "open")
 
   return (
     <div
-      className="flex w-[260px] flex-shrink-0 flex-col"
+      className="flex w-[280px] flex-shrink-0 flex-col"
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage.key)}
     >
       {/* Column Header */}
-      <div className={cn("mb-2 rounded-xl border px-3 py-2.5", stage.bgColor, stage.borderColor)}>
-        <div className="flex items-center justify-between">
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <span className={cn("h-2 w-2 rounded-full bg-[#9795e4]")} />
-            <span className={cn("text-xs font-semibold", stage.color)}>{stage.label}</span>
+            <span className="text-sm font-bold text-foreground">{stage.label}</span>
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+              {deals.length}
+            </span>
           </div>
-          <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-bold text-foreground">
-            {deals.length}
-          </span>
+          <div 
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: stage.color }}
+          />
         </div>
-        <div className="mt-1 text-[10px] text-muted-foreground">{formatCurrency(totalValue)}</div>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <TrendingUp className="h-3 w-3" />
+          {formatCurrency(totalValue)} · {openDeals.length} deals
+        </div>
       </div>
 
       {/* Cards Container */}
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-0.5 pb-2">
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
         {deals.map((deal) => (
           <DealCard
             key={deal.id}
@@ -224,7 +255,7 @@ function PipelineColumn({
       </div>
 
       {/* Add Button */}
-      <button className="mt-2 flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-[#9795e4]/40 hover:bg-[#9795e4]/5 hover:text-[#9795e4]">
+      <button className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-[#9795e4]/40 hover:bg-[#9795e4]/5 hover:text-[#9795e4]">
         <Plus className="h-3.5 w-3.5" />
         Adicionar negócio
       </button>
@@ -247,8 +278,7 @@ export function PipelineView() {
     return deals.filter(
       (d) =>
         d.titulo.toLowerCase().includes(query) ||
-        d.empresa.toLowerCase().includes(query) ||
-        d.responsavel?.toLowerCase().includes(query)
+        d.empresa.toLowerCase().includes(query)
     )
   }, [deals, searchQuery])
 
@@ -261,6 +291,10 @@ export function PipelineView() {
     if (!selectedDeal) return undefined
     return findContactByDeal(selectedDeal)
   }, [selectedDeal])
+
+  // Totals
+  const totalValue = deals.reduce((sum, d) => sum + d.valor, 0)
+  const openDealsCount = deals.filter(d => d.status === "open").length
 
   const handleDragStart = (e: React.DragEvent, dealId: number) => {
     setDraggedDealId(dealId)
@@ -279,7 +313,7 @@ export function PipelineView() {
     setDeals((prev) =>
       prev.map((deal) => {
         if (deal.id === draggedDealId) {
-          const stageConfig = PURPLE_STAGES.find((s) => s.key === stageKey)
+          const stageConfig = STAGES.find((s) => s.key === stageKey)
           return {
             ...deal,
             stage: stageKey,
@@ -304,13 +338,10 @@ export function PipelineView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      {/* Header */}
-      <header className="flex h-16 items-center justify-between border-b border-border px-6">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Pipeline Comercial</h1>
-          <p className="text-xs text-muted-foreground">
-            {deals.length} oportunidades de negócio
-          </p>
+      {/* Top Toolbar */}
+      <div className="flex h-14 items-center justify-between border-b border-border px-4">
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold text-foreground">Deals</h1>
         </div>
 
         <div className="flex items-center gap-3">
@@ -318,30 +349,75 @@ export function PipelineView() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar negócios..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64 pl-9"
+              className="w-64 pl-9 h-9"
             />
           </div>
 
-          {/* Filters */}
-          <Button variant="outline" size="sm" className="gap-2">
-            <SlidersHorizontal className="h-4 w-4" />
-            Filtros
-          </Button>
-
-          {/* Add Deal */}
-          <Button size="sm" className="gap-2 bg-[#9795e4] hover:bg-[#7b79c4] text-white">
-            <Plus className="h-4 w-4" />
-            Negócio
+          <Button size="icon" variant="ghost" className="h-9 w-9">
+            <RotateCcw className="h-4 w-4" />
           </Button>
         </div>
-      </header>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="flex h-12 items-center justify-between border-b border-border px-4 bg-muted/30">
+        <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex items-center rounded-md border border-border bg-card p-0.5">
+            <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 bg-white shadow-sm">
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Board
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground">
+              <List className="h-3.5 w-3.5" />
+              List
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground">
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          {/* Add Deal Button */}
+          <Button size="sm" className="h-8 gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white">
+            <Plus className="h-4 w-4" />
+            Deal
+          </Button>
+        </div>
+
+        {/* Pipeline Selector + Filters */}
+        <div className="flex items-center gap-2">
+          {/* Summary */}
+          <div className="text-sm text-muted-foreground mr-4">
+            <span className="font-semibold text-foreground">{formatCurrency(totalValue)}</span>
+            <span className="mx-2">·</span>
+            <span>{openDealsCount} deals</span>
+          </div>
+
+          {/* Pipeline Dropdown */}
+          <Button variant="outline" size="sm" className="h-8 gap-2">
+            <LayoutGrid className="h-3.5 w-3.5" />
+            Sales pipeline
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+
+          <Button variant="outline" size="sm" className="h-8 px-2">
+            <Edit3 className="h-3.5 w-3.5" />
+          </Button>
+
+          <Button variant="outline" size="sm" className="h-8 gap-2">
+            <Filter className="h-3.5 w-3.5" />
+            Filter
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
 
       {/* Kanban Board */}
       <div className="flex flex-1 gap-4 overflow-x-auto overflow-y-hidden p-4">
-        {PURPLE_STAGES.map((stage) => (
+        {STAGES.map((stage) => (
           <PipelineColumn
             key={stage.key}
             stage={stage}
@@ -356,7 +432,7 @@ export function PipelineView() {
         ))}
       </div>
 
-      {/* Contact Detail Panel - Same as other pages */}
+      {/* Contact Detail Panel */}
       <ContactDetailPanel 
         isOpen={isPanelOpen} 
         onClose={handleClosePanel}
