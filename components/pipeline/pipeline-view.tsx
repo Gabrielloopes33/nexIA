@@ -39,30 +39,24 @@ interface Deal {
 // ─── Purple Theme Config ─────────────────────────────────────────────────────
 
 const PURPLE_STAGES: PipelineStageConfig[] = [
-  { key: "entrada", label: "Entrada", color: "text-[#6b69c9]", bgColor: "bg-[#f8f7fc]", borderColor: "border-[#e8e6f5]" },
-  { key: "tentativa", label: "Tentativa de Contato", color: "text-[#7b79c4]", bgColor: "bg-[#f5f4fa]", borderColor: "border-[#e5e3f0]" },
-  { key: "contato", label: "Contato Efetivado", color: "text-[#8b89c9]", bgColor: "bg-[#f2f1f8]", borderColor: "border-[#e2e0ed]" },
-  { key: "qualificado", label: "Qualificado", color: "text-[#9b99ce]", bgColor: "bg-[#efeef6]", borderColor: "border-[#dfdeea]" },
-  { key: "proposta", label: "Proposta", color: "text-[#aba9d3]", bgColor: "bg-[#ecebf4]", borderColor: "border-[#dcdbef]" },
-  { key: "negociacao", label: "Negociação", color: "text-[#bbb9d8]", bgColor: "bg-[#e9e8f2]", borderColor: "border-[#d9d8e5]" },
-  { key: "fechamento", label: "Fechamento", color: "text-[#cbc9dd]", bgColor: "bg-[#e6e5f0]", borderColor: "border-[#d6d5e3]" },
+  { key: "novo", label: "Novo", color: "text-[#6b69c9]", bgColor: "bg-[#f8f7fc]", borderColor: "border-[#e8e6f5]" },
+  { key: "qualificado", label: "Qualificado", color: "text-[#7b79c4]", bgColor: "bg-[#f5f4fa]", borderColor: "border-[#e5e3f0]" },
+  { key: "proposta", label: "Proposta", color: "text-[#8b89c9]", bgColor: "bg-[#f2f1f8]", borderColor: "border-[#e2e0ed]" },
+  { key: "fechamento", label: "Fechamento", color: "text-[#9b99ce]", bgColor: "bg-[#efeef6]", borderColor: "border-[#dfdeea]" },
 ]
 
 // Link deals to existing contacts by name/empresa similarity
 const INITIAL_DEALS: Deal[] = [
-  { id: 1, titulo: "Vinicius Santos", empresa: "TechCorp Brasil", valor: 48000, avatar: "VS", responsavel: "Vinicius Santos", email: "vinicius@techcorp.com", prioridade: "alta", dias: 2, stage: "entrada", stageLabel: "Entrada", contactId: "cont-001" },
-  { id: 2, titulo: "Marissia Lima", empresa: "Costa & Associados", valor: 32000, avatar: "ML", responsavel: "Marissia Lima", email: "marissia@costa.com", prioridade: "media", dias: 6, stage: "entrada", stageLabel: "Entrada", contactId: "cont-002" },
-  { id: 3, titulo: "Fábio Vitorino", empresa: "Vendas Express", valor: 15000, avatar: "FV", responsavel: "Fábio Vitorino", email: "fabio@vendas.com", prioridade: "alta", dias: 8, stage: "entrada", stageLabel: "Entrada", contactId: "cont-003" },
-  { id: 4, titulo: "Cristiano Nascimento", empresa: "DataFlow Systems", valor: 85000, avatar: "CN", responsavel: "Cristiano Nascimento", email: "cristiano@dataflow.com", prioridade: "baixa", dias: 17, stage: "entrada", stageLabel: "Entrada", tags: ["enterprise"] },
-  { id: 5, titulo: "Ramon Albergaria", empresa: "CloudSync", valor: 22000, avatar: "RA", responsavel: "Ramon Albergaria", email: "ramon@cloudsync.com", prioridade: "alta", dias: 17, stage: "entrada", stageLabel: "Entrada" },
-  { id: 6, titulo: "Railson Almeida", empresa: "codirect.com.br", valor: 12000, avatar: "RA", responsavel: "Railson Almeida", email: "railson@codirect.com", prioridade: "alta", dias: 7, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["direct", "codirect"] },
-  { id: 7, titulo: "Kelvin Kirst", empresa: "Eventos Internos", valor: 18000, avatar: "KK", responsavel: "Kelvin Kirst", email: "kelvin@eventos.com", prioridade: "media", dias: 17, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["evento_interno"] },
-  { id: 8, titulo: "Miguel Neto", empresa: "Organic Bio", valor: 35000, avatar: "MN", responsavel: "Miguel Alves", email: "miguel@organic.com", prioridade: "alta", dias: 9, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["organic"] },
-  { id: 9, titulo: "Ingrid Kezia", empresa: "FinTrack", valor: 67000, avatar: "IK", responsavel: "Ingrid Kezia", email: "ingrid@fintrack.com", prioridade: "media", dias: 2, stage: "contato", stageLabel: "Contato Efetivado" },
-  { id: 10, titulo: "Matheus Buneo", empresa: "GrowthLab", valor: 42000, avatar: "MB", responsavel: "Matheus Buneo", email: "matheus@growth.com", prioridade: "alta", dias: 25, stage: "contato", stageLabel: "Contato Efetivado" },
-  { id: 11, titulo: "Cheftensei Silva", empresa: "MegaCorp", valor: 120000, avatar: "CS", responsavel: "Cheftensei Silva", email: "cheftensei@megacorp.com", prioridade: "media", dias: 2, stage: "contato", stageLabel: "Contato Efetivado" },
-  { id: 12, titulo: "Simão Costa", empresa: "RetailMax", valor: 28000, avatar: "SC", responsavel: "Simão Costa", email: "simao@retail.com", prioridade: "baixa", dias: 8, stage: "contato", stageLabel: "Contato Efetivado" },
-  { id: 13, titulo: "Gislaine Souza", empresa: "Startup Hub", valor: 45000, avatar: "GS", responsavel: "Gislaine Souza", email: "gislaine@startup.com", prioridade: "alta", dias: 17, stage: "qualificado", stageLabel: "Qualificado" },
+  { id: 1, titulo: "Vinicius Santos", empresa: "TechCorp Brasil", valor: 48000, avatar: "VS", responsavel: "Vinicius Santos", email: "vinicius@techcorp.com", prioridade: "alta", dias: 2, stage: "novo", stageLabel: "Novo", contactId: "cont-001" },
+  { id: 2, titulo: "Marissia Lima", empresa: "Costa & Associados", valor: 32000, avatar: "ML", responsavel: "Marissia Lima", email: "marissia@costa.com", prioridade: "media", dias: 6, stage: "novo", stageLabel: "Novo", contactId: "cont-002" },
+  { id: 3, titulo: "Fábio Vitorino", empresa: "Vendas Express", valor: 15000, avatar: "FV", responsavel: "Fábio Vitorino", email: "fabio@vendas.com", prioridade: "alta", dias: 8, stage: "novo", stageLabel: "Novo", contactId: "cont-003" },
+  { id: 4, titulo: "Cristiano Nascimento", empresa: "DataFlow Systems", valor: 85000, avatar: "CN", responsavel: "Cristiano Nascimento", email: "cristiano@dataflow.com", prioridade: "baixa", dias: 17, stage: "novo", stageLabel: "Novo", tags: ["enterprise"] },
+  { id: 5, titulo: "Railson Almeida", empresa: "codirect.com.br", valor: 12000, avatar: "RA", responsavel: "Railson Almeida", email: "railson@codirect.com", prioridade: "alta", dias: 7, stage: "qualificado", stageLabel: "Qualificado", tags: ["direct"] },
+  { id: 6, titulo: "Kelvin Kirst", empresa: "Eventos Internos", valor: 18000, avatar: "KK", responsavel: "Kelvin Kirst", email: "kelvin@eventos.com", prioridade: "media", dias: 17, stage: "qualificado", stageLabel: "Qualificado", tags: ["evento"] },
+  { id: 7, titulo: "Miguel Neto", empresa: "Organic Bio", valor: 35000, avatar: "MN", responsavel: "Miguel Alves", email: "miguel@organic.com", prioridade: "alta", dias: 9, stage: "proposta", stageLabel: "Proposta" },
+  { id: 8, titulo: "Ingrid Kezia", empresa: "FinTrack", valor: 67000, avatar: "IK", responsavel: "Ingrid Kezia", email: "ingrid@fintrack.com", prioridade: "media", dias: 2, stage: "proposta", stageLabel: "Proposta" },
+  { id: 9, titulo: "Gislaine Souza", empresa: "Startup Hub", valor: 45000, avatar: "GS", responsavel: "Gislaine Souza", email: "gislaine@startup.com", prioridade: "alta", dias: 17, stage: "fechamento", stageLabel: "Fechamento" },
+  { id: 10, titulo: "Matheus Buneo", empresa: "GrowthLab", valor: 42000, avatar: "MB", responsavel: "Matheus Buneo", email: "matheus@growth.com", prioridade: "alta", dias: 25, stage: "fechamento", stageLabel: "Fechamento" },
 ]
 
 const PRIORIDADE_CONFIG = {
