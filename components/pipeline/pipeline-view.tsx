@@ -11,16 +11,10 @@ import {
   RotateCcw,
   TrendingUp,
   MoreHorizontal,
-  Edit3,
   CheckCircle2,
   XCircle,
   AlertCircle,
-  ArrowRightLeft,
-  Calendar,
-  User,
-  Building2,
-  Phone,
-  Mail
+  Check
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -39,6 +33,7 @@ interface PipelineStageConfig {
 
 type DealStatus = "open" | "won" | "lost"
 type ViewMode = "board" | "list"
+type Prioridade = "alta" | "media" | "baixa"
 
 interface Deal {
   id: number
@@ -49,12 +44,19 @@ interface Deal {
   responsavel: string
   email: string
   telefone: string
-  prioridade: "alta" | "media" | "baixa"
+  prioridade: Prioridade
   dias: number
   stage: string
   status: DealStatus
   contactId?: string
   criadoEm: string
+}
+
+interface Filtros {
+  prioridade: Prioridade[]
+  status: DealStatus[]
+  valorMin: number | null
+  valorMax: number | null
 }
 
 // ─── Theme Config ────────────────────────────────────────────────────────────
@@ -116,7 +118,6 @@ function findContactByDeal(deal: Deal): Contact | undefined {
   if (deal.contactId) {
     return MOCK_CONTACTS.find(c => c.id === deal.contactId)
   }
-  // Criar um contato mockado baseado no deal
   return {
     id: `deal-contact-${deal.id}`,
     nome: deal.responsavel.split(' ')[0],
@@ -379,6 +380,171 @@ function DealListView({ deals, onDealClick, selectedDealId }: DealListViewProps)
   )
 }
 
+// ─── Filter Dropdown Component ───────────────────────────────────────────────
+
+interface FilterDropdownProps {
+  filtros: Filtros
+  onChange: (filtros: Filtros) => void
+}
+
+function FilterDropdown({ filtros, onChange }: FilterDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const togglePrioridade = (p: Prioridade) => {
+    const novas = filtros.prioridade.includes(p)
+      ? filtros.prioridade.filter(x => x !== p)
+      : [...filtros.prioridade, p]
+    onChange({ ...filtros, prioridade: novas })
+  }
+
+  const toggleStatus = (s: DealStatus) => {
+    const novos = filtros.status.includes(s)
+      ? filtros.status.filter(x => x !== s)
+      : [...filtros.status, s]
+    onChange({ ...filtros, status: novos })
+  }
+
+  const limparFiltros = () => {
+    onChange({ prioridade: [], status: [], valorMin: null, valorMax: null })
+  }
+
+  const temFiltros = filtros.prioridade.length > 0 || filtros.status.length > 0 || filtros.valorMin !== null || filtros.valorMax !== null
+
+  return (
+    <div className="relative">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className={cn(
+          "h-8 gap-2",
+          temFiltros && "border-[#9795e4] text-[#9795e4]"
+        )}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <Filter className="h-3.5 w-3.5" />
+        Filtros
+        {temFiltros && (
+          <span className="ml-1 rounded-full bg-[#9795e4] px-1.5 py-0.5 text-[10px] text-white">
+            {filtros.prioridade.length + filtros.status.length + (filtros.valorMin || filtros.valorMax ? 1 : 0)}
+          </span>
+        )}
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
+      </Button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-white p-4 shadow-lg">
+            {/* Prioridade */}
+            <div className="mb-4">
+              <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Prioridade</h4>
+              <div className="space-y-1">
+                {(["alta", "media", "baixa"] as Prioridade[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => togglePrioridade(p)}
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                  >
+                    <span className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded border",
+                      filtros.prioridade.includes(p) 
+                        ? "border-[#9795e4] bg-[#9795e4] text-white" 
+                        : "border-border"
+                    )}>
+                      {filtros.prioridade.includes(p) && <Check className="h-3 w-3" />}
+                    </span>
+                    <span className={cn(
+                      "capitalize",
+                      p === "alta" && "text-red-600",
+                      p === "media" && "text-amber-600",
+                      p === "baixa" && "text-gray-500"
+                    )}>
+                      {p}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="mb-4">
+              <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Status</h4>
+              <div className="space-y-1">
+                {([
+                  { key: "open", label: "Em aberto" },
+                  { key: "won", label: "Ganho" },
+                  { key: "lost", label: "Perdido" }
+                ] as { key: DealStatus; label: string }[]).map((s) => (
+                  <button
+                    key={s.key}
+                    onClick={() => toggleStatus(s.key)}
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                  >
+                    <span className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded border",
+                      filtros.status.includes(s.key) 
+                        ? "border-[#9795e4] bg-[#9795e4] text-white" 
+                        : "border-border"
+                    )}>
+                      {filtros.status.includes(s.key) && <Check className="h-3 w-3" />}
+                    </span>
+                    <span className={cn(
+                      s.key === "won" && "text-emerald-600",
+                      s.key === "lost" && "text-red-600"
+                    )}>
+                      {s.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Valor */}
+            <div className="mb-4">
+              <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Valor</h4>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Min"
+                  value={filtros.valorMin || ""}
+                  onChange={(e) => onChange({ ...filtros, valorMin: e.target.value ? Number(e.target.value) : null })}
+                  className="h-8 text-sm"
+                />
+                <Input
+                  type="number"
+                  placeholder="Max"
+                  value={filtros.valorMax || ""}
+                  onChange={(e) => onChange({ ...filtros, valorMax: e.target.value ? Number(e.target.value) : null })}
+                  className="h-8 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-between border-t border-border pt-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs"
+                onClick={limparFiltros}
+              >
+                Limpar
+              </Button>
+              <Button 
+                size="sm" 
+                className="h-7 bg-[#9795e4] hover:bg-[#7b79c4] text-white text-xs"
+                onClick={() => setIsOpen(false)}
+              >
+                Aplicar
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Main View ───────────────────────────────────────────────────────────────
 
 export function PipelineView() {
@@ -389,17 +555,47 @@ export function PipelineView() {
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("board")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [filtros, setFiltros] = useState<Filtros>({
+    prioridade: [],
+    status: [],
+    valorMin: null,
+    valorMax: null
+  })
 
   const filteredDeals = useMemo(() => {
-    if (!searchQuery) return deals
-    const query = searchQuery.toLowerCase()
-    return deals.filter(
-      (d) =>
-        d.titulo.toLowerCase().includes(query) ||
-        d.empresa.toLowerCase().includes(query) ||
-        d.responsavel.toLowerCase().includes(query)
-    )
-  }, [deals, searchQuery])
+    let result = deals
+    
+    // Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter(
+        (d) =>
+          d.titulo.toLowerCase().includes(query) ||
+          d.empresa.toLowerCase().includes(query) ||
+          d.responsavel.toLowerCase().includes(query)
+      )
+    }
+    
+    // Filtros de prioridade
+    if (filtros.prioridade.length > 0) {
+      result = result.filter(d => filtros.prioridade.includes(d.prioridade))
+    }
+    
+    // Filtros de status
+    if (filtros.status.length > 0) {
+      result = result.filter(d => filtros.status.includes(d.status))
+    }
+    
+    // Filtro de valor
+    if (filtros.valorMin !== null) {
+      result = result.filter(d => d.valor >= filtros.valorMin!)
+    }
+    if (filtros.valorMax !== null) {
+      result = result.filter(d => d.valor <= filtros.valorMax!)
+    }
+    
+    return result
+  }, [deals, searchQuery, filtros])
 
   const selectedDeal = useMemo(
     () => deals.find((d) => d.id === selectedDealId) || null,
@@ -543,29 +739,17 @@ export function PipelineView() {
           </Button>
         </div>
 
-        {/* Pipeline Selector + Filters */}
+        {/* Filters Only */}
         <div className="flex items-center gap-2">
+          {/* Summary */}
           <div className="text-sm text-muted-foreground mr-4">
             <span className="font-semibold text-foreground">{formatCurrency(totalValue)}</span>
             <span className="mx-2">·</span>
             <span>{openDealsCount} negócios abertos</span>
           </div>
 
-          <Button variant="outline" size="sm" className="h-8 gap-2">
-            <LayoutGrid className="h-3.5 w-3.5" />
-            Pipeline Comercial
-            <ChevronDown className="h-3.5 w-3.5" />
-          </Button>
-
-          <Button variant="outline" size="sm" className="h-8 px-2">
-            <Edit3 className="h-3.5 w-3.5" />
-          </Button>
-
-          <Button variant="outline" size="sm" className="h-8 gap-2">
-            <Filter className="h-3.5 w-3.5" />
-            Filtros
-            <ChevronDown className="h-3.5 w-3.5" />
-          </Button>
+          {/* Filter Dropdown */}
+          <FilterDropdown filtros={filtros} onChange={setFiltros} />
         </div>
       </div>
 
