@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Check
+  Check,
+  GripVertical
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -309,72 +310,163 @@ interface DealListViewProps {
   deals: Deal[]
   onDealClick: (deal: Deal) => void
   selectedDealId: number | null
+  draggedDealId: number | null
+  onDragStart: (e: React.DragEvent, dealId: number) => void
+  onDragOver: (e: React.DragEvent) => void
+  onDrop: (e: React.DragEvent, stageKey: string) => void
 }
 
-function DealListView({ deals, onDealClick, selectedDealId }: DealListViewProps) {
+function DealListView({ 
+  deals, 
+  onDealClick, 
+  selectedDealId,
+  draggedDealId,
+  onDragStart,
+  onDragOver,
+  onDrop
+}: DealListViewProps) {
+  // Agrupa deals por estágio
+  const dealsByStage = STAGES.map(stage => ({
+    stage,
+    deals: deals.filter(d => d.stage === stage.key)
+  }))
+
   return (
     <div className="flex-1 overflow-auto p-4">
-      <div className="rounded-lg border border-border bg-white">
-        {/* Header */}
-        <div className="grid grid-cols-12 gap-4 border-b border-border bg-muted/30 px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-          <div className="col-span-3">Negócio</div>
-          <div className="col-span-2">Empresa</div>
-          <div className="col-span-2">Valor</div>
-          <div className="col-span-2">Etapa</div>
-          <div className="col-span-1">Dias</div>
-          <div className="col-span-1">Prioridade</div>
-          <div className="col-span-1">Ações</div>
-        </div>
+      <div className="space-y-4">
+        {dealsByStage.map(({ stage, deals: stageDeals }) => {
+          const totalValue = stageDeals.reduce((sum, d) => sum + d.valor, 0)
+          const openDeals = stageDeals.filter(d => d.status === "open")
 
-        {/* Rows */}
-        {deals.map((deal) => (
-          <div
-            key={deal.id}
-            onClick={() => onDealClick(deal)}
-            className={cn(
-              "grid grid-cols-12 gap-4 border-b border-border px-4 py-3 text-sm cursor-pointer transition-colors hover:bg-muted/20",
-              selectedDealId === deal.id && "bg-[#9795e4]/5 border-[#9795e4]",
-              deal.status === "won" && "bg-emerald-50/30",
-              deal.status === "lost" && "bg-red-50/30"
-            )}
-          >
-            <div className="col-span-3 flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9795e4]/10 text-xs font-bold text-[#9795e4]">
-                {deal.avatar}
+          return (
+            <div 
+              key={stage.key}
+              className="rounded-lg border border-border bg-white overflow-hidden"
+              onDragOver={onDragOver}
+              onDrop={(e) => onDrop(e, stage.key)}
+            >
+              {/* Stage Header */}
+              <div 
+                className="flex items-center justify-between px-4 py-3 border-b border-border"
+                style={{ backgroundColor: `${stage.color}15` }}
+              >
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: stage.color }}
+                  />
+                  <span className="font-semibold text-foreground">{stage.label}</span>
+                  <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-600">
+                    {stageDeals.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span>{formatCurrency(totalValue)}</span>
+                  <span>·</span>
+                  <span>{openDeals.length} abertos</span>
+                </div>
               </div>
-              <div>
-                <div className="font-medium text-foreground">{deal.titulo}</div>
-                <div className="text-xs text-muted-foreground">{deal.responsavel}</div>
-              </div>
+
+              {/* Deals List */}
+              {stageDeals.length > 0 ? (
+                <div className="divide-y divide-border">
+                  {stageDeals.map((deal) => (
+                    <div
+                      key={deal.id}
+                      draggable
+                      onDragStart={(e) => onDragStart(e, deal.id)}
+                      onClick={() => onDealClick(deal)}
+                      className={cn(
+                        "flex items-center gap-4 px-4 py-3 text-sm cursor-grab transition-colors hover:bg-muted/20",
+                        selectedDealId === deal.id && "bg-[#9795e4]/5",
+                        deal.status === "won" && "bg-emerald-50/30",
+                        deal.status === "lost" && "bg-red-50/30",
+                        draggedDealId === deal.id && "opacity-50"
+                      )}
+                    >
+                      {/* Drag Handle */}
+                      <div className="text-muted-foreground/40">
+                        <GripVertical className="h-4 w-4" />
+                      </div>
+
+                      {/* Avatar */}
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-bold text-white shrink-0"
+                        style={{ 
+                          backgroundColor: deal.prioridade === "alta" ? "#f87171" : 
+                                          deal.prioridade === "media" ? "#fbbf24" : "#9ca3af"
+                        }}
+                      >
+                        {deal.avatar}
+                      </div>
+
+                      {/* Title & Responsavel */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{deal.titulo}</span>
+                          {deal.status === "won" && (
+                            <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500 text-white">
+                              <CheckCircle2 className="h-3 w-3" /> Ganho
+                            </span>
+                          )}
+                          {deal.status === "lost" && (
+                            <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-red-500 text-white">
+                              <XCircle className="h-3 w-3" /> Perdido
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{deal.responsavel}</span>
+                      </div>
+
+                      {/* Empresa */}
+                      <div className="w-32 shrink-0 text-sm text-muted-foreground truncate">
+                        {deal.empresa}
+                      </div>
+
+                      {/* Valor */}
+                      <div className="w-24 shrink-0 text-sm font-semibold text-foreground text-right">
+                        {formatCurrency(deal.valor)}
+                      </div>
+
+                      {/* Dias */}
+                      <div className="w-16 shrink-0 text-xs text-muted-foreground text-center">
+                        {deal.dias}d
+                      </div>
+
+                      {/* Prioridade */}
+                      <div className="w-20 shrink-0 flex justify-center">
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                          deal.prioridade === "alta" ? "bg-red-100 text-red-600" : 
+                          deal.prioridade === "media" ? "bg-amber-100 text-amber-600" : 
+                          "bg-gray-100 text-gray-600"
+                        )}>
+                          {deal.prioridade}
+                        </span>
+                      </div>
+
+                      {/* Ações */}
+                      <div className="w-10 shrink-0 flex justify-end">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                  Nenhum negócio nesta etapa
+                </div>
+              )}
+
+              {/* Add Button */}
+              <button className="flex w-full items-center justify-center gap-1.5 border-t border-border py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-[#9795e4]">
+                <Plus className="h-3.5 w-3.5" />
+                Adicionar negócio
+              </button>
             </div>
-            <div className="col-span-2 flex items-center text-muted-foreground">
-              {deal.empresa}
-            </div>
-            <div className="col-span-2 flex items-center font-semibold text-foreground">
-              {formatCurrency(deal.valor)}
-            </div>
-            <div className="col-span-2 flex items-center">
-              <span className="inline-flex items-center rounded-full bg-[#9795e4]/10 px-2 py-1 text-xs font-medium text-[#9795e4]">
-                {STAGES.find(s => s.key === deal.stage)?.label || deal.stage}
-              </span>
-            </div>
-            <div className="col-span-1 flex items-center text-muted-foreground">
-              {deal.dias}d
-            </div>
-            <div className="col-span-1 flex items-center">
-              <span className={cn(
-                "h-2 w-2 rounded-full",
-                deal.prioridade === "alta" ? "bg-red-400" : 
-                deal.prioridade === "media" ? "bg-amber-400" : "bg-gray-400"
-              )} />
-            </div>
-            <div className="col-span-1 flex items-center">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -775,6 +867,10 @@ export function PipelineView() {
           deals={filteredDeals} 
           onDealClick={handleDealClick}
           selectedDealId={selectedDealId}
+          draggedDealId={draggedDealId}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
         />
       )}
 
