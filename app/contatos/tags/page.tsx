@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { ContactsSubSidebar } from "@/components/contacts/contacts-sub-sidebar"
-import { MOCK_TAGS, Tag, UTM_SOURCES, UTM_MEDIUMS } from "@/lib/mock/tags"
+import { MOCK_TAGS, type Tag, UTM_SOURCES, UTM_MEDIUMS } from "@/lib/mock/tags"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -30,7 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Tag, Target, Bot, Filter } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Tag as TagIcon, Target, Bot, Filter } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -278,7 +278,7 @@ export default function TagsPage() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5 text-[#9795e4]" />
+                <TagIcon className="h-5 w-5 text-[#9795e4]" />
                 {editingTag ? "Editar Tag" : "Nova Tag"}
               </DialogTitle>
               <DialogDescription>

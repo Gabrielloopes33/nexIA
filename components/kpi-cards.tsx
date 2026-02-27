@@ -6,7 +6,7 @@ export function KpiCards() {
   // Calcula KPIs reais dos leads enriquecidos
   const totalLeads = ENRICHED_LEADS.length
   const activeContacts = ENRICHED_LEADS.filter(l => l.status === 'ativo').length
-  const conversions = ENRICHED_LEADS.filter(l => l.status === 'cliente' || l.negocios).length
+  const conversions = ENRICHED_LEADS.filter(l => l.negocios && l.negocios > 0).length
   const conversionRate = totalLeads > 0 ? (conversions / totalLeads) * 100 : 0
   const closedDeals = ENRICHED_LEADS.filter(l => l.receita && l.receita > 0).length
 

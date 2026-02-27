@@ -122,7 +122,6 @@ export function ConversationsPanel({ selectedId, onSelect, conversations = [] }:
                       {conv.assignedTo && (
                         <div
                           className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#9795e4] text-[8px] font-bold text-white ring-2 ring-white"
-                          title={`Atribuído a ${conv.assignedTo.name}`}
                         >
                           {conv.assignedTo.avatar}
                         </div>
@@ -185,7 +184,7 @@ export function ConversationsPanel({ selectedId, onSelect, conversations = [] }:
 
                         {/* SLA Warning */}
                         {conv.slaStatus === "breach" && (
-                          <AlertCircle className="h-3.5 w-3.5 text-red-500" title="SLA vencido" />
+                          <AlertCircle className="h-3.5 w-3.5 text-red-500" />
                         )}
 
                         {/* Unread Count */}

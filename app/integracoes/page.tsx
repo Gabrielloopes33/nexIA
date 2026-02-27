@@ -35,7 +35,7 @@ export default function IntegracoesPage() {
       .filter((date): date is Date => date !== undefined)
     const lastSync = lastSyncDates.length > 0 
       ? new Date(Math.max(...lastSyncDates.map(d => d.getTime())))
-      : undefined
+      : null
 
     return {
       connectedCount,

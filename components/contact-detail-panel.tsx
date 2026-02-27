@@ -1,14 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, Mail, Phone, MapPin, Briefcase, Instagram, Linkedin, Calendar, User, Clock, Building2, Tag, CheckCircle2, Circle, MoreHorizontal, Plus, Send, MessageSquare, FileText, PhoneCall, MailOpen, Star, AlertCircle, CheckCheck } from 'lucide-react'
+import { X, Mail, Phone, MapPin, Briefcase, Instagram, Linkedin, Calendar, User, Clock, Building2, Tag, CheckCircle2, Circle, MoreHorizontal, Plus, Send, MessageSquare, FileText, PhoneCall, MailOpen, Star, AlertCircle, CheckCheck, Trash2, Palette } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Contact, getContactTags } from '@/lib/mock/contacts'
+import { type Tag as ContactTag, MOCK_TAGS, getTagsByIds } from '@/lib/mock/tags'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useContactPanel } from '@/lib/contexts/contact-panel-context'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface ContactDetailPanelProps {
   contact?: Contact
@@ -159,6 +162,15 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
   const [newNote, setNewNote] = useState('')
   const [showAddTask, setShowAddTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  
+  // Tags management state
+  const [contactTags, setContactTags] = useState<string[]>([])
+  const [availableTags, setAvailableTags] = useState<ContactTag[]>(MOCK_TAGS)
+  const [isAddingTag, setIsAddingTag] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState('#9795e4')
+  const [searchTagQuery, setSearchTagQuery] = useState('')
+  const tagInputRef = useRef<HTMLInputElement>(null)
 
   // Use context if no props provided
   const context = useContactPanel()
@@ -166,6 +178,13 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
   const contact = propContact ?? context.selectedContact ?? null
   const isOpen = propIsOpen ?? context.isOpen
   const onClose = propOnClose ?? context.closeContactPanel
+
+  // Sync contact tags when contact changes
+  useEffect(() => {
+    if (contact) {
+      setContactTags(contact.tags || [])
+    }
+  }, [contact?.id])
 
   const timelineEvents = contact ? generateTimelineEvents(`${contact.nome} ${contact.sobrenome}`) : []
 
@@ -196,11 +215,88 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
     setNewNote('')
   }
 
+  // Tag color options
+  const tagColorOptions = [
+    '#9795e4', // Purple (primary)
+    '#7c7ab8', // Dark purple
+    '#b3b3e5', // Light purple
+    '#7573b8', // Medium purple
+    '#9b99d1', // Lavender
+    '#8a88c7', // Violet
+    '#c4c3ea', // Pale purple
+    '#a5a3d9', // Soft purple
+    '#ef4444', // Red
+    '#f97316', // Orange
+    '#f59e0b', // Amber
+    '#84cc16', // Lime
+    '#10b981', // Emerald
+    '#06b6d4', // Cyan
+    '#3b82f6', // Blue
+    '#8b5cf6', // Violet
+    '#ec4899', // Pink
+    '#6b7280', // Gray
+  ]
+
+  // Add existing tag to contact
+  const addTagToContact = (tagId: string) => {
+    if (!contactTags.includes(tagId)) {
+      setContactTags([...contactTags, tagId])
+    }
+    setIsAddingTag(false)
+    setSearchTagQuery('')
+  }
+
+  // Remove tag from contact
+  const removeTagFromContact = (tagId: string) => {
+    setContactTags(contactTags.filter(id => id !== tagId))
+  }
+
+  // Create new tag and add to contact
+  const createNewTag = () => {
+    if (!newTagName.trim()) return
+    
+    const newTag: ContactTag = {
+      id: `tag-${Date.now()}`,
+      nome: newTagName.trim(),
+      cor: newTagColor,
+      leadScore: 0,
+      contatosCount: 1,
+      automatizacao: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    
+    setAvailableTags([...availableTags, newTag])
+    setContactTags([...contactTags, newTag.id])
+    setNewTagName('')
+    setNewTagColor('#9795e4')
+    setIsAddingTag(false)
+  }
+
+  // Get tags not yet assigned to contact
+  const getUnassignedTags = () => {
+    return availableTags.filter(tag => !contactTags.includes(tag.id))
+  }
+
+  // Filter tags by search query
+  const getFilteredTags = () => {
+    const unassigned = getUnassignedTags()
+    if (!searchTagQuery.trim()) return unassigned
+    return unassigned.filter(tag => 
+      tag.nome.toLowerCase().includes(searchTagQuery.toLowerCase())
+    )
+  }
+
+  // Get full tag objects for display
+  const getContactTagObjects = (): ContactTag[] => {
+    return getTagsByIds(contactTags)
+  }
+
   if (!isOpen || !contact) {
     return null
   }
 
-  const tags = contact.tags ? getContactTags(contact) : []
+  // Tags are now managed by contactTags state
 
   const getInitials = (nome: string, sobrenome: string) => {
     return `${nome[0]}${sobrenome[0]}`.toUpperCase()
@@ -347,30 +443,137 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
               </div>
 
               {/* Tags Section */}
-              {tags.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
                     <Tag className="h-4 w-4 text-[#9795e4]" />
                     <span className="text-sm font-medium text-foreground">Tags</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {tags.map((tag) => (
-                      <Badge
-                        key={tag.id}
-                        style={{
-                          backgroundColor: `${tag.cor}20`,
-                          color: tag.cor,
-                          borderColor: tag.cor,
-                        }}
-                        variant="outline"
-                        className="text-xs"
+                  <Popover open={isAddingTag} onOpenChange={setIsAddingTag}>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs text-[#9795e4] hover:text-[#7b79c4] hover:bg-[#9795e4]/10"
                       >
-                        {tag.nome}
-                      </Badge>
-                    ))}
-                  </div>
+                        <Plus className="h-3.5 w-3.5 mr-1" />
+                        Adicionar
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-0" align="end">
+                      <div className="p-3 border-b">
+                        <p className="text-sm font-medium mb-2">Adicionar Tag</p>
+                        <Input
+                          ref={tagInputRef}
+                          placeholder="Buscar ou criar tag..."
+                          value={searchTagQuery}
+                          onChange={(e) => setSearchTagQuery(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      
+                      {/* Existing tags */}
+                      <div className="max-h-40 overflow-y-auto">
+                        {getFilteredTags().length > 0 ? (
+                          <div className="p-1">
+                            <p className="text-xs text-muted-foreground px-2 py-1">Tags existentes</p>
+                            {getFilteredTags().map((tag) => (
+                              <button
+                                key={tag.id}
+                                onClick={() => addTagToContact(tag.id)}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted text-left"
+                              >
+                                <span 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: tag.cor }}
+                                />
+                                <span className="text-sm flex-1">{tag.nome}</span>
+                                <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                              </button>
+                            ))}
+                          </div>
+                        ) : searchTagQuery.trim() && getUnassignedTags().length === 0 ? (
+                          <div className="p-3 text-center text-sm text-muted-foreground">
+                            Nenhuma tag disponível
+                          </div>
+                        ) : null}
+                        
+                        {/* Create new tag option */}
+                        {searchTagQuery.trim() && !availableTags.some(t => 
+                          t.nome.toLowerCase() === searchTagQuery.toLowerCase()
+                        ) && (
+                          <div className="p-2 border-t">
+                            <p className="text-xs text-muted-foreground px-2 py-1">Criar nova tag</p>
+                            <div className="px-2 py-2">
+                              <Input
+                                placeholder="Nome da tag"
+                                value={newTagName || searchTagQuery}
+                                onChange={(e) => setNewTagName(e.target.value)}
+                                className="h-8 text-sm mb-2"
+                              />
+                              <div className="flex items-center gap-2 mb-2">
+                                <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+                                <div className="flex flex-wrap gap-1">
+                                  {tagColorOptions.map((color) => (
+                                    <button
+                                      key={color}
+                                      onClick={() => setNewTagColor(color)}
+                                      className={cn(
+                                        "w-5 h-5 rounded-full border-2 transition-all",
+                                        newTagColor === color 
+                                          ? "border-foreground scale-110" 
+                                          : "border-transparent hover:scale-105"
+                                      )}
+                                      style={{ backgroundColor: color }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                className="w-full h-8 bg-[#9795e4] hover:bg-[#7b79c4] text-white"
+                                onClick={createNewTag}
+                                disabled={!newTagName.trim() && !searchTagQuery.trim()}
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1" />
+                                Criar "{newTagName || searchTagQuery}"
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              )}
+                
+                <div className="flex flex-wrap gap-1.5">
+                  {getContactTagObjects().map((tag) => (
+                    <Badge
+                      key={tag.id}
+                      style={{
+                        backgroundColor: `${tag.cor}20`,
+                        color: tag.cor,
+                        borderColor: tag.cor,
+                      }}
+                      variant="outline"
+                      className="text-xs pr-1 group flex items-center gap-1"
+                    >
+                      {tag.nome}
+                      <button
+                        onClick={() => removeTagFromContact(tag.id)}
+                        className="ml-0.5 p-0.5 rounded-full hover:bg-black/10 opacity-60 hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {contactTags.length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Nenhuma tag atribuída
+                    </p>
+                  )}
+                </div>
+              </div>
 
               {/* Geral Section */}
               <div className="mb-6">

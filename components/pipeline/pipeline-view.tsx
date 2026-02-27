@@ -224,7 +224,7 @@ function DealCard({ deal, isDragging, onDragStart, onClick, isSelected }: DealCa
         </div>
         
         {deal.dias > 7 && deal.status === "open" && (
-          <AlertCircle className="h-4 w-4 text-amber-500" title="Negócio antigo" />
+          <AlertCircle className="h-4 w-4 text-amber-500" />
         )}
       </div>
     </div>
