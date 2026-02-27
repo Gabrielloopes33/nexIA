@@ -544,6 +544,7 @@ export function AgendamentosView() {
   const [atividadeSelecionada, setAtividadeSelecionada] = useState<Atividade | null>(null)
   const [atividades, setAtividades] = useState<Atividade[]>(ATIVIDADES_MOCK)
   const [draggedAtividade, setDraggedAtividade] = useState<Atividade | null>(null)
+  const [dragIndicator, setDragIndicator] = useState<{ diaIndex: number; hora: number; y: number } | null>(null)
   
   // Sidebar state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -590,39 +591,48 @@ export function AgendamentosView() {
     return contagem
   }, [atividades])
 
-  // Drag & Drop handlers
+  // Drag & Drop com linha indicadora
+  const [dragIndicator, setDragIndicator] = useState<{ diaIndex: number; hora: number; y: number } | null>(null)
+
   const handleDragStart = useCallback((e: React.DragEvent, atividade: Atividade) => {
     setDraggedAtividade(atividade)
     e.dataTransfer.effectAllowed = "move"
   }, [])
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent, diaIndex: number) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = "move"
+
+    // Calcular hora baseada na posição Y
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const y = e.clientY - rect.top
+    const horaIndex = Math.floor(y / 60)
+    const hora = Math.max(6, Math.min(20, horaIndex + 6))
+    
+    setDragIndicator({ diaIndex, hora, y: horaIndex * 60 })
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent, diaIndex: number, hora?: number) => {
+  const handleDragLeave = useCallback(() => {
+    setDragIndicator(null)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent, diaIndex: number) => {
     e.preventDefault()
     if (!draggedAtividade) return
+
+    // Calcular hora baseada na posição Y
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const y = e.clientY - rect.top
+    const horaIndex = Math.floor(y / 60)
+    const hora = Math.max(6, Math.min(20, horaIndex + 6))
 
     // Calcular nova data
     const novaData = new Date(diasSemana[diaIndex])
     
     // Calcular nova hora
-    let novaHoraInicio: string
-    let novaHoraFim: string
-    
-    if (hora !== undefined) {
-      // Drop em uma célula específica de hora
-      novaHoraInicio = formatarHora(hora)
-      const duracao = getDuracaoSlots(draggedAtividade.horaInicio, draggedAtividade.horaFim)
-      novaHoraFim = formatarHora(hora + duracao)
-    } else {
-      // Drop na coluna do dia - manter hora original
-      const horaOriginal = parseInt(draggedAtividade.horaInicio.split(":")[0])
-      novaHoraInicio = draggedAtividade.horaInicio
-      novaHoraFim = draggedAtividade.horaFim
-    }
+    const novaHoraInicio = formatarHora(hora)
+    const duracao = getDuracaoSlots(draggedAtividade.horaInicio, draggedAtividade.horaFim)
+    const novaHoraFim = formatarHora(Math.min(20, hora + duracao))
 
     // Atualizar atividade
     setAtividades(prev => prev.map(a => {
@@ -638,6 +648,7 @@ export function AgendamentosView() {
     }))
 
     setDraggedAtividade(null)
+    setDragIndicator(null)
   }, [draggedAtividade, diasSemana])
 
   // Abrir sidebar com contato
@@ -841,18 +852,39 @@ export function AgendamentosView() {
                     "relative min-h-[600px] rounded-lg border",
                     eDiaHoje ? "border-[#9795e4]/30 bg-[#9795e4]/5" : "border-gray-200 bg-gray-50/50"
                   )}
-                  onDragOver={handleDragOver}
+                  onDragOver={(e) => handleDragOver(e, diaIndex)}
+                  onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, diaIndex)}
                 >
-                  {/* Células de Horário (drop targets) */}
+                  {/* Células de Horário */}
                   {HORARIOS.map((hora) => (
                     <div 
                       key={hora}
-                      className="h-[60px] border-b border-gray-100 last:border-b-0 hover:bg-gray-100/50 transition-colors"
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, diaIndex, hora)}
+                      className="h-[60px] border-b border-gray-100 last:border-b-0"
                     />
                   ))}
+                  
+                  {/* Linha Indicadora de Drop */}
+                  {dragIndicator && dragIndicator.diaIndex === diaIndex && draggedAtividade && (
+                    <div 
+                      className="absolute inset-x-0 z-20 pointer-events-none"
+                      style={{ top: `${dragIndicator.y}px` }}
+                    >
+                      {/* Linha horizontal */}
+                      <div className="absolute inset-x-0 h-0.5 bg-[#9795e4]" />
+                      {/* Badge de hora */}
+                      <div className="absolute left-1 -top-3 bg-[#9795e4] text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                        {formatarHora(dragIndicator.hora)}
+                      </div>
+                      {/* Preview do card */}
+                      <div 
+                        className="absolute inset-x-1 mt-0.5 rounded bg-[#9795e4]/20 border border-[#9795e4]/40"
+                        style={{ 
+                          height: `${Math.max(30, getDuracaoSlots(draggedAtividade.horaInicio, draggedAtividade.horaFim) * 60 - 4)}px` 
+                        }}
+                      />
+                    </div>
+                  )}
                   
                   {/* Cards de Atividades */}
                   {atividadesDia.map(atividade => {
