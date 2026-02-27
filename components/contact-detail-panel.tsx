@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Contact, getContactTags } from '@/lib/mock/contacts'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useContactPanel } from '@/lib/contexts/contact-panel-context'
 
 interface ContactDetailPanelProps {
   contact?: Contact
@@ -159,18 +160,12 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
   const [showAddTask, setShowAddTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
 
-  // Try to use context if available, otherwise use props
-  const context = (() => {
-    try {
-      return { selectedContact: undefined, isOpen: false, closeContactPanel: () => {} }
-    } catch {
-      return null
-    }
-  })()
-
-  const contact = propContact
-  const isOpen = propIsOpen ?? false
-  const onClose = propOnClose || (() => {})
+  // Use context if no props provided
+  const context = useContactPanel()
+  
+  const contact = propContact ?? context.selectedContact ?? null
+  const isOpen = propIsOpen ?? context.isOpen
+  const onClose = propOnClose ?? context.closeContactPanel
 
   const timelineEvents = contact ? generateTimelineEvents(`${contact.nome} ${contact.sobrenome}`) : []
 
