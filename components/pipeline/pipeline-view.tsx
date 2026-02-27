@@ -5,19 +5,22 @@ import {
   Plus, 
   Search, 
   Filter, 
-  MoreHorizontal, 
   ChevronDown, 
   LayoutGrid, 
   List, 
   RotateCcw,
   TrendingUp,
-  User,
-  Phone,
-  Mail,
+  MoreHorizontal,
   Edit3,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  ArrowRightLeft,
+  Calendar,
+  User,
+  Building2,
+  Phone,
+  Mail
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -35,6 +38,7 @@ interface PipelineStageConfig {
 }
 
 type DealStatus = "open" | "won" | "lost"
+type ViewMode = "board" | "list"
 
 interface Deal {
   id: number
@@ -42,46 +46,65 @@ interface Deal {
   empresa: string
   valor: number
   avatar: string
-  responsavel?: string
-  email?: string
-  telefone?: string
+  responsavel: string
+  email: string
+  telefone: string
   prioridade: "alta" | "media" | "baixa"
   dias: number
   stage: string
-  stageLabel?: string
   status: DealStatus
-  // Link to contact
   contactId?: string
+  criadoEm: string
 }
 
 // ─── Theme Config ────────────────────────────────────────────────────────────
 
 const STAGES: PipelineStageConfig[] = [
-  { key: "qualified", label: "Qualificado", color: "#9795e4", bgColor: "bg-[#f8f7fc]" },
-  { key: "contact", label: "Contato Realizado", color: "#7b79c4", bgColor: "bg-[#f5f4fa]" },
-  { key: "demo", label: "Demo Agendada", color: "#6b69c9", bgColor: "bg-[#f2f1f8]" },
-  { key: "proposal", label: "Proposta Enviada", color: "#5b59be", bgColor: "bg-[#efeef6]" },
+  { key: "novo", label: "Novo Lead", color: "#9795e4", bgColor: "bg-[#f8f7fc]" },
+  { key: "qualificado", label: "Qualificado", color: "#7b79c4", bgColor: "bg-[#f5f4fa]" },
+  { key: "proposta", label: "Proposta", color: "#6b69c9", bgColor: "bg-[#f2f1f8]" },
+  { key: "fechamento", label: "Fechamento", color: "#5b59be", bgColor: "bg-[#efeef6]" },
 ]
 
-const INITIAL_DEALS: Deal[] = [
-  { id: 1, titulo: "Willamette Co deal", empresa: "Willamette Co", valor: 1500, avatar: "WC", responsavel: "Willamette", prioridade: "alta", dias: 3, stage: "qualified", status: "open", contactId: "cont-001" },
-  { id: 2, titulo: "Park Place deal", empresa: "Park Place", valor: 4500, avatar: "PP", responsavel: "Park", prioridade: "media", dias: 5, stage: "qualified", status: "open", contactId: "cont-002" },
-  { id: 3, titulo: "Dream college deal", empresa: "Dream college", valor: 3700, avatar: "DC", responsavel: "Dream", prioridade: "alta", dias: 7, stage: "qualified", status: "open" },
-  { id: 4, titulo: "Pet insurance deal", empresa: "Pet insurance", valor: 1000, avatar: "PI", responsavel: "Pet", prioridade: "baixa", dias: 2, stage: "qualified", status: "open" },
+const RESPONSAVEIS = ["Ana Silva", "Bruno Costa", "Carol Mendes", "Diego Lima", "Elisa Souza"]
+const EMPRESAS = ["TechCorp", "DataFlow", "CloudSync", "MegaCorp", "StartupHub", "VendasExpress", "GrowthLab", "FinTrack"]
+
+function gerarDealsMock(): Deal[] {
+  const deals: Deal[] = []
+  const stages = ["novo", "qualificado", "proposta", "fechamento"]
   
-  { id: 5, titulo: "Tim and sons logistics", empresa: "Tim and sons logistics", valor: 2300, avatar: "TS", responsavel: "Tim", prioridade: "alta", dias: 3, stage: "contact", status: "open" },
-  { id: 6, titulo: "Fantastic hotels LTD deal", empresa: "Fantastic hotels LTD", valor: 1900, avatar: "FH", responsavel: "Fantastic", prioridade: "media", dias: 8, stage: "contact", status: "open", contactId: "cont-003" },
-  { id: 7, titulo: "JD manufacturing deal", empresa: "JD manufacturing", valor: 1150, avatar: "JD", responsavel: "JD", prioridade: "baixa", dias: 12, stage: "contact", status: "open" },
-  
-  { id: 8, titulo: "Bringit media agency deal", empresa: "Bringit media agency", valor: 1400, avatar: "BM", responsavel: "Bringit", prioridade: "media", dias: 4, stage: "demo", status: "open" },
-  { id: 9, titulo: "We heart trees non-profit", empresa: "We heart trees", valor: 1700, avatar: "WH", responsavel: "Trees", prioridade: "alta", dias: 6, stage: "demo", status: "open" },
-  { id: 10, titulo: "Bringit media agency", empresa: "Bringit media", valor: 1200, avatar: "BM", responsavel: "Bringit", prioridade: "media", dias: 2, stage: "demo", status: "open" },
-  
-  { id: 11, titulo: "Rio housing deal", empresa: "Rio housing", valor: 2700, avatar: "RH", responsavel: "Rio", prioridade: "alta", dias: 1, stage: "proposal", status: "open" },
-  
-  { id: 12, titulo: "Maria M. retail LTD", empresa: "Maria M. retail", valor: 2600, avatar: "MR", responsavel: "Maria", prioridade: "media", dias: 5, stage: "proposal", status: "lost" },
-  { id: 13, titulo: "Trip abroad LTD", empresa: "Trip abroad", valor: 3750, avatar: "TA", responsavel: "Trip", prioridade: "alta", dias: 0, stage: "proposal", status: "won" },
-]
+  for (let i = 1; i <= 20; i++) {
+    const empresa = EMPRESAS[Math.floor(Math.random() * EMPRESAS.length)]
+    const responsavel = RESPONSAVEIS[Math.floor(Math.random() * RESPONSAVEIS.length)]
+    const stage = stages[Math.floor(Math.random() * stages.length)]
+    const valor = Math.floor(Math.random() * 50000) + 5000
+    const dias = Math.floor(Math.random() * 30)
+    
+    let status: DealStatus = "open"
+    if (stage === "fechamento") {
+      const rand = Math.random()
+      if (rand > 0.7) status = "won"
+      else if (rand > 0.4) status = "lost"
+    }
+    
+    deals.push({
+      id: i,
+      titulo: `Negócio ${empresa} ${String(i).padStart(2, '0')}`,
+      empresa: `${empresa} LTDA`,
+      valor,
+      avatar: empresa.slice(0, 2).toUpperCase(),
+      responsavel,
+      email: `contato@${empresa.toLowerCase()}.com.br`,
+      telefone: `+55 11 9${Math.floor(Math.random() * 9000 + 1000)}-${Math.floor(Math.random() * 9000 + 1000)}`,
+      prioridade: Math.random() > 0.6 ? "alta" : Math.random() > 0.3 ? "media" : "baixa",
+      dias,
+      stage,
+      status,
+      criadoEm: new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString(),
+    })
+  }
+  return deals
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -93,10 +116,27 @@ function findContactByDeal(deal: Deal): Contact | undefined {
   if (deal.contactId) {
     return MOCK_CONTACTS.find(c => c.id === deal.contactId)
   }
-  return MOCK_CONTACTS.find(c => 
-    deal.titulo.toLowerCase().includes(c.nome.toLowerCase()) ||
-    deal.empresa.toLowerCase().includes(c.empresa.toLowerCase())
-  )
+  // Criar um contato mockado baseado no deal
+  return {
+    id: `deal-contact-${deal.id}`,
+    nome: deal.responsavel.split(' ')[0],
+    sobrenome: deal.responsavel.split(' ').slice(1).join(' ') || "Sobrenome",
+    email: deal.email,
+    telefone: deal.telefone,
+    cidade: "São Paulo",
+    estado: "SP",
+    cargo: "Diretor Comercial",
+    empresa: deal.empresa,
+    tags: ["pipeline"],
+    leadScore: Math.floor(Math.random() * 100),
+    status: "ativo",
+    origem: "Pipeline",
+    criadoEm: deal.criadoEm,
+    atualizadoEm: new Date().toISOString(),
+    atualizadoPor: "Sistema",
+    avatar: deal.avatar,
+    avatarBg: "#9795e4",
+  } as Contact
 }
 
 // ─── Components ──────────────────────────────────────────────────────────────
@@ -151,7 +191,7 @@ function DealCard({ deal, isDragging, onDragStart, onClick, isSelected }: DealCa
       {/* Company */}
       <p className="text-xs text-muted-foreground mb-2">{deal.empresa}</p>
 
-      {/* Status Badge (if won/lost) */}
+      {/* Status Badge */}
       {(isWon || isLost) && (
         <div className="mb-2">
           <span className={cn(
@@ -160,15 +200,15 @@ function DealCard({ deal, isDragging, onDragStart, onClick, isSelected }: DealCa
             isLost && "bg-red-500 text-white"
           )}>
             {isWon ? (
-              <><CheckCircle2 className="h-3 w-3" /> Won</>
+              <><CheckCircle2 className="h-3 w-3" /> Ganho</>
             ) : (
-              <><XCircle className="h-3 w-3" /> Lost</>
+              <><XCircle className="h-3 w-3" /> Perdido</>
             )}
           </span>
         </div>
       )}
 
-      {/* Footer: Avatar + Value */}
+      {/* Footer */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className={cn(
@@ -181,9 +221,8 @@ function DealCard({ deal, isDragging, onDragStart, onClick, isSelected }: DealCa
           <span className="text-xs font-medium text-foreground">{formatCurrency(deal.valor)}</span>
         </div>
         
-        {/* Warning icon for old deals */}
         {deal.dias > 7 && deal.status === "open" && (
-          <AlertCircle className="h-4 w-4 text-amber-500" title="Deal antigo" />
+          <AlertCircle className="h-4 w-4 text-amber-500" title="Negócio antigo" />
         )}
       </div>
     </div>
@@ -220,7 +259,7 @@ function PipelineColumn({
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage.key)}
     >
-      {/* Column Header */}
+      {/* Header */}
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
@@ -236,11 +275,11 @@ function PipelineColumn({
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <TrendingUp className="h-3 w-3" />
-          {formatCurrency(totalValue)} · {openDeals.length} deals
+          {formatCurrency(totalValue)} · {openDeals.length} negócios
         </div>
       </div>
 
-      {/* Cards Container */}
+      {/* Cards */}
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
         {deals.map((deal) => (
           <DealCard
@@ -263,14 +302,93 @@ function PipelineColumn({
   )
 }
 
+// ─── List View ───────────────────────────────────────────────────────────────
+
+interface DealListViewProps {
+  deals: Deal[]
+  onDealClick: (deal: Deal) => void
+  selectedDealId: number | null
+}
+
+function DealListView({ deals, onDealClick, selectedDealId }: DealListViewProps) {
+  return (
+    <div className="flex-1 overflow-auto p-4">
+      <div className="rounded-lg border border-border bg-white">
+        {/* Header */}
+        <div className="grid grid-cols-12 gap-4 border-b border-border bg-muted/30 px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
+          <div className="col-span-3">Negócio</div>
+          <div className="col-span-2">Empresa</div>
+          <div className="col-span-2">Valor</div>
+          <div className="col-span-2">Etapa</div>
+          <div className="col-span-1">Dias</div>
+          <div className="col-span-1">Prioridade</div>
+          <div className="col-span-1">Ações</div>
+        </div>
+
+        {/* Rows */}
+        {deals.map((deal) => (
+          <div
+            key={deal.id}
+            onClick={() => onDealClick(deal)}
+            className={cn(
+              "grid grid-cols-12 gap-4 border-b border-border px-4 py-3 text-sm cursor-pointer transition-colors hover:bg-muted/20",
+              selectedDealId === deal.id && "bg-[#9795e4]/5 border-[#9795e4]",
+              deal.status === "won" && "bg-emerald-50/30",
+              deal.status === "lost" && "bg-red-50/30"
+            )}
+          >
+            <div className="col-span-3 flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9795e4]/10 text-xs font-bold text-[#9795e4]">
+                {deal.avatar}
+              </div>
+              <div>
+                <div className="font-medium text-foreground">{deal.titulo}</div>
+                <div className="text-xs text-muted-foreground">{deal.responsavel}</div>
+              </div>
+            </div>
+            <div className="col-span-2 flex items-center text-muted-foreground">
+              {deal.empresa}
+            </div>
+            <div className="col-span-2 flex items-center font-semibold text-foreground">
+              {formatCurrency(deal.valor)}
+            </div>
+            <div className="col-span-2 flex items-center">
+              <span className="inline-flex items-center rounded-full bg-[#9795e4]/10 px-2 py-1 text-xs font-medium text-[#9795e4]">
+                {STAGES.find(s => s.key === deal.stage)?.label || deal.stage}
+              </span>
+            </div>
+            <div className="col-span-1 flex items-center text-muted-foreground">
+              {deal.dias}d
+            </div>
+            <div className="col-span-1 flex items-center">
+              <span className={cn(
+                "h-2 w-2 rounded-full",
+                deal.prioridade === "alta" ? "bg-red-400" : 
+                deal.prioridade === "media" ? "bg-amber-400" : "bg-gray-400"
+              )} />
+            </div>
+            <div className="col-span-1 flex items-center">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main View ───────────────────────────────────────────────────────────────
 
 export function PipelineView() {
-  const [deals, setDeals] = useState<Deal[]>(INITIAL_DEALS)
+  const [deals, setDeals] = useState<Deal[]>(gerarDealsMock())
   const [selectedDealId, setSelectedDealId] = useState<number | null>(null)
   const [draggedDealId, setDraggedDealId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>("board")
+  const [showAddModal, setShowAddModal] = useState(false)
 
   const filteredDeals = useMemo(() => {
     if (!searchQuery) return deals
@@ -278,7 +396,8 @@ export function PipelineView() {
     return deals.filter(
       (d) =>
         d.titulo.toLowerCase().includes(query) ||
-        d.empresa.toLowerCase().includes(query)
+        d.empresa.toLowerCase().includes(query) ||
+        d.responsavel.toLowerCase().includes(query)
     )
   }, [deals, searchQuery])
 
@@ -293,7 +412,7 @@ export function PipelineView() {
   }, [selectedDeal])
 
   // Totals
-  const totalValue = deals.reduce((sum, d) => sum + d.valor, 0)
+  const totalValue = deals.filter(d => d.status === "open").reduce((sum, d) => sum + d.valor, 0)
   const openDealsCount = deals.filter(d => d.status === "open").length
 
   const handleDragStart = (e: React.DragEvent, dealId: number) => {
@@ -313,11 +432,10 @@ export function PipelineView() {
     setDeals((prev) =>
       prev.map((deal) => {
         if (deal.id === draggedDealId) {
-          const stageConfig = STAGES.find((s) => s.key === stageKey)
           return {
             ...deal,
             stage: stageKey,
-            stageLabel: stageConfig?.label || deal.stageLabel,
+            status: "open" as DealStatus,
           }
         }
         return deal
@@ -336,27 +454,48 @@ export function PipelineView() {
     setSelectedDealId(null)
   }
 
+  const handleAddDeal = () => {
+    const empresa = EMPRESAS[Math.floor(Math.random() * EMPRESAS.length)]
+    const responsavel = RESPONSAVEIS[Math.floor(Math.random() * RESPONSAVEIS.length)]
+    const novoDeal: Deal = {
+      id: Date.now(),
+      titulo: `Novo Negócio ${empresa}`,
+      empresa: `${empresa} LTDA`,
+      valor: Math.floor(Math.random() * 30000) + 5000,
+      avatar: empresa.slice(0, 2).toUpperCase(),
+      responsavel,
+      email: `contato@${empresa.toLowerCase()}.com.br`,
+      telefone: `+55 11 9${Math.floor(Math.random() * 9000 + 1000)}-${Math.floor(Math.random() * 9000 + 1000)}`,
+      prioridade: "media",
+      dias: 0,
+      stage: "novo",
+      status: "open",
+      criadoEm: new Date().toISOString(),
+    }
+    setDeals([novoDeal, ...deals])
+    setShowAddModal(false)
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       {/* Top Toolbar */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold text-foreground">Deals</h1>
+          <h1 className="text-lg font-bold text-foreground">Negócios</h1>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder="Buscar negócios..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-64 pl-9 h-9"
             />
           </div>
 
-          <Button size="icon" variant="ghost" className="h-9 w-9">
+          <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setDeals(gerarDealsMock())}>
             <RotateCcw className="h-4 w-4" />
           </Button>
         </div>
@@ -367,39 +506,54 @@ export function PipelineView() {
         <div className="flex items-center gap-2">
           {/* View Toggle */}
           <div className="flex items-center rounded-md border border-border bg-card p-0.5">
-            <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 bg-white shadow-sm">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={cn(
+                "h-7 px-2 gap-1.5",
+                viewMode === "board" ? "bg-white shadow-sm" : "text-muted-foreground"
+              )}
+              onClick={() => setViewMode("board")}
+            >
               <LayoutGrid className="h-3.5 w-3.5" />
               Board
             </Button>
-            <Button variant="ghost" size="sm" className="h-7 px-2 gap-1.5 text-muted-foreground">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={cn(
+                "h-7 px-2 gap-1.5",
+                viewMode === "list" ? "bg-white shadow-sm" : "text-muted-foreground"
+              )}
+              onClick={() => setViewMode("list")}
+            >
               <List className="h-3.5 w-3.5" />
-              List
-            </Button>
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground">
-              <RotateCcw className="h-3.5 w-3.5" />
+              Lista
             </Button>
           </div>
 
           {/* Add Deal Button */}
-          <Button size="sm" className="h-8 gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white">
+          <Button 
+            size="sm" 
+            className="h-8 gap-1.5 bg-[#9795e4] hover:bg-[#7b79c4] text-white"
+            onClick={() => setShowAddModal(true)}
+          >
             <Plus className="h-4 w-4" />
-            Deal
+            Negócio
           </Button>
         </div>
 
         {/* Pipeline Selector + Filters */}
         <div className="flex items-center gap-2">
-          {/* Summary */}
           <div className="text-sm text-muted-foreground mr-4">
             <span className="font-semibold text-foreground">{formatCurrency(totalValue)}</span>
             <span className="mx-2">·</span>
-            <span>{openDealsCount} deals</span>
+            <span>{openDealsCount} negócios abertos</span>
           </div>
 
-          {/* Pipeline Dropdown */}
           <Button variant="outline" size="sm" className="h-8 gap-2">
             <LayoutGrid className="h-3.5 w-3.5" />
-            Sales pipeline
+            Pipeline Comercial
             <ChevronDown className="h-3.5 w-3.5" />
           </Button>
 
@@ -409,28 +563,60 @@ export function PipelineView() {
 
           <Button variant="outline" size="sm" className="h-8 gap-2">
             <Filter className="h-3.5 w-3.5" />
-            Filter
+            Filtros
             <ChevronDown className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex flex-1 gap-4 overflow-x-auto overflow-y-hidden p-4">
-        {STAGES.map((stage) => (
-          <PipelineColumn
-            key={stage.key}
-            stage={stage}
-            deals={filteredDeals.filter((d) => d.stage === stage.key)}
-            draggedDealId={draggedDealId}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onDealClick={handleDealClick}
-            selectedDealId={selectedDealId}
-          />
-        ))}
-      </div>
+      {/* Content */}
+      {viewMode === "board" ? (
+        <div className="flex flex-1 gap-4 overflow-x-auto overflow-y-hidden p-4">
+          {STAGES.map((stage) => (
+            <PipelineColumn
+              key={stage.key}
+              stage={stage}
+              deals={filteredDeals.filter((d) => d.stage === stage.key)}
+              draggedDealId={draggedDealId}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDealClick={handleDealClick}
+              selectedDealId={selectedDealId}
+            />
+          ))}
+        </div>
+      ) : (
+        <DealListView 
+          deals={filteredDeals} 
+          onDealClick={handleDealClick}
+          selectedDealId={selectedDealId}
+        />
+      )}
+
+      {/* Add Deal Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-[400px] rounded-xl border border-border bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold mb-4">Novo Negócio</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Deseja adicionar um novo negócio ao pipeline?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                className="bg-[#9795e4] hover:bg-[#7b79c4] text-white"
+                onClick={handleAddDeal}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contact Detail Panel */}
       <ContactDetailPanel 
