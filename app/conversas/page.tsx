@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
 import { ChatSubSidebar } from "@/components/conversations/chat-sub-sidebar"
@@ -10,7 +10,7 @@ import { CustomerContextPanel } from "@/components/customer-context-panel"
 import { Conversation } from "@/lib/types/conversation"
 import { MOCK_CONVERSATIONS_DATA } from "@/lib/mock-conversations"
 
-export default function ConversasPage() {
+function ConversasPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const conversationIdFromUrl = searchParams.get("id")
@@ -65,5 +65,20 @@ export default function ConversasPage() {
         />
       </main>
     </div>
+  )
+}
+
+export default function ConversasPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#9795e4] border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Carregando conversas...</p>
+        </div>
+      </div>
+    }>
+      <ConversasPageContent />
+    </Suspense>
   )
 }
