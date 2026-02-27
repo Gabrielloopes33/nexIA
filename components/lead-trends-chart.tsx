@@ -25,7 +25,7 @@ const data = [
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string; color: string }>; label?: string }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-sm border-2 border-border bg-card px-3 py-2 shadow-sm">
+      <div className="rounded-sm shadow-sm bg-card px-3 py-2">
         <p className="mb-1 text-xs font-semibold text-foreground">{label}</p>
         {payload.map((entry) => (
           <p key={entry.name} className="text-xs text-muted-foreground">
@@ -41,8 +41,8 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 
 export function LeadTrendsChart() {
   return (
-    <div className="rounded-sm border-2 border-border bg-card p-5">
-      <div className="mb-6 pb-4 border-b-2 border-border flex items-center justify-between">
+    <div className="rounded-sm shadow-sm bg-card p-5">
+      <div className="mb-6 pb-4 flex items-center justify-between">
         <h3 className="text-lg font-bold text-foreground">Tendência de Geração de Leads</h3>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">

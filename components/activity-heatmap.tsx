@@ -88,7 +88,7 @@ export function ActivityHeatmap() {
   }
 
   return (
-    <Card className="rounded-sm border-2">
+    <Card className="rounded-sm shadow-sm">
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center justify-between">
           <div>

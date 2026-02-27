@@ -30,7 +30,7 @@ const channelColors = {
 
 export function ConversationVolumeChart() {
   return (
-    <Card className="rounded-sm border-2 border-border">
+    <Card className="rounded-sm shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

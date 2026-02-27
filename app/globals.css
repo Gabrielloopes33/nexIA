@@ -1,57 +1,57 @@
 @import 'tailwindcss';
-@import 'tw-animate-css';
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #F3F4F6;
-  --foreground: #1F2937;
-  --card: #FFFFFF;
-  --card-foreground: #1F2937;
-  --popover: #FFFFFF;
-  --popover-foreground: #1F2937;
-  --primary: #9795e4;
-  --primary-foreground: #FFFFFF;
-  --primary-gradient: linear-gradient(135deg, #9795e4 0%, #b3b3e5 100%);
-  --primary-dark: #7573b8;
-  --primary-light: #b3b3e5;
-  --secondary: #F3F4F6;
-  --secondary-foreground: #1F2937;
-  --muted: #F3F4F6;
-  --muted-foreground: #6B7280;
-  --accent: #F3F4F6;
-  --accent-foreground: #1F2937;
-  --destructive: #DC2626;
-  --destructive-foreground: #FFFFFF;
-  --border: #DDDBDA;
-  --input: #DDDBDA;
-  --ring: #9795e4;
-  --chart-1: #9795e4;
-  --chart-2: #027E46;
-  --chart-3: #D1D5DB;
-  --chart-4: #FFB75D;
-  --chart-5: #C23934;
+  --background: oklch(0.945 0.004 260);
+  --foreground: oklch(0.23 0.01 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.23 0.01 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.23 0.01 260);
+  --primary: oklch(0.62 0.19 260);
+  --primary-foreground: oklch(0.99 0.004 260);
+  --primary-gradient: linear-gradient(135deg, oklch(0.62 0.19 260) 0%, oklch(0.63 0.19 260) 100%);
+  --primary-dark: oklch(0.58 0.19 260);
+  --primary-light: oklch(0.65 0.19 260);
+  --secondary: oklch(0.945 0.004 260);
+  --secondary-foreground: oklch(0.23 0.01 260);
+  --muted: oklch(0.945 0.004 260);
+  --muted-foreground: oklch(0.45 0.004 260);
+  --accent: oklch(0.945 0.004 260);
+  --accent-foreground: oklch(0.23 0.01 260);
+  --destructive: oklch(0.59 0.21 24);
+  --destructive-foreground: oklch(0.99 0.004 260);
+  --border: oklch(0.87 0.004 260);
+  --input: oklch(0.87 0.004 260);
+  --ring: oklch(0.62 0.19 260);
+  --chart-1: oklch(0.62 0.19 260);
+  --chart-2: oklch(0.51 0.08 144);
+  --chart-3: oklch(0.82 0.04 260);
+  --chart-4: oklch(0.69 0.11 45);
+  --chart-5: oklch(0.61 0.17 20);
   --radius: 0.125rem;
-  --sidebar-bg: #9795e4;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #FFFFFF;
-  --sidebar-primary-foreground: #9795e4;
-  --sidebar-accent: rgba(255,255,255,0.15);
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: rgba(255,255,255,0.15);
-  --sidebar-ring: #FFFFFF;
-  --success: #027E46;
-  --success-bg: #D1FAE5;
-  --warning: #FFB75D;
-  --warning-bg: #FEF3C7;
-  --error: #C23934;
-  --error-bg: #FEE2E2;
-  --bg-secondary: #F3F2F2;
+  --sidebar-bg: oklch(0.62 0.19 260);
+  --sidebar-foreground: oklch(0.99 0.004 260);
+  --sidebar-primary: oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0.62 0.19 260);
+  --sidebar-accent: oklch(1 0 0/0.15);
+  --sidebar-accent-foreground: oklch(0.99 0.004 260);
+  --sidebar-border: oklch(1 0 0/0.15);
+  --sidebar-ring: oklch(1 0 0);
+  --success: oklch(0.51 0.08 144);
+  --success-bg: oklch(0.9 0.04 144);
+  --warning: oklch(0.69 0.11 45);
+  --warning-bg: oklch(0.93 0.05 45);
+  --error: oklch(0.61 0.17 20);
+  --error-bg: oklch(0.93 0.05 20);
+  --bg-secondary: oklch(0.941 0.004 260);
 }
 
 @theme inline {
-  --font-sans: 'Manrope', 'Manrope Fallback', sans-serif;
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-manrope), 'Manrope', system-ui, sans-serif;
+  --font-mono: 'Menlo', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -88,20 +88,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --color-success: var(--success);
-  --color-success-bg: var(--success-bg);
-  --color-warning: var(--warning);
-  --color-warning-bg: var(--warning-bg);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground font-sans;
-    font-feature-settings: 'tnum' 1, 'ss02' 1;
-  }
+  --success-bg: var(--success-bg);
+  --warning-bg: var(--warning-bg);
+  --error-bg: var(--error-bg);
 }
 
 /* ============================================
@@ -159,4 +148,62 @@
   .sub-sidebar {
     animation: none !important;
   }
+}
+
+/* Cards sem borda, com sombra suave */
+[data-slot="card"] {
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+/* Popovers e Dropdowns sem borda */
+[data-slot="popover-content"],
+[data-slot="dropdown-menu-content"],
+[data-slot="dropdown-menu-sub-content"] {
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* Tabela de contatos sem bordas entre linhas */
+table tbody tr {
+  border: none !important;
+}
+
+table tbody tr + tr {
+  border-top: none !important;
+}
+
+table tbody td {
+  border: none !important;
+}
+
+table thead th {
+  border: none !important;
+}
+
+/* Remover linha entre thead e tbody */
+table thead {
+  border-bottom: none !important;
+}
+
+table thead tr {
+  border-bottom: none !important;
+}
+
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* Garantir fonte Manrope em todos os elementos */
+html {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+body {
+  font-family: 'Manrope', system-ui, sans-serif !important;
+}
+
+* {
+  font-family: inherit;
 }

@@ -10,7 +10,7 @@ export function RightPanel() {
   return (
     <div className="flex flex-col gap-4">
       {/* Counters */}
-      <div className="rounded-sm border-2 border-border bg-card p-4">
+      <div className="rounded-sm shadow-sm bg-card p-4">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -45,7 +45,7 @@ export function RightPanel() {
       </div>
 
       {/* Lead Sources */}
-      <div className="rounded-sm border-2 border-border bg-card p-4">
+      <div className="rounded-sm shadow-sm bg-card p-4">
         <h3 className="mb-4 text-base font-semibold text-foreground">Lead Sources</h3>
         <div className="flex flex-col gap-3.5">
           {leadSources.map((source) => (

@@ -25,7 +25,7 @@ export function ContactsToolbar({
   onBulkDelete,
 }: ContactsToolbarProps) {
   return (
-    <div className="rounded-xl border border-border bg-card shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+    <div className="rounded-sm bg-card shadow-sm">
       <div className="flex items-center justify-between gap-4 p-4">
         <div className="flex flex-1 items-center gap-4">
           {/* Busca */}
@@ -36,7 +36,7 @@ export function ContactsToolbar({
               placeholder="Buscar contatos..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="h-10 w-full rounded-lg border border-border bg-background pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-10 w-full rounded-lg bg-background pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -48,7 +48,7 @@ export function ContactsToolbar({
             <select
               value={filterStatus}
               onChange={(e) => onFilterStatusChange(e.target.value as ContactStatus | "todos")}
-              className="h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-10 rounded-lg bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="todos">Todos os Status</option>
               <option value="ativo">Ativos</option>
@@ -60,7 +60,7 @@ export function ContactsToolbar({
             <select
               value={filterSource}
               onChange={(e) => onFilterSourceChange(e.target.value as ContactSource | "todos")}
-              className="h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-10 rounded-lg bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="todos">Todas as Fontes</option>
               <option value="LinkedIn">LinkedIn</option>
@@ -79,7 +79,7 @@ export function ContactsToolbar({
             </span>
             <button
               onClick={onBulkDelete}
-              className="flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+              className="flex h-10 items-center gap-2 rounded-lg bg-card px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               <Trash2 className="h-4 w-4" />
               Excluir

@@ -73,8 +73,8 @@ export function RecentLeads() {
   }
 
   return (
-    <Card className="rounded-sm border-2 border-border">
-      <CardHeader className="p-4 pb-3 border-b-2 border-border">
+    <Card className="rounded-sm shadow-sm">
+      <CardHeader className="p-4 pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-lg font-bold">Leads Recentes</CardTitle>

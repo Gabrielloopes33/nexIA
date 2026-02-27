@@ -43,14 +43,14 @@ export function ContactRow({
   const statusConfig = STATUS_CONFIG[contact.status]
 
   return (
-    <tr className="border-b border-border transition-colors hover:bg-secondary/50">
+    <tr className="border-0 transition-colors hover:bg-secondary/50">
       {/* Checkbox */}
       <td className="px-6 py-4">
         <input
           type="checkbox"
           checked={selected}
           onChange={(e) => onSelect(contact.id, e.target.checked)}
-          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+          className="h-4 w-4 rounded border-0 text-primary focus:ring-primary"
         />
       </td>
 

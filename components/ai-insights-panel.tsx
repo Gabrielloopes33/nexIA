@@ -116,7 +116,7 @@ export function AiInsightsPanel() {
     return (
       <div 
         key={index}
-        className="group flex items-start gap-3 p-3 rounded-sm border-2 border-border bg-card hover:border-primary/50 transition-all cursor-pointer min-h-[120px]"
+        className="group flex items-start gap-3 p-3 rounded-sm bg-card transition-all cursor-pointer min-h-[120px]"
       >
         <div className={`${insight.iconBg} p-2 rounded-sm flex-shrink-0`}>
           <Icon className={`h-4 w-4 ${insight.iconColor}`} />
@@ -147,7 +147,7 @@ export function AiInsightsPanel() {
   }
 
   return (
-    <Card className="p-6 rounded-sm border-2 bg-gradient-to-br from-purple-50/50 to-blue-50/50">
+    <Card className="p-6 rounded-sm shadow-sm bg-gradient-to-br from-purple-50/50 to-blue-50/50">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
           <div className="bg-gradient-to-br from-[#9795e4] to-[#b3b3e5] p-2 rounded-sm">
@@ -218,7 +218,7 @@ export function AiInsightsPanel() {
       </div>
 
       {/* Footer com açõesg*/}
-      <div className="mt-6 pt-4 border-t-2 border-border">
+      <div className="mt-6 pt-4">
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
             Powered by IA • Confiança média: <span className="font-semibold">87%</span>

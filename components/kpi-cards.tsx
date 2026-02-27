@@ -45,7 +45,7 @@ export function KpiCards() {
     },
   ]
   return (
-    <div className="rounded-sm border-2 border-border bg-card p-4">
+    <div className="rounded-sm shadow-sm bg-card p-4">
       <div className="grid grid-cols-2 gap-0">
         {kpis.map((kpi, index) => {
           const Icon = kpi.icon
@@ -54,7 +54,7 @@ export function KpiCards() {
           return (
             <div
               key={kpi.label}
-              className={`flex flex-col gap-3 p-4 ${isTop ? "" : "border-t border-border"} ${isLeft ? "" : "border-l border-border"}`}
+              className="flex flex-col gap-3 p-4"
             >
               <div className="flex items-center gap-3">
                 <div

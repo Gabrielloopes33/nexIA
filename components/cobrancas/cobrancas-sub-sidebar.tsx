@@ -3,18 +3,17 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import {
-  Users,
-  Tags,
-  Layers,
+  CreditCard,
+  Receipt,
+  Package,
+  History,
   Settings,
+  FileText,
+  Plus,
   BarChart3,
-  Mail,
-  Download,
-  Trash2,
-  Database,
-  FileSpreadsheet,
-  UserPlus,
-  List,
+  Users,
+  Wallet,
+  Zap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -26,30 +25,23 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { label: "Todos os Contatos", href: "/contatos", icon: Users },
-  { label: "Listas", href: "/contatos/listas", icon: List },
+  { label: "Visão Geral", href: "/cobrancas", icon: BarChart3 },
+  { label: "Assinaturas", href: "/cobrancas/assinaturas", icon: Package },
+  { label: "Faturas", href: "/cobrancas/faturas", icon: Receipt },
+  { label: "Clientes", href: "/cobrancas/clientes", icon: Users },
 ]
 
-const manageNavItems: NavItem[] = [
-  { label: "Segmentos", href: "/contatos/segmentos", icon: Layers },
-  { label: "Tags", href: "/contatos/tags", icon: Tags },
-  { label: "Campos", href: "/contatos/campos", icon: Settings },
-  { label: "Pontuação", href: "/contatos/pontuacao", icon: BarChart3 },
+const gestaoNavItems: NavItem[] = [
+  { label: "Métodos de Pagamento", href: "/cobrancas/pagamentos", icon: CreditCard },
+  { label: "Histórico", href: "/cobrancas/historico", icon: History },
+  { label: "Reembolsos", href: "/cobrancas/reembolsos", icon: Wallet },
+  { label: "Descontos", href: "/cobrancas/cupons", icon: Zap },
 ]
 
-const dataNavItems: NavItem[] = [
-  { label: "Importar", href: "/contatos/importar", icon: Download },
-  { label: "Exportar", href: "/contatos/exportar", icon: FileSpreadsheet },
-  { label: "Inscrições por Email", href: "/contatos/inscricoes", icon: Mail },
-  { label: "Lixeira", href: "/contatos/lixeira", icon: Trash2, badge: 0 },
-]
-
-const reportNavItems: NavItem[] = [
-  { label: "Tendências de Contatos", href: "/contatos/relatorios/tendencias", icon: BarChart3 },
-  { label: "Desempenho de Contatos", href: "/contatos/relatorios/desempenho", icon: BarChart3 },
-  { label: "Análise Detalhada", href: "/contatos/relatorios/analise", icon: Database },
-  { label: "Contatos Globalizados", href: "/contatos/relatorios/global", icon: Database },
-  { label: "Existência na Lista", href: "/contatos/relatorios/existencia", icon: List },
+const configNavItems: NavItem[] = [
+  { label: "Planos e Preços", href: "/cobrancas/planos", icon: Package },
+  { label: "Taxas e Impostos", href: "/cobrancas/taxas", icon: FileText },
+  { label: "Configurações", href: "/cobrancas/configuracoes", icon: Settings },
 ]
 
 interface NavSectionProps {
@@ -95,36 +87,41 @@ function NavSection({ title, items, pathname }: NavSectionProps) {
   )
 }
 
-export function ContactsSubSidebar() {
+export function CobrancasSubSidebar() {
   const pathname = usePathname()
 
   return (
     <aside className="fixed left-[72px] top-0 z-30 h-screen w-[220px] border-0 bg-background pt-[72px] shadow-sm">
       <div className="flex h-full flex-col">
-        {/* Header */}
+        {/* Header com botão Nova Assinatura */}
         <div className="border-0 px-4 py-4">
           <Link
-            href="/contatos/novo"
+            href="/cobrancas/nova"
             className="flex w-full items-center justify-center gap-2 rounded-md bg-[#9795e4] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#7c7ab8]"
           >
-            <UserPlus className="h-4 w-4" />
-            Adicionar Contato
+            <Plus className="h-4 w-4" />
+            Nova Assinatura
           </Link>
         </div>
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto px-2 py-4">
           <NavSection title="Principal" items={mainNavItems} pathname={pathname} />
-          <NavSection title="Gerenciar" items={manageNavItems} pathname={pathname} />
-          <NavSection title="Dados" items={dataNavItems} pathname={pathname} />
-          <NavSection title="Relatórios" items={reportNavItems} pathname={pathname} />
+          <NavSection title="Gestão" items={gestaoNavItems} pathname={pathname} />
+          <NavSection title="Configurações" items={configNavItems} pathname={pathname} />
         </div>
 
-        {/* Footer */}
+        {/* Footer com status Stripe */}
         <div className="border-0 p-4">
-          <div className="rounded-lg bg-[#9795e4]/5 p-3">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-semibold text-[#9795e4]">Dica:</span> Use tags para organizar seus contatos
+          <div className="rounded-lg bg-green-50 p-3">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <p className="text-xs font-medium text-green-700">
+                Stripe Conectado
+              </p>
+            </div>
+            <p className="text-xs text-green-600 mt-1">
+              Pagamentos ativos
             </p>
           </div>
         </div>

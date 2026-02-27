@@ -55,7 +55,7 @@ export function ObjectionsChart() {
   const maxCount = Math.max(...objectionStats.map(s => s.count))
 
   return (
-    <Card className="rounded-sm border-2">
+    <Card className="rounded-sm shadow-sm">
       <CardHeader className="p-4 pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold">Objeções Detectadas</CardTitle>

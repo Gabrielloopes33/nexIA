@@ -65,7 +65,7 @@ export function ConversionFunnelChart() {
   ]
 
   return (
-    <Card className="p-6 rounded-sm border-2">
+    <Card className="p-6 rounded-sm shadow-sm">
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-1">Funil de Conversão</h3>
         <p className="text-sm text-muted-foreground">
@@ -83,7 +83,7 @@ export function ConversionFunnelChart() {
             <div key={stage.name} className="space-y-2">
               {/* Barra do estágio */}
               <div 
-                className={`${stage.color} border-2 rounded-sm px-4 py-3 transition-all hover:scale-[1.02] cursor-pointer`}
+                className={`${stage.color} rounded-sm shadow-sm px-4 py-3 transition-all hover:scale-[1.02] cursor-pointer`}
                 style={{ 
                   width: `${Math.max(width, 15)}%`, // Mínimo 15% para não ficar pequeno demais
                   marginLeft: `${(maxWidth - Math.max(width, 15)) / 2}%` // Centralizar
@@ -126,7 +126,7 @@ export function ConversionFunnelChart() {
       </div>
 
       {/* Footer com insights */}
-      <div className="mt-6 pt-4 border-t-2 border-border">
+      <div className="mt-6 pt-4">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Taxa Global</p>

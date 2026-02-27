@@ -33,7 +33,7 @@ const formatCurrency = (value: number) => {
 
 export function RevenueForecastChart() {
   return (
-    <Card className="rounded-sm border-2">
+    <Card className="rounded-sm shadow-sm">
       <CardHeader className="p-4 pb-2">
         <div>
           <CardTitle className="text-lg font-bold">Previsão de Receita</CardTitle>

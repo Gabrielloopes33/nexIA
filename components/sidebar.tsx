@@ -15,6 +15,7 @@ import {
   Settings,
   User,
   KanbanSquare,
+  CreditCard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSubSidebar, type NavItemKey } from "@/lib/contexts/sidebar-context"
@@ -23,11 +24,11 @@ const topNavItems = [
   { key: "overview" as NavItemKey, label: "Overview", icon: LayoutDashboard, href: "/" },
   { key: "contatos" as NavItemKey, label: "Contatos", icon: Users, href: "/contatos" },
   { key: "conversas" as NavItemKey, label: "Conversas", icon: MessageSquare, href: "/conversas" },
-  { key: "canais" as NavItemKey, label: "Canais", icon: Globe, href: "/canais" },
   { key: "pipeline" as NavItemKey, label: "Pipeline", icon: KanbanSquare, href: "/pipeline" },
   { key: "agendamentos" as NavItemKey, label: "Agendamentos", icon: CalendarDays, href: "/agendamentos" },
   { key: "integracoes" as NavItemKey, label: "Integrações", icon: Plug, href: "/integracoes" },
   { key: "automacoes" as NavItemKey, label: "Automacoes", icon: Wifi, href: "/automacoes" },
+  { key: "cobrancas" as NavItemKey, label: "Cobranças", icon: CreditCard, href: "/cobrancas" },
 ]
 
 const bottomNavItems = [

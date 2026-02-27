@@ -1,15 +1,12 @@
 "use client"
 
-import { Search, Download } from "lucide-react"
+import { Search, Download, ChevronDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import type { IntegrationCategory } from "@/lib/types/integration"
 
 interface Props {
@@ -23,6 +20,28 @@ interface Props {
   onSortByChange: (value: 'popular' | 'name' | 'recent') => void
   hasConnectedIntegrations: boolean
   onExportLogs: () => void
+}
+
+const categoryLabels: Record<IntegrationCategory | 'all', string> = {
+  all: 'Todas Categorias',
+  communication: 'Comunicação',
+  infoproduct: 'Infoprodutos',
+  email: 'Email',
+  analytics: 'Analytics',
+  automation: 'Automação',
+}
+
+const statusLabels: Record<Props['filterStatus'], string> = {
+  all: 'Todas',
+  connected: 'Conectadas',
+  not_connected: 'Disponíveis',
+  error: 'Com Problemas',
+}
+
+const sortLabels: Record<Props['sortBy'], string> = {
+  popular: 'Popular',
+  name: 'A-Z',
+  recent: 'Recentes',
 }
 
 export function IntegrationsToolbar({
@@ -47,57 +66,95 @@ export function IntegrationsToolbar({
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar integrações..."
-            className="pl-9"
+            className="h-10 rounded-sm shadow-sm border-0 pl-9"
           />
         </div>
 
         {/* Status Filter */}
-        <Select value={filterStatus} onValueChange={onFilterStatusChange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="connected">Conectadas</SelectItem>
-            <SelectItem value="not_connected">Disponíveis</SelectItem>
-            <SelectItem value="error">Com Problemas</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex h-10 items-center gap-2 rounded-sm shadow-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary">
+              <span className="text-sm">{statusLabels[filterStatus]}</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" align="start">
+            <div className="flex flex-col gap-1">
+              {(Object.keys(statusLabels) as Props['filterStatus'][]).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => onFilterStatusChange(status)}
+                  className={`rounded-sm px-3 py-2 text-left text-sm hover:bg-secondary ${
+                    filterStatus === status ? 'bg-secondary' : ''
+                  }`}
+                >
+                  {statusLabels[status]}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Category Filter */}
-        <Select value={filterCategory} onValueChange={(value) => onFilterCategoryChange(value as IntegrationCategory | 'all')}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas Categorias</SelectItem>
-            <SelectItem value="communication">Comunicação</SelectItem>
-            <SelectItem value="infoproduct">Infoprodutos</SelectItem>
-            <SelectItem value="email">Email</SelectItem>
-            <SelectItem value="analytics">Analytics</SelectItem>
-            <SelectItem value="automation">Automação</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex h-10 items-center gap-2 rounded-sm shadow-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary">
+              <span className="text-sm">{categoryLabels[filterCategory]}</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" align="start">
+            <div className="flex flex-col gap-1">
+              {(Object.keys(categoryLabels) as (IntegrationCategory | 'all')[]).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => onFilterCategoryChange(cat)}
+                  className={`rounded-sm px-3 py-2 text-left text-sm hover:bg-secondary ${
+                    filterCategory === cat ? 'bg-secondary' : ''
+                  }`}
+                >
+                  {categoryLabels[cat]}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Sort */}
-        <Select value={sortBy} onValueChange={(value) => onSortByChange(value as 'popular' | 'name' | 'recent')}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Ordenar" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="popular">Popular</SelectItem>
-            <SelectItem value="name">A-Z</SelectItem>
-            <SelectItem value="recent">Recentes</SelectItem>
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex h-10 items-center gap-2 rounded-sm shadow-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary">
+              <span className="text-sm">{sortLabels[sortBy]}</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-40 p-2" align="start">
+            <div className="flex flex-col gap-1">
+              {(Object.keys(sortLabels) as Props['sortBy'][]).map((sort) => (
+                <button
+                  key={sort}
+                  onClick={() => onSortByChange(sort)}
+                  className={`rounded-sm px-3 py-2 text-left text-sm hover:bg-secondary ${
+                    sortBy === sort ? 'bg-secondary' : ''
+                  }`}
+                >
+                  {sortLabels[sort]}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Export Button */}
       {hasConnectedIntegrations && (
-        <Button variant="outline" onClick={onExportLogs}>
-          <Download className="mr-2 h-4 w-4" />
-          Exportar Logs
-        </Button>
+        <button 
+          onClick={onExportLogs}
+          className="flex h-10 items-center gap-2 rounded-sm shadow-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary"
+        >
+          <Download className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm">Exportar Logs</span>
+        </button>
       )}
     </div>
   )

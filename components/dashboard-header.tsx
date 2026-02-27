@@ -25,7 +25,7 @@ export function DashboardHeader() {
         {/* Period Selector */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="flex h-10 items-center gap-2 rounded-sm border-2 border-border bg-card px-3 text-foreground transition-colors hover:bg-secondary">
+            <button className="flex h-10 items-center gap-2 rounded-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">Período</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -52,7 +52,7 @@ export function DashboardHeader() {
         {/* User Filter */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="flex h-10 items-center gap-2 rounded-sm border-2 border-border bg-card px-3 text-foreground transition-colors hover:bg-secondary">
+            <button className="flex h-10 items-center gap-2 rounded-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary">
               <User className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">Todos usuários</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -79,7 +79,7 @@ export function DashboardHeader() {
         {/* Export Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex h-10 items-center gap-2 rounded-sm border-2 border-border bg-card px-3 text-foreground transition-colors hover:bg-secondary">
+            <button className="flex h-10 items-center gap-2 rounded-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary">
               <Download className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">Exportar</span>
             </button>
@@ -101,7 +101,7 @@ export function DashboardHeader() {
         <div className="h-6 w-px bg-border" />
         
         {/* Notifications */}
-        <button className="relative flex h-10 items-center justify-center gap-2 rounded-sm border-2 border-border bg-card px-3 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+        <button className="relative flex h-10 items-center justify-center gap-2 rounded-sm bg-card px-3 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
           <Bell className="h-[18px] w-[18px]" />
           <span className="text-sm">Notificações</span>
           <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#DC2626] text-[10px] font-bold text-white">

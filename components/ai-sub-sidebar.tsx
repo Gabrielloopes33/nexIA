@@ -172,7 +172,7 @@ export function AISubSidebar({
               filteredInsights.map((insight) => (
                 <Card
                   key={insight.id}
-                  className="cursor-pointer rounded-sm border-2 border-border transition-all hover:border-[#9795e4] hover:shadow-md"
+                  className="cursor-pointer rounded-sm shadow-sm transition-all hover:shadow-md"
                   onClick={() => onInsightClick?.(insight)}
                 >
                   <CardHeader className="p-3 pb-2">

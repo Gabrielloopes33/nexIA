@@ -81,7 +81,7 @@ export function ContactsKPIs({ contacts }: ContactsKPIsProps) {
         return (
           <div
             key={kpi.label}
-            className="rounded-xl border border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+            className="rounded-sm bg-card p-5 shadow-sm"
           >
             {/* Icon + Badge */}
             <div className="flex items-center justify-between mb-3">

@@ -85,7 +85,7 @@ export function AdvancedKpis() {
         return (
           <Card 
             key={index}
-            className="p-4 rounded-sm border-2 hover:border-primary/50 transition-colors"
+            className="p-4 rounded-sm shadow-sm transition-colors"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">

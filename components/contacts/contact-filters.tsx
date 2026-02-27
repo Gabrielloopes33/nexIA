@@ -51,7 +51,7 @@ export function ContactFilters({
       {/* Tag Filter */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-9 gap-2">
+          <Button variant="outline" size="sm" className="h-9 gap-2 border-0 shadow-sm">
             <Filter className="h-4 w-4" />
             Tags
             {selectedTags.length > 0 && (
@@ -91,7 +91,7 @@ export function ContactFilters({
       {/* Status Filter */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-9 gap-2">
+          <Button variant="outline" size="sm" className="h-9 gap-2 border-0 shadow-sm">
             <Filter className="h-4 w-4" />
             Status
             {selectedStatuses.length > 0 && (

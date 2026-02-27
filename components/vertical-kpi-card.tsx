@@ -30,7 +30,7 @@ export function VerticalKpiCard({
   const isPositive = isNegativeGood ? changeValue < 0 : changeValue > 0
 
   return (
-    <Card className="group rounded-sm border-2 border-border p-4 transition-all hover:border-[#9795e4]">
+    <Card className="group rounded-sm shadow-sm p-4 transition-all hover:shadow-md">
       {/* Icon e Change Badge no topo */}
       <div className="mb-3 flex items-center justify-between">
         <div className="bg-gradient-to-br from-[#9795e4] to-[#b3b3e5] p-2 rounded-sm">

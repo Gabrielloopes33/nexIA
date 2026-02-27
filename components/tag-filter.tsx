@@ -74,7 +74,7 @@ export function TagFilter({
         variant="outline"
         size="sm"
         className={cn(
-          'relative rounded-sm border-2',
+          'relative rounded-sm shadow-sm',
           activeFiltersCount > 0 && 'border-primary bg-primary/10'
         )}
       >
@@ -97,9 +97,9 @@ export function TagFilter({
           />
           
           {/* Dropdown Content */}
-          <div className="absolute right-0 top-full z-50 mt-2 w-[400px] rounded-sm border-2 border-border bg-card shadow-lg">
+          <div className="absolute right-0 top-full z-50 mt-2 w-[400px] rounded-sm shadow-lg bg-card">
             {/* Header */}
-            <div className="flex items-center justify-between border-b-2 border-border px-4 py-3">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="text-sm font-semibold">Filtrar por Tags</h3>
               <button
                 onClick={() => setIsOpen(false)}
@@ -110,7 +110,7 @@ export function TagFilter({
             </div>
             
             {/* Mode Toggle */}
-            <div className="border-b-2 border-border px-4 py-3">
+            <div className="border-b border-border px-4 py-3">
               <div className="mb-2 text-xs font-medium text-muted-foreground">
                 Modo de Combinação
               </div>
@@ -118,10 +118,10 @@ export function TagFilter({
                 <button
                   onClick={() => onChange({ ...filter, mode: 'OR' })}
                   className={cn(
-                    'flex-1 rounded-sm border-2 px-3 py-2 text-sm font-medium transition-colors',
+                    'flex-1 rounded-sm border px-3 py-2 text-sm font-medium transition-colors',
                     filter.mode === 'OR'
                       ? 'border-primary bg-primary text-white'
-                      : 'border-border hover:bg-accent'
+                      : 'hover:bg-accent'
                   )}
                 >
                   <div className="font-semibold">OR (Qualquer)</div>
@@ -132,10 +132,10 @@ export function TagFilter({
                 <button
                   onClick={() => onChange({ ...filter, mode: 'AND' })}
                   className={cn(
-                    'flex-1 rounded-sm border-2 px-3 py-2 text-sm font-medium transition-colors',
+                    'flex-1 rounded-sm border px-3 py-2 text-sm font-medium transition-colors',
                     filter.mode === 'AND'
                       ? 'border-primary bg-primary text-white'
-                      : 'border-border hover:bg-accent'
+                      : 'hover:bg-accent'
                   )}
                 >
                   <div className="font-semibold">AND (Todas)</div>
@@ -147,7 +147,7 @@ export function TagFilter({
             </div>
             
             {/* Include Filters */}
-            <div className="border-b-2 border-border px-4 py-3">
+            <div className="border-b border-border px-4 py-3">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
                   Incluir Tags
@@ -225,7 +225,7 @@ export function TagFilter({
             </div>
             
             {/* Footer Actions */}
-            <div className="flex items-center justify-between  border-t-2 border-border px-4 py-3">
+            <div className="flex items-center justify-between border-t border-border px-4 py-3">
               <button
                 onClick={clearFilters}
                 className="text-sm text-muted-foreground hover:text-foreground"

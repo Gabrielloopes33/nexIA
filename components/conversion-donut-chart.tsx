@@ -40,7 +40,7 @@ export function ConversionDonutChart() {
     if (active && payload && payload.length) {
       const data = payload[0].payload
       return (
-        <div className="rounded-sm border-2 border-border bg-background p-3 shadow-lg">
+        <div className="rounded-sm shadow-sm bg-background p-3">
           <p className="mb-1 text-sm font-semibold text-foreground">{data.stage}</p>
           <p className="text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">{data.value}</span> leads
@@ -74,7 +74,7 @@ export function ConversionDonutChart() {
   }
 
   return (
-    <Card className="rounded-sm border-2 border-border">
+    <Card className="rounded-sm shadow-sm">
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold">
@@ -111,7 +111,7 @@ export function ConversionDonutChart() {
         </ResponsiveContainer>
 
         {/* Summary Stats */}
-        <div className="mt-4 grid grid-cols-3 gap-3 border-t-2 border-border pt-4">
+        <div className="mt-4 grid grid-cols-3 gap-3 pt-4">
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Total Leads</p>
             <p className="text-lg font-bold text-foreground">

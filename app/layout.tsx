@@ -9,7 +9,8 @@ const manrope = Manrope({
   subsets: ["latin"], 
   variable: "--font-manrope",
   weight: ['300', '400', '500', '600', '700', '800'],
-  display: 'swap'
+  display: 'swap',
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -29,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${manrope.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} antialiased`} style={{ fontFamily: 'var(--font-manrope), Manrope, system-ui, sans-serif' }}>
         <SubSidebarProvider>
           <ContactPanelProvider>
             {children}

@@ -330,14 +330,14 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
       {/* Panel */}
       <div 
         className={cn(
-          "fixed right-0 top-0 h-full w-[420px] bg-white border-l-2 border-border z-50",
+          "fixed right-0 top-0 h-full w-[420px] bg-white shadow-2xl z-50",
           "transform transition-transform duration-200 ease-out shadow-2xl",
           "flex flex-col",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b-2 border-border">
+        <div className="flex items-center justify-between p-4 border-0">
           <div className="flex items-center gap-3">
             <div 
               className="flex h-10 w-10 items-center justify-center rounded-full text-white font-bold text-sm"
@@ -365,7 +365,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 p-2 border-b border-border bg-muted/30">
+        <div className="flex items-center gap-1 p-2 border-0 bg-muted/30">
           <Button 
             variant="ghost" 
             size="sm" 
@@ -461,7 +461,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-72 p-0" align="end">
-                      <div className="p-3 border-b">
+                      <div className="p-3 border-0">
                         <p className="text-sm font-medium mb-2">Adicionar Tag</p>
                         <Input
                           ref={tagInputRef}
@@ -502,7 +502,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                         {searchTagQuery.trim() && !availableTags.some(t => 
                           t.nome.toLowerCase() === searchTagQuery.toLowerCase()
                         ) && (
-                          <div className="p-2 border-t">
+                          <div className="p-2 border-0">
                             <p className="text-xs text-muted-foreground px-2 py-1">Criar nova tag</p>
                             <div className="px-2 py-2">
                               <Input
@@ -519,10 +519,10 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                                       key={color}
                                       onClick={() => setNewTagColor(color)}
                                       className={cn(
-                                        "w-5 h-5 rounded-full border-2 transition-all",
+                                        "w-5 h-5 rounded-full border-0 transition-all",
                                         newTagColor === color 
-                                          ? "border-foreground scale-110" 
-                                          : "border-transparent hover:scale-105"
+                                          ? "ring-2 ring-foreground scale-110" 
+                                          : "hover:scale-105"
                                       )}
                                       style={{ backgroundColor: color }}
                                     />
@@ -730,14 +730,14 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
           {activeTab === 'timeline' && (
             <div className="flex flex-col h-full">
               {/* Add Note Input */}
-              <div className="p-4 border-b border-border">
+              <div className="p-4 border-0">
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <textarea
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Adicionar nota ou atualização..."
-                      className="w-full min-h-[60px] px-3 py-2 text-sm border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20 focus:border-[#9795e4]"
+                      className="w-full min-h-[60px] px-3 py-2 text-sm border-0 bg-muted/30 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
                     />
                   </div>
                 </div>
@@ -769,7 +769,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="relative">
                   {/* Timeline line */}
-                  <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
+                  <div className="absolute left-4 top-0 bottom-0 w-px bg-muted" />
                   
                   <div className="space-y-4">
                     {timelineEvents.map((event, index) => {
@@ -778,7 +778,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                         <div key={event.id} className="relative pl-10">
                           {/* Icon */}
                           <div className={cn(
-                            "absolute left-0 top-0 h-8 w-8 rounded-full flex items-center justify-center border-2 border-white",
+                            "absolute left-0 top-0 h-8 w-8 rounded-full flex items-center justify-center ring-2 ring-white",
                             EVENT_COLORS[event.type]
                           )}>
                             <Icon className="h-3.5 w-3.5" />
@@ -819,7 +819,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
           {activeTab === 'tasks' && (
             <div className="flex flex-col h-full">
               {/* Progress */}
-              <div className="p-4 border-b border-border">
+              <div className="p-4 border-0">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-foreground">Progresso</span>
                   <span className="text-xs text-muted-foreground">{completedTasks}/{tasks.length} concluídas</span>
@@ -833,11 +833,11 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
               </div>
 
               {/* Add Task */}
-              <div className="p-4 border-b border-border">
+              <div className="p-4 border-0">
                 {!showAddTask ? (
                   <Button 
                     variant="outline" 
-                    className="w-full h-9 text-sm border-dashed"
+                    className="w-full h-9 text-sm border-0 shadow-sm"
                     onClick={() => setShowAddTask(true)}
                   >
                     <Plus className="h-4 w-4 mr-1.5" />
@@ -924,7 +924,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                           return (
                             <div 
                               key={task.id} 
-                              className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-transparent opacity-60"
+                              className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border-0 opacity-60"
                             >
                               <button 
                                 onClick={() => toggleTask(task.id)}

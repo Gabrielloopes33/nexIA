@@ -93,7 +93,7 @@ export function TagSelector({
   return (
     <div className={cn('relative', className)}>
       {/* Selected Tags Display */}
-      <div className="rounded-sm border-2 border-border bg-card p-3">
+      <div className="rounded-sm shadow-sm bg-card p-3">
         <div className="flex items-center gap-2 flex-wrap">
           {selectedTags.length > 0 ? (
             <>
@@ -130,7 +130,7 @@ export function TagSelector({
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsOpen(true)}
               placeholder={placeholder}
-              className="pl-9 rounded-sm border-2"
+              className="pl-9 rounded-sm border"
             />
           </div>
           <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -149,10 +149,10 @@ export function TagSelector({
           />
           
           {/* Dropdown Content */}
-          <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[400px] overflow-y-auto rounded-sm border-2 border-border bg-card shadow-lg">
+          <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[400px] overflow-y-auto rounded-sm shadow-lg bg-card">
             {/* Popular Tags Section */}
             {!searchQuery && availablePopularTags.length > 0 && (
-              <div className="border-b-2 border-border p-3">
+              <div className="border-b border-border p-3">
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     📌 Tags Populares
@@ -165,7 +165,7 @@ export function TagSelector({
                       onClick={() => toggleTag(tag.id)}
                       className={cn(
                         'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-                        'border-2 hover:bg-accent',
+                        'border hover:bg-accent',
                         selectedTagIds.includes(tag.id) 
                           ? 'border-primary bg-primary/10' 
                           : 'border-border'
@@ -211,7 +211,7 @@ export function TagSelector({
                           )}
                         >
                           <div className={cn(
-                            'flex h-4 w-4 items-center justify-center rounded-sm border-2',
+                            'flex h-4 w-4 items-center justify-center rounded-sm border',
                             selectedTagIds.includes(tag.id) 
                               ? 'border-primary bg-primary' 
                               : 'border-border'
@@ -253,7 +253,7 @@ export function TagSelector({
             
             {/* Create New Tag Section */}
             {allowCreate && !showCreateForm && filteredTags.length > 0 && (
-              <div className="border-t-2 border-border p-3">
+              <div className="border-t border-border p-3">
                 <Button
                   onClick={() => setShowCreateForm(true)}
                   variant="outline"
@@ -268,7 +268,7 @@ export function TagSelector({
             
             {/* Create Form (placeholder - would be full component) */}
             {showCreateForm && (
-              <div className="border-t-2 border-border bg-accent p-4">
+              <div className="border-t border-border bg-accent p-4">
                 <p className="text-sm text-muted-foreground mb-3">
                   Formulário de criação de tag (implementar)
                 </p>

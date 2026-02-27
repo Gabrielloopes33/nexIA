@@ -2,7 +2,6 @@
 
 import { Plug } from "lucide-react"
 import { IntegrationCard } from "./integration-card"
-import { Button } from "@/components/ui/button"
 import type { Integration } from "@/lib/types/integration"
 
 interface Props {
@@ -20,8 +19,8 @@ export function IntegrationsGrid({
 }: Props) {
   if (integrations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 py-16">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+      <div className="flex flex-col items-center justify-center rounded-sm border-2 border-dashed border-border bg-muted/30 py-16">
+        <div className="flex h-16 w-16 items-center justify-center rounded-sm bg-muted">
           <Plug className="h-8 w-8 text-muted-foreground" />
         </div>
         <p className="mt-4 text-base font-semibold text-foreground">
@@ -30,15 +29,18 @@ export function IntegrationsGrid({
         <p className="mt-1 text-sm text-muted-foreground">
           Tente ajustar seus filtros de busca
         </p>
-        <Button variant="outline" onClick={onClearFilters} className="mt-4">
+        <button 
+          onClick={onClearFilters} 
+          className="mt-4 flex h-9 items-center gap-2 rounded-sm shadow-sm bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+        >
           Limpar Filtros
-        </Button>
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {integrations.map((integration) => (
         <IntegrationCard
           key={integration.id}
