@@ -1,12 +1,40 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Plus, Search, SlidersHorizontal, MoreHorizontal, GripVertical } from "lucide-react"
+import { Plus, Search, SlidersHorizontal, GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Deal, Pipeline, PipelineStageConfig } from "@/lib/types/deal"
-import { DealDetailPanel } from "./deal-detail-panel"
+import { ContactDetailPanel } from "@/components/contact-detail-panel"
+import { MOCK_CONTACTS, Contact } from "@/lib/mock/contacts"
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface PipelineStageConfig {
+  key: string
+  label: string
+  color: string
+  bgColor: string
+  borderColor: string
+}
+
+interface Deal {
+  id: number
+  titulo: string
+  empresa: string
+  valor: number
+  avatar: string
+  responsavel?: string
+  email?: string
+  telefone?: string
+  prioridade: "alta" | "media" | "baixa"
+  dias: number
+  stage: string
+  stageLabel?: string
+  tags?: string[]
+  // Link to contact
+  contactId?: string
+}
 
 // ─── Purple Theme Config ─────────────────────────────────────────────────────
 
@@ -20,20 +48,21 @@ const PURPLE_STAGES: PipelineStageConfig[] = [
   { key: "fechamento", label: "Fechamento", color: "text-[#cbc9dd]", bgColor: "bg-[#e6e5f0]", borderColor: "border-[#d6d5e3]" },
 ]
 
+// Link deals to existing contacts by name/empresa similarity
 const INITIAL_DEALS: Deal[] = [
-  { id: 1, titulo: "Vinicius", empresa: "TechCorp Ltda", valor: 0, avatar: "VI", responsavel: "Vinicius Santos", email: "vinicius@techcorp.com", prioridade: "alta", dias: 2, stage: "entrada", stageLabel: "Entrada" },
-  { id: 2, titulo: "Marissia", empresa: "DataFlow Systems", valor: 0, avatar: "MA", responsavel: "Marissia Lima", email: "marissia@dataflow.com", prioridade: "media", dias: 6, stage: "entrada", stageLabel: "Entrada" },
-  { id: 3, titulo: "Fábio Vitorino", empresa: "CloudSync", valor: 0, avatar: "FV", responsavel: "Fábio Vitorino", email: "fabio@cloudsync.com", prioridade: "alta", dias: 8, stage: "entrada", stageLabel: "Entrada" },
-  { id: 4, titulo: "Cristiano lira do Nascimento", empresa: "AI Solutions", valor: 0, avatar: "CN", responsavel: "Cristiano Nascimento", email: "cristiano@ai.com", prioridade: "baixa", dias: 17, stage: "entrada", stageLabel: "Entrada" },
-  { id: 5, titulo: "Ramon Albergaria", empresa: "DevTools Pro", valor: 0, avatar: "RA", responsavel: "Ramon Albergaria", email: "ramon@devtools.com", prioridade: "alta", dias: 17, stage: "entrada", stageLabel: "Entrada" },
-  { id: 6, titulo: "railson", empresa: "codirect.com.br", valor: 0, avatar: "RA", responsavel: "Railson Almeida", email: "railson@codirect.com", prioridade: "alta", dias: 7, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["direct", "codirect.com.br"] },
-  { id: 7, titulo: "Kelvin Galvão Kirst", empresa: "Eventos Internos", valor: 0, avatar: "KK", responsavel: "Kelvin Kirst", email: "kelvin@eventos.com", prioridade: "media", dias: 17, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["evento_interno"] },
-  { id: 8, titulo: "Miguel Alves dos Santos Neto", empresa: "Organic Bio", valor: 0, avatar: "MN", responsavel: "Miguel Neto", email: "miguel@organic.com", prioridade: "alta", dias: 9, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["organic_bio"] },
-  { id: 9, titulo: "Ingrid kezia", empresa: "FinTrack", valor: 0, avatar: "IK", responsavel: "Ingrid Kezia", email: "ingrid@fintrack.com", prioridade: "media", dias: 2, stage: "contato", stageLabel: "Contato Efetivado" },
-  { id: 10, titulo: "Matheus Buneo", empresa: "GrowthLab", valor: 0, avatar: "MB", responsavel: "Matheus Buneo", email: "matheus@growth.com", prioridade: "alta", dias: 25, stage: "contato", stageLabel: "Contato Efetivado" },
-  { id: 11, titulo: "Cheftensei", empresa: "MegaCorp", valor: 0, avatar: "CH", responsavel: "Cheftensei Silva", email: "cheftensei@megacorp.com", prioridade: "media", dias: 2, stage: "contato", stageLabel: "Contato Efetivado" },
-  { id: 12, titulo: "Simão", empresa: "RetailMax", valor: 0, avatar: "SI", responsavel: "Simão Costa", email: "simao@retail.com", prioridade: "baixa", dias: 8, stage: "contato", stageLabel: "Contato Efetivado" },
-  { id: 13, titulo: "Gislaine", empresa: "Startup Hub", valor: 0, avatar: "GI", responsavel: "Gislaine Souza", email: "gislaine@startup.com", prioridade: "alta", dias: 17, stage: "contato", stageLabel: "Contato Efetivado" },
+  { id: 1, titulo: "Vinicius Santos", empresa: "TechCorp Brasil", valor: 48000, avatar: "VS", responsavel: "Vinicius Santos", email: "vinicius@techcorp.com", prioridade: "alta", dias: 2, stage: "entrada", stageLabel: "Entrada", contactId: "cont-001" },
+  { id: 2, titulo: "Marissia Lima", empresa: "Costa & Associados", valor: 32000, avatar: "ML", responsavel: "Marissia Lima", email: "marissia@costa.com", prioridade: "media", dias: 6, stage: "entrada", stageLabel: "Entrada", contactId: "cont-002" },
+  { id: 3, titulo: "Fábio Vitorino", empresa: "Vendas Express", valor: 15000, avatar: "FV", responsavel: "Fábio Vitorino", email: "fabio@vendas.com", prioridade: "alta", dias: 8, stage: "entrada", stageLabel: "Entrada", contactId: "cont-003" },
+  { id: 4, titulo: "Cristiano Nascimento", empresa: "DataFlow Systems", valor: 85000, avatar: "CN", responsavel: "Cristiano Nascimento", email: "cristiano@dataflow.com", prioridade: "baixa", dias: 17, stage: "entrada", stageLabel: "Entrada", tags: ["enterprise"] },
+  { id: 5, titulo: "Ramon Albergaria", empresa: "CloudSync", valor: 22000, avatar: "RA", responsavel: "Ramon Albergaria", email: "ramon@cloudsync.com", prioridade: "alta", dias: 17, stage: "entrada", stageLabel: "Entrada" },
+  { id: 6, titulo: "Railson Almeida", empresa: "codirect.com.br", valor: 12000, avatar: "RA", responsavel: "Railson Almeida", email: "railson@codirect.com", prioridade: "alta", dias: 7, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["direct", "codirect"] },
+  { id: 7, titulo: "Kelvin Kirst", empresa: "Eventos Internos", valor: 18000, avatar: "KK", responsavel: "Kelvin Kirst", email: "kelvin@eventos.com", prioridade: "media", dias: 17, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["evento_interno"] },
+  { id: 8, titulo: "Miguel Neto", empresa: "Organic Bio", valor: 35000, avatar: "MN", responsavel: "Miguel Alves", email: "miguel@organic.com", prioridade: "alta", dias: 9, stage: "tentativa", stageLabel: "Tentativa de Contato", tags: ["organic"] },
+  { id: 9, titulo: "Ingrid Kezia", empresa: "FinTrack", valor: 67000, avatar: "IK", responsavel: "Ingrid Kezia", email: "ingrid@fintrack.com", prioridade: "media", dias: 2, stage: "contato", stageLabel: "Contato Efetivado" },
+  { id: 10, titulo: "Matheus Buneo", empresa: "GrowthLab", valor: 42000, avatar: "MB", responsavel: "Matheus Buneo", email: "matheus@growth.com", prioridade: "alta", dias: 25, stage: "contato", stageLabel: "Contato Efetivado" },
+  { id: 11, titulo: "Cheftensei Silva", empresa: "MegaCorp", valor: 120000, avatar: "CS", responsavel: "Cheftensei Silva", email: "cheftensei@megacorp.com", prioridade: "media", dias: 2, stage: "contato", stageLabel: "Contato Efetivado" },
+  { id: 12, titulo: "Simão Costa", empresa: "RetailMax", valor: 28000, avatar: "SC", responsavel: "Simão Costa", email: "simao@retail.com", prioridade: "baixa", dias: 8, stage: "contato", stageLabel: "Contato Efetivado" },
+  { id: 13, titulo: "Gislaine Souza", empresa: "Startup Hub", valor: 45000, avatar: "GS", responsavel: "Gislaine Souza", email: "gislaine@startup.com", prioridade: "alta", dias: 17, stage: "qualificado", stageLabel: "Qualificado" },
 ]
 
 const PRIORIDADE_CONFIG = {
@@ -59,6 +88,17 @@ function avatarColor(initials: string): string {
   ]
   const idx = (initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % colors.length
   return colors[idx]
+}
+
+function findContactByDeal(deal: Deal): Contact | undefined {
+  if (deal.contactId) {
+    return MOCK_CONTACTS.find(c => c.id === deal.contactId)
+  }
+  // Try to find by name or empresa
+  return MOCK_CONTACTS.find(c => 
+    deal.titulo.toLowerCase().includes(c.nome.toLowerCase()) ||
+    deal.empresa.toLowerCase().includes(c.empresa.toLowerCase())
+  )
 }
 
 // ─── Components ──────────────────────────────────────────────────────────────
@@ -165,7 +205,7 @@ function PipelineColumn({
       <div className={cn("mb-2 rounded-xl border px-3 py-2.5", stage.bgColor, stage.borderColor)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={cn("h-2 w-2 rounded-full", stage.color.replace("text-", "bg-").replace("[", "[").replace("]", "]"))} />
+            <span className={cn("h-2 w-2 rounded-full bg-[#9795e4]")} />
             <span className={cn("text-xs font-semibold", stage.color)}>{stage.label}</span>
           </div>
           <span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-bold text-foreground">
@@ -205,6 +245,7 @@ export function PipelineView() {
   const [selectedDealId, setSelectedDealId] = useState<number | null>(null)
   const [draggedDealId, setDraggedDealId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
 
   const filteredDeals = useMemo(() => {
     if (!searchQuery) return deals
@@ -221,6 +262,11 @@ export function PipelineView() {
     () => deals.find((d) => d.id === selectedDealId) || null,
     [deals, selectedDealId]
   )
+
+  const selectedContact = useMemo(() => {
+    if (!selectedDeal) return undefined
+    return findContactByDeal(selectedDeal)
+  }, [selectedDeal])
 
   const handleDragStart = (e: React.DragEvent, dealId: number) => {
     setDraggedDealId(dealId)
@@ -254,9 +300,11 @@ export function PipelineView() {
 
   const handleDealClick = (deal: Deal) => {
     setSelectedDealId(deal.id)
+    setIsPanelOpen(true)
   }
 
   const handleClosePanel = () => {
+    setIsPanelOpen(false)
     setSelectedDealId(null)
   }
 
@@ -312,10 +360,14 @@ export function PipelineView() {
             selectedDealId={selectedDealId}
           />
         ))}
-
-        {/* Detail Panel */}
-        <DealDetailPanel deal={selectedDeal} onClose={handleClosePanel} />
       </div>
+
+      {/* Contact Detail Panel - Same as other pages */}
+      <ContactDetailPanel 
+        isOpen={isPanelOpen} 
+        onClose={handleClosePanel}
+        contact={selectedContact}
+      />
     </div>
   )
 }
