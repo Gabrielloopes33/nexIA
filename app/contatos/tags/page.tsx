@@ -141,9 +141,6 @@ export default function TagsPage() {
       <Sidebar />
 
       {/* Contacts Sub-Sidebar */}
-      <ContactsSubSidebar />
-
-      {/* Contacts Sub-Sidebar */}
       <div className="flex-shrink-0">
         <ContactsSubSidebar />
       </div>
