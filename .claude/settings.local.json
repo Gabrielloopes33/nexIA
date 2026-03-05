@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next build:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(findstr:*)",
+      "Bash(find:*)",
+      "Bash(xargs grep:*)"
+    ]
+  }
+}

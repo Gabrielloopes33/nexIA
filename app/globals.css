@@ -1,0 +1,224 @@
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.23 0.01 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.23 0.01 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.23 0.01 260);
+  --primary: oklch(0.62 0.19 260);
+  --primary-foreground: oklch(0.99 0.004 260);
+  --primary-gradient: linear-gradient(135deg, oklch(0.62 0.19 260) 0%, oklch(0.63 0.19 260) 100%);
+  --primary-dark: oklch(0.58 0.19 260);
+  --primary-light: oklch(0.65 0.19 260);
+  --secondary: oklch(0.945 0.004 260);
+  --secondary-foreground: oklch(0.23 0.01 260);
+  --muted: oklch(0.945 0.004 260);
+  --muted-foreground: oklch(0.45 0.004 260);
+  --accent: oklch(0.945 0.004 260);
+  --accent-foreground: oklch(0.23 0.01 260);
+  --destructive: oklch(0.59 0.21 24);
+  --destructive-foreground: oklch(0.99 0.004 260);
+  --border: oklch(0.87 0.004 260);
+  --input: oklch(0.87 0.004 260);
+  --ring: oklch(0.62 0.19 260);
+  --chart-1: oklch(0.62 0.19 260);
+  --chart-2: oklch(0.51 0.08 144);
+  --chart-3: oklch(0.82 0.04 260);
+  --chart-4: oklch(0.69 0.11 45);
+  --chart-5: oklch(0.61 0.17 20);
+  --radius: 0.125rem;
+  --sidebar-bg: oklch(0.62 0.19 260);
+  --sidebar-foreground: oklch(0.99 0.004 260);
+  --sidebar-primary: oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0.62 0.19 260);
+  --sidebar-accent: oklch(1 0 0/0.15);
+  --sidebar-accent-foreground: oklch(0.99 0.004 260);
+  --sidebar-border: oklch(1 0 0/0.15);
+  --sidebar-ring: oklch(1 0 0);
+  --success: oklch(0.51 0.08 144);
+  --success-bg: oklch(0.9 0.04 144);
+  --warning: oklch(0.69 0.11 45);
+  --warning-bg: oklch(0.93 0.05 45);
+  --error: oklch(0.61 0.17 20);
+  --error-bg: oklch(0.93 0.05 20);
+  --bg-secondary: oklch(0.941 0.004 260);
+  
+  /* Tipografia Condensada */
+  --text-display: 1.5rem;      /* 24px */
+  --text-h1: 1.25rem;          /* 20px */
+  --text-h2: 1.125rem;         /* 18px */
+  --text-h3: 1rem;             /* 16px */
+  --text-body: 0.875rem;       /* 14px */
+  --text-sm: 0.8125rem;        /* 13px */
+  --text-xs: 0.75rem;          /* 12px */
+  --text-2xs: 0.6875rem;       /* 11px */
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'Menlo', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --success-bg: var(--success-bg);
+  --warning-bg: var(--warning-bg);
+  --error-bg: var(--error-bg);
+}
+
+/* ============================================
+   DASHBOARD ENTERPRISE - MOBILE FIX
+   Forçar KPIs a nunca subirem no mobile
+   ============================================ */
+
+/* Mobile: KPIs sempre no topo */
+@media (max-width: 1279px) {
+  /* Container principal */
+  .dashboard-grid {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  /* KPI Sidebar sempre primeiro */
+  .kpi-sidebar {
+    order: -9999 !important;
+    width: 100% !important;
+  }
+  
+  /* Grid dos KPIs em 2 colunas no mobile */
+  .kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+  
+  /* Cards pequenos dos KPIs */
+  .kpi-sidebar > *:not(.kpi-grid) {
+    order: 1;
+  }
+  
+  /* Conteúdo principal depois */
+  .main-content {
+    order: 1 !important;
+    width: 100% !important;
+  }
+  
+  /* Esconder sub-sidebar em mobile */
+  .sub-sidebar {
+    display: none !important;
+  }
+}
+
+/* Tablet: 3 colunas mas compacto */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .kpi-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* Suavizar animações para quem prefere */
+@media (prefers-reduced-motion: reduce) {
+  .sub-sidebar {
+    animation: none !important;
+  }
+}
+
+/* Cards com borda sutil e sombra para destacar no fundo branco */
+[data-slot="card"] {
+  border: 1px solid oklch(0.9 0.004 260) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+[data-slot="card"]:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+}
+
+/* Popovers e Dropdowns sem borda */
+[data-slot="popover-content"],
+[data-slot="dropdown-menu-content"],
+[data-slot="dropdown-menu-sub-content"] {
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* Tabela de contatos sem bordas entre linhas */
+table tbody tr {
+  border: none !important;
+}
+
+table tbody tr + tr {
+  border-top: none !important;
+}
+
+table tbody td {
+  border: none !important;
+}
+
+table thead th {
+  border: none !important;
+}
+
+/* Remover linha entre thead e tbody */
+table thead {
+  border-bottom: none !important;
+}
+
+table thead tr {
+  border-bottom: none !important;
+}
+
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* Garantir fonte Inter/SF Pro em todos os elementos */
+html {
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif !important;
+}
+
+* {
+  font-family: inherit;
+}
