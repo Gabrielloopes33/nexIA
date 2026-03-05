@@ -267,13 +267,12 @@ export function ContactsSubSidebar() {
               pathname={pathname}
               isCollapsed={isCollapsed}
             />
-            {/* Relatórios - seção removida conforme solicitação */}
-            {/* <NavSection
+            <NavSection
               title="Relatórios"
               items={reportNavItems}
               pathname={pathname}
               isCollapsed={isCollapsed}
-            /> */}
+            />
           </div>
 
           {/* Footer - escondido quando colapsado */}
