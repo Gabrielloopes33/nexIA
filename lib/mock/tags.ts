@@ -2,7 +2,7 @@ export interface Tag {
   id: string
   nome: string
   cor: string
-  leadScore: number
+
   contatosCount: number
   automatizacao: boolean
   utmSource?: string
@@ -17,7 +17,7 @@ export const MOCK_TAGS: Tag[] = [
     id: "tag-1",
     nome: "VIP",
     cor: "#9795e4",
-    leadScore: 100,
+
     contatosCount: 45,
     automatizacao: true,
     utmSource: "facebook",
@@ -30,7 +30,7 @@ export const MOCK_TAGS: Tag[] = [
     id: "tag-2",
     nome: "Lead Quente",
     cor: "#7c7ab8",
-    leadScore: 80,
+
     contatosCount: 128,
     automatizacao: true,
     utmSource: "google",
@@ -43,7 +43,7 @@ export const MOCK_TAGS: Tag[] = [
     id: "tag-3",
     nome: "Lead Frio",
     cor: "#b3b3e5",
-    leadScore: 30,
+
     contatosCount: 342,
     automatizacao: false,
     utmSource: "organic",
@@ -55,7 +55,7 @@ export const MOCK_TAGS: Tag[] = [
     id: "tag-4",
     nome: "Conteúdo",
     cor: "#a5a3d9",
-    leadScore: 50,
+
     contatosCount: 892,
     automatizacao: true,
     utmSource: "organic",
@@ -67,7 +67,7 @@ export const MOCK_TAGS: Tag[] = [
     id: "tag-5",
     nome: "Webinar",
     cor: "#7573b8",
-    leadScore: 70,
+
     contatosCount: 67,
     automatizacao: true,
     utmSource: "webinar",
@@ -80,7 +80,7 @@ export const MOCK_TAGS: Tag[] = [
     id: "tag-6",
     nome: "Indicação",
     cor: "#9b99d1",
-    leadScore: 90,
+
     contatosCount: 23,
     automatizacao: false,
     utmSource: "referral",
@@ -92,7 +92,7 @@ export const MOCK_TAGS: Tag[] = [
     id: "tag-7",
     nome: "Parceiro",
     cor: "#8a88c7",
-    leadScore: 85,
+
     contatosCount: 12,
     automatizacao: false,
     utmSource: "partner",
@@ -104,7 +104,7 @@ export const MOCK_TAGS: Tag[] = [
     id: "tag-8",
     nome: "Trial",
     cor: "#c4c3ea",
-    leadScore: 60,
+
     contatosCount: 156,
     automatizacao: true,
     utmSource: "website",

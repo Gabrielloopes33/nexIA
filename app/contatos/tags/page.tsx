@@ -53,7 +53,6 @@ export default function TagsPage() {
   const [formData, setFormData] = useState<Partial<Tag>>({
     nome: "",
     cor: "#9795e4",
-    leadScore: 50,
     automatizacao: false,
     utmSource: "",
     utmMedium: "",
@@ -69,7 +68,6 @@ export default function TagsPage() {
     setFormData({
       nome: "",
       cor: "#9795e4",
-      leadScore: 50,
       automatizacao: false,
       utmSource: "",
       utmMedium: "",
@@ -102,7 +100,6 @@ export default function TagsPage() {
         id: `tag-${Date.now()}`,
         nome: formData.nome,
         cor: formData.cor || "#9795e4",
-        leadScore: formData.leadScore || 50,
         contatosCount: 0,
         automatizacao: formData.automatizacao || false,
         utmSource: formData.utmSource,
@@ -183,7 +180,7 @@ export default function TagsPage() {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-[250px]">Nome</TableHead>
-                <TableHead>Lead Score</TableHead>
+
                 <TableHead>Contatos</TableHead>
                 <TableHead>Automação</TableHead>
                 <TableHead>UTM Source</TableHead>
@@ -194,7 +191,7 @@ export default function TagsPage() {
             <TableBody>
               {filteredTags.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
                     Nenhuma tag encontrada
                   </TableCell>
                 </TableRow>
@@ -219,12 +216,7 @@ export default function TagsPage() {
                         </Badge>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{tag.leadScore}</span>
-                      </div>
-                    </TableCell>
+
                     <TableCell>
                       <span className="text-sm">{tag.contatosCount}</span>
                     </TableCell>
@@ -321,27 +313,6 @@ export default function TagsPage() {
                     />
                   ))}
                 </div>
-              </div>
-
-              {/* Lead Score */}
-              <div className="space-y-2">
-                <Label htmlFor="leadScore">
-                  Lead Score ({formData.leadScore})
-                </Label>
-                <input
-                  id="leadScore"
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={formData.leadScore}
-                  onChange={(e) =>
-                    setFormData({ ...formData, leadScore: parseInt(e.target.value) })
-                  }
-                  className="w-full accent-[#9795e4]"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Quanto maior o score, mais qualificado é o contato
-                </p>
               </div>
 
               {/* Automation */}

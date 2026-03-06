@@ -22,7 +22,7 @@ export const DEFAULT_FIELDS: { nome: string; label: string; tipo: FieldType; obr
   { nome: "cidade", label: "Cidade", tipo: "texto", obrigatorio: false, descricao: "Cidade de localização" },
   { nome: "estado", label: "Estado", tipo: "texto", obrigatorio: false, descricao: "Estado (UF)" },
   { nome: "status", label: "Status", tipo: "selecao", obrigatorio: false, descricao: "Status do contato no CRM" },
-  { nome: "leadScore", label: "Lead Score", tipo: "numero", obrigatorio: false, descricao: "Pontuação de qualificação (0-100)" },
+
   { nome: "origem", label: "Origem", tipo: "texto", obrigatorio: false, descricao: "Canal de origem do contato" },
   { nome: "observacoes", label: "Observações", tipo: "texto", obrigatorio: false, descricao: "Notas e observações gerais" },
 ]

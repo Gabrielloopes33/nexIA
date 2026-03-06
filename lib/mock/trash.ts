@@ -27,7 +27,7 @@ export const MOCK_TRASHED_CONTACTS: TrashedContact[] = [
     instagram: "@mariana.oliveira",
     linkedin: "linkedin.com/in/marianaoliveira",
     tags: ["tag-1"],
-    leadScore: 85,
+
     status: "ativo",
     origem: "LinkedIn",
     utmSource: "linkedin",
@@ -55,7 +55,7 @@ export const MOCK_TRASHED_CONTACTS: TrashedContact[] = [
     cargo: "CEO",
     empresa: "StartUp SP",
     tags: ["tag-2", "tag-5"],
-    leadScore: 92,
+
     status: "ativo",
     origem: "Webinar",
     utmSource: "webinar",
@@ -83,7 +83,7 @@ export const MOCK_TRASHED_CONTACTS: TrashedContact[] = [
     empresa: "Consultoria XYZ",
     linkedin: "linkedin.com/in/patricialima",
     tags: ["tag-3"],
-    leadScore: 45,
+
     status: "pendente",
     origem: "Indicação",
     criadoEm: "2024-09-10T11:30:00Z",
@@ -109,7 +109,7 @@ export const MOCK_TRASHED_CONTACTS: TrashedContact[] = [
     empresa: "Digital Solutions",
     instagram: "@fernandocosta",
     tags: ["tag-4"],
-    leadScore: 68,
+
     status: "inativo",
     origem: "Google Ads",
     utmSource: "google",
@@ -135,7 +135,7 @@ export const MOCK_TRASHED_CONTACTS: TrashedContact[] = [
     cargo: "E-commerce Manager",
     empresa: "E-commerce Plus",
     tags: ["tag-6", "tag-7"],
-    leadScore: 78,
+
     status: "convertido",
     origem: "Facebook Ads",
     utmSource: "facebook",

@@ -100,16 +100,9 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { togglePanel, activeNavItem } = useSubSidebar()
-  const { isCollapsed, toggle, setCollapsed } = useMainSidebar()
+  const { isCollapsed, toggle } = useMainSidebar()
 
-  // Rotas que possuem sub-sidebar
-  const routesWithSubSidebar: NavItemKey[] = ['contatos', 'cobrancas', 'integracoes', 'conversas', 'agendamentos']
-
-  const handleNavClick = (key: NavItemKey, href: string) => {
-    // Se clicar em uma rota com sub-sidebar e a sidebar estiver aberta, recolher
-    if (routesWithSubSidebar.includes(key) && !isCollapsed) {
-      setCollapsed(true)
-    }
+  const handleNavClick = (href: string) => {
     router.push(href)
   }
   
@@ -176,7 +169,7 @@ export function Sidebar() {
                   item={item}
                   isActive={isActive}
                   isPanelActive={isPanelActive}
-                  onClick={() => handleNavClick(item.key, item.href)}
+                  onClick={() => handleNavClick(item.href)}
                   onRightClick={(e) => handleRightClick(e, item.key)}
                   isCollapsed={isCollapsed}
                 />
@@ -198,7 +191,7 @@ export function Sidebar() {
                   item={item}
                   isActive={isActive}
                   isPanelActive={isPanelActive}
-                  onClick={() => handleNavClick(item.key, item.href)}
+                  onClick={() => handleNavClick(item.href)}
                   onRightClick={(e) => handleRightClick(e, item.key)}
                   isCollapsed={isCollapsed}
                 />

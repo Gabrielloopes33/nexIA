@@ -198,7 +198,7 @@ export default function SegmentosPage() {
       id: generateRuleId(),
       field: newRule.field,
       operator: newRule.operator,
-      value: newRule.field === "leadScore" ? Number(newRule.value) : newRule.value,
+      value: newRule.value,
     }
 
     setFormData((prev) => ({
@@ -217,7 +217,7 @@ export default function SegmentosPage() {
   }
 
   const isValueSelect = newRule.field === "status"
-  const isValueNumber = newRule.field === "leadScore"
+  const isValueNumber = false
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

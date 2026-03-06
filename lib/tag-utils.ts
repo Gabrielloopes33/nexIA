@@ -332,11 +332,6 @@ export function suggestTagsForContact(contact: Contact): string[] {
     }
   }
   
-  // Análise de leadScore para Qualificado
-  if (contact.leadScore !== undefined && contact.leadScore >= 70) {
-    suggestions.push('tag-26') // Qualificado
-  }
-  
   // Análise de receita para Cliente
   if (contact.receita && contact.receita > 0) {
     suggestions.push('tag-27') // Cliente
@@ -414,90 +409,12 @@ export function getTagStatistics(contacts: Contact[]): {
   }
 }
 
-/**
- * Exporta funções auxiliares para cálculo de lead score
- */
-export const LEAD_SCORE_WEIGHTS = {
-  tags: 0.30,         // 30% - Qualidade das tags
-  utm: 0.15,          // 15% - Origem do lead
-  engagement: 0.25,   // 25% - Engajamento (emails, calls, forms)
-  sentiment: 0.15,    // 15% - Sentimento geral
-  profile: 0.15       // 15% - Perfil da empresa
-}
 
-/**
- * Calcula pontuação de tags (0-100)
- * Tags de alta qualidade (VIP, C-Level, Demo Solicitada) valem mais
- */
-export function calculateTagScore(tagIds: string[]): number {
-  const highValueTags = ['tag-28', 'tag-30', 'tag-13', 'tag-31', 'tag-29'] // VIP, C-Level, Demo, Orçamento, Decisor
-  const mediumValueTags = ['tag-26', 'tag-25', 'tag-14', 'tag-20'] // Qualificado, Engajamento Alto, Trial, Enterprise
-  
-  let score = 0
-  let maxScore = 100
-  
-  tagIds.forEach(tagId => {
-    if (highValueTags.includes(tagId)) {
-      score += 25
-    } else if (mediumValueTags.includes(tagId)) {
-      score += 15
-    } else {
-      score += 5
-    }
-  })
-  
-  return Math.min(score, maxScore)
-}
 
-/**
- * Calcula pontuação de UTM/origem (0-100)
- */
-export function calculateUtmScore(source?: string): number {
-  const sourceScores: Record<string, number> = {
-    referral: 90,      // Indicação = altíssima qualidade
-    linkedin: 80,      // LinkedIn = B2B profissional
-    organic: 70,       // Orgânico = busca intencional
-    google: 65,        // Google Ads = interesse ativo
-    direct: 55,        // Direto = conhece a marca
-    whatsapp: 50,      // WhatsApp = contato casual
-    instagram: 45,     // Instagram = menos B2B
-    facebook: 40       // Facebook = baixa intenção B2B
-  }
-  
-  return source ? sourceScores[source.toLowerCase()] || 50 : 50
-}
 
-/**
- * Calcula pontuação de engajamento (0-100)
- */
-export function calculateEngagementScore(
-  emailOpens: number = 0,
-  emailClicks: number = 0,
-  formSubmissions: number = 0,
-  callsCompleted: number = 0
-): number {
-  // Pesos para cada métrica
-  const openScore = Math.min(emailOpens * 2, 30)        // Máx 30 pontos (15+ opens)
-  const clickScore = Math.min(emailClicks * 4, 30)      // Máx 30 pontos (7+ clicks)
-  const formScore = Math.min(formSubmissions * 15, 30)  // Máx 30 pontos (2+ forms)
-  const callScore = Math.min(callsCompleted * 10, 30)   // Máx 30 pontos (3+ calls)
-  
-  // Soma parcial (máx 120), normaliza para 100
-  const total = openScore + clickScore + formScore + callScore
-  return Math.min(Math.round((total / 120) * 100), 100)
-}
 
-/**
- * Calcula pontuação de perfil da empresa (0-100)
- */
-export function calculateProfileScore(companySize: number = 0): number {
-  // Empresas maiores tendem a ter deals maiores e serem mais estáveis
-  if (companySize >= 1000) return 100      // Enterprise
-  if (companySize >= 500) return 90        // Grande
-  if (companySize >= 250) return 80        // Média-Grande
-  if (companySize >= 100) return 70        // Média
-  if (companySize >= 50) return 60         // Pequena-Média
-  if (companySize >= 20) return 50         // Pequena
-  if (companySize >= 10) return 40         // Micro
-  return 30                                 // Muito pequena
-}
+
+
+
+
+

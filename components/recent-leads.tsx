@@ -24,20 +24,16 @@ const leads = recentLeads.map(lead => {
     .substring(0, 2)
     .toUpperCase()
   
-  // Define status baseado no leadScore
-  const isValid = (lead.leadScore || 0) >= 60
-  
   return {
     id: lead.id,
     name: lead.nome,
     role: `${lead.cargo} | ${lead.empresa}`,
     email: lead.email,
-    status: isValid ? ("valid" as const) : ("risky" as const),
+    status: "valid" as const,
     avatar: initials,
     // Cores padronizadas em tons de roxo/cinza
     avatarBg: "#E8E7F7",  // Roxo muito claro
     avatarColor: "#7573b8", // Roxo escuro
-    leadScore: lead.leadScore,
     tags: lead.tags || [],
     favorito: lead.favorito || false
   }
@@ -66,7 +62,7 @@ export function RecentLeads({ compact }: RecentLeadsProps) {
       cargo: originalLead.cargo || 'Gerente',
       empresa: originalLead.empresa || '',
       tags: originalLead.tags || [],
-      leadScore: originalLead.leadScore || 50,
+
       status: 'ativo',
       origem: originalLead.fonte || 'Dashboard',
       criadoEm: originalLead.criadoEm || new Date().toISOString(),
@@ -139,15 +135,6 @@ export function RecentLeads({ compact }: RecentLeadsProps) {
                   </div>
                 )}
               </div>
-              
-              {/* Lead Score Badge */}
-              {lead.leadScore !== undefined && (
-                <div className="shrink-0 text-center">
-                  <div className="text-sm font-semibold px-2 py-0.5 rounded-sm bg-[#9795e4]/10 text-[#7573b8]">
-                    {lead.leadScore}
-                  </div>
-                </div>
-              )}
               
               {/* Status Badge */}
               <span

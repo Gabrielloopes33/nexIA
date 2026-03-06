@@ -23,7 +23,6 @@ const data = [
 
 const channelColors = {
   whatsapp: "#9795e4",
-  email: "#b3b3e5",
   instagram: "#7c7ab8",
   telegram: "#a5a3d9",
 }
@@ -77,12 +76,6 @@ export function ConversationVolumeChart() {
                 radius={[0, 0, 0, 0]}
               />
               <Bar
-                dataKey="email"
-                stackId="a"
-                fill={channelColors.email}
-                radius={[0, 0, 0, 0]}
-              />
-              <Bar
                 dataKey="instagram"
                 stackId="a"
                 fill={channelColors.instagram}
@@ -101,10 +94,6 @@ export function ConversationVolumeChart() {
           <div className="flex items-center gap-1.5">
             <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: channelColors.whatsapp }} />
             <span className="text-muted-foreground text-xs">WhatsApp</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: channelColors.email }} />
-            <span className="text-muted-foreground text-xs">Email</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: channelColors.instagram }} />

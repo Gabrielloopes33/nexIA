@@ -813,7 +813,7 @@ export function AgendamentosView({
       cargo: atividade.tipo === "reuniao" ? "Diretor" : "Gerente",
       empresa: atividade.empresa,
       tags: [atividade.tipo],
-      leadScore: Math.floor(Math.random() * 100),
+
       status: "ativo",
       origem: "Agenda",
       criadoEm: atividade.data.toISOString(),

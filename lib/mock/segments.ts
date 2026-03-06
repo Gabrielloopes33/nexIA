@@ -1,6 +1,6 @@
 import type { Contact } from "./contacts"
 
-export type RuleField = "status" | "leadScore" | "origem" | "tags" | "cidade" | "estado" | "empresa"
+export type RuleField = "status" | "origem" | "tags" | "cidade" | "estado" | "empresa"
 export type RuleOperator = "equals" | "not_equals" | "contains" | "greater_than" | "less_than"
 
 export interface SegmentRule {
@@ -24,7 +24,7 @@ export interface Segment {
 
 export const RULE_FIELDS: { value: RuleField; label: string }[] = [
   { value: "status", label: "Status" },
-  { value: "leadScore", label: "Lead Score" },
+
   { value: "origem", label: "Origem" },
   { value: "tags", label: "Tags" },
   { value: "cidade", label: "Cidade" },
@@ -41,19 +41,6 @@ export const RULE_OPERATORS: { value: RuleOperator; label: string }[] = [
 ]
 
 export const MOCK_SEGMENTS: Segment[] = [
-  {
-    id: "seg-001",
-    nome: "Leads Quentes",
-    descricao: "Contatos com alto potencial de conversão",
-    cor: "#E57373",
-    regras: [
-      { id: "rule-001", field: "leadScore", operator: "greater_than", value: 70 },
-    ],
-    operador: "AND",
-    contatosCount: 3,
-    criadoEm: "2024-12-01T10:00:00Z",
-    atualizadoEm: "2025-02-28T14:20:00Z",
-  },
   {
     id: "seg-002",
     nome: "Clientes SP",
@@ -161,8 +148,6 @@ function getContactFieldValue(contact: Contact, field: RuleField): string | numb
   switch (field) {
     case "status":
       return contact.status
-    case "leadScore":
-      return contact.leadScore
     case "origem":
       return contact.origem
     case "tags":

@@ -74,25 +74,7 @@ export function calculateConversionTime(leads: Contact[]): KPIResult {
   }
 }
 
-/**
- * Calculate average lead score
- */
-export function calculateAverageLeadScore(leads: Contact[]): KPIResult {
-  const leadsWithScore = leads.filter((l) => l.leadScore !== undefined)
 
-  if (leadsWithScore.length === 0) {
-    return { value: 0, count: 0, change: 0 }
-  }
-
-  const total = leadsWithScore.reduce((sum, l) => sum + (l.leadScore || 0), 0)
-  const average = Math.round(total / leadsWithScore.length)
-
-  return {
-    value: average,
-    count: leadsWithScore.length,
-    change: 5.3, // Mock change percentage
-  }
-}
 
 /**
  * Calculate all KPIs at once
@@ -102,6 +84,6 @@ export function calculateAllKPIs(leads: Contact[]) {
     pipeline: calculatePipelineTotal(leads),
     ticket: calculateAverageTicket(leads),
     conversion: calculateConversionTime(leads),
-    score: calculateAverageLeadScore(leads),
+
   }
 }

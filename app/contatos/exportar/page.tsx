@@ -57,7 +57,7 @@ const EXPORTABLE_FIELDS = [
   { key: "cidade", label: "Cidade" },
   { key: "estado", label: "Estado" },
   { key: "status", label: "Status" },
-  { key: "leadScore", label: "Lead Score" },
+
   { key: "origem", label: "Origem" },
   { key: "instagram", label: "Instagram" },
   { key: "linkedin", label: "LinkedIn" },
@@ -109,8 +109,7 @@ export default function ExportarPage() {
   // Filtros
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [minScore, setMinScore] = useState<string>("")
-  const [maxScore, setMaxScore] = useState<string>("")
+
 
   // Campos
   const [selectedFields, setSelectedFields] = useState<string[]>([
@@ -141,21 +140,9 @@ export default function ExportarPage() {
         return false
       }
 
-      // Filtro de score mínimo
-      const min = parseInt(minScore)
-      if (!isNaN(min) && contact.leadScore < min) {
-        return false
-      }
-
-      // Filtro de score máximo
-      const max = parseInt(maxScore)
-      if (!isNaN(max) && contact.leadScore > max) {
-        return false
-      }
-
       return true
     })
-  }, [selectedStatuses, selectedTags, minScore, maxScore])
+  }, [selectedStatuses, selectedTags])
 
   const toggleStatus = (status: string) => {
     setSelectedStatuses((prev) =>
@@ -195,9 +182,6 @@ export default function ExportarPage() {
     }
     if (selectedTags.length > 0) {
       filtrosParts.push(`Tags: ${selectedTags.length} selecionadas`)
-    }
-    if (minScore || maxScore) {
-      filtrosParts.push(`Score: ${minScore || "0"}-${maxScore || "100"}`)
     }
     const filtrosDesc = filtrosParts.join(", ") || "Sem filtros"
 
@@ -294,34 +278,6 @@ export default function ExportarPage() {
                         </button>
                       )
                     })}
-                  </div>
-                </div>
-
-                {/* Lead Score */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="min-score">Lead Score mínimo</Label>
-                    <Input
-                      id="min-score"
-                      type="number"
-                      min={0}
-                      max={100}
-                      placeholder="0"
-                      value={minScore}
-                      onChange={(e) => setMinScore(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="max-score">Lead Score máximo</Label>
-                    <Input
-                      id="max-score"
-                      type="number"
-                      min={0}
-                      max={100}
-                      placeholder="100"
-                      value={maxScore}
-                      onChange={(e) => setMaxScore(e.target.value)}
-                    />
                   </div>
                 </div>
 

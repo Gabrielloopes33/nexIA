@@ -13,7 +13,7 @@ export interface Contact {
   instagram?: string
   linkedin?: string
   tags: string[]
-  leadScore: number
+
   status: "ativo" | "inativo" | "pendente" | "convertido"
   origem: string
   utmSource?: string
@@ -42,7 +42,7 @@ export const MOCK_CONTACTS: Contact[] = [
     instagram: "@ana.silva",
     linkedin: "linkedin.com/in/anasilva",
     tags: ["tag-1", "tag-2"],
-    leadScore: 95,
+
     status: "ativo",
     origem: "Facebook Ads",
     utmSource: "facebook",
@@ -68,7 +68,7 @@ export const MOCK_CONTACTS: Contact[] = [
     empresa: "Costa & Associados",
     linkedin: "linkedin.com/in/brunocosta",
     tags: ["tag-2", "tag-5"],
-    leadScore: 88,
+
     status: "ativo",
     origem: "Webinar",
     utmSource: "webinar",
@@ -93,7 +93,7 @@ export const MOCK_CONTACTS: Contact[] = [
     empresa: "Vendas Express",
     instagram: "@carolmendes",
     tags: ["tag-3", "tag-4"],
-    leadScore: 45,
+
     status: "pendente",
     origem: "Orgânico",
     utmSource: "organic",
@@ -117,7 +117,7 @@ export const MOCK_CONTACTS: Contact[] = [
     empresa: "InovaTech",
     linkedin: "linkedin.com/in/danielferreira",
     tags: ["tag-8"],
-    leadScore: 62,
+
     status: "ativo",
     origem: "Trial",
     utmSource: "website",
@@ -143,7 +143,7 @@ export const MOCK_CONTACTS: Contact[] = [
     instagram: "@eduardalima",
     linkedin: "linkedin.com/in/eduardalima",
     tags: ["tag-1", "tag-6", "tag-7"],
-    leadScore: 98,
+
     status: "convertido",
     origem: "Indicação",
     utmSource: "referral",
@@ -168,7 +168,7 @@ export const MOCK_CONTACTS: Contact[] = [
     empresa: "Corp Finance",
     linkedin: "linkedin.com/in/felipesantos",
     tags: ["tag-5", "tag-7"],
-    leadScore: 75,
+
     status: "ativo",
     origem: "Parceiro",
     utmSource: "partner",
@@ -191,7 +191,7 @@ export const MOCK_CONTACTS: Contact[] = [
     empresa: "RH Digital",
     instagram: "@gabioliveira",
     tags: ["tag-3", "tag-4"],
-    leadScore: 38,
+
     status: "inativo",
     origem: "Google Ads",
     utmSource: "google",
@@ -214,7 +214,7 @@ export const MOCK_CONTACTS: Contact[] = [
     empresa: "Tech Solutions",
     linkedin: "linkedin.com/in/henriquerocha",
     tags: ["tag-1", "tag-2", "tag-5"],
-    leadScore: 92,
+
     status: "ativo",
     origem: "LinkedIn",
     utmSource: "linkedin",
@@ -232,9 +232,7 @@ export function getContactTags(contact: Contact): Tag[] {
   return getTagsByIds(contact.tags || [])
 }
 
-export function calculateTotalLeadScore(contacts: Contact[]): number {
-  return contacts.reduce((sum, contact) => sum + contact.leadScore, 0)
-}
+
 
 export function getContactsByTag(tagId: string): Contact[] {
   return MOCK_CONTACTS.filter((contact) => contact.tags.includes(tagId))

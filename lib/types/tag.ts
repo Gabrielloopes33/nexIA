@@ -153,14 +153,7 @@ export interface ContactTagsExtension {
   /** Histórico completo de touchpoints */
   touchpoints?: UTMTouchpoint[]
   
-  /** Lead score calculado (0-100) */
-  leadScore?: number
-  /** Grade de qualidade (A/B/C/D) */
-  leadGrade?: 'A' | 'B' | 'C' | 'D'
-  /** Sentimento detectado em conversas */
-  sentiment?: 'positive' | 'neutral' | 'negative'
-  /** Score de sentimento (0-100) */
-  sentimentScore?: number
+
 }
 
 /**

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, Phone, MapPin, Briefcase, Instagram, Linkedin, Calendar, User, Clock, Building2, Tag, CheckCircle2, Circle, MoreHorizontal, Plus, Send, MessageSquare, FileText, PhoneCall, Star, AlertCircle, CheckCheck, Trash2, Palette, Mail } from 'lucide-react'
+import { X, Phone, MapPin, Briefcase, Instagram, Linkedin, Calendar, User, Clock, Building2, Tag, CheckCircle2, Circle, MoreHorizontal, Plus, Send, MessageSquare, FileText, PhoneCall, Star, AlertCircle, CheckCheck, Trash2, Palette } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Contact, getContactTags } from '@/lib/mock/contacts'
@@ -256,7 +256,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
       id: `tag-${Date.now()}`,
       nome: newTagName.trim(),
       cor: newTagColor,
-      leadScore: 0,
+
       contatosCount: 1,
       automatizacao: false,
       createdAt: new Date().toISOString(),
@@ -691,21 +691,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                 </div>
               )}
 
-              {/* Lead Score Section */}
-              <div>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Lead Score
-                </h3>
-                <div className="flex items-center gap-3 p-3 rounded-sm bg-muted/30">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className="h-full rounded-full bg-[#9795e4] transition-all"
-                      style={{ width: `${Math.min(contact.leadScore, 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-[#9795e4]">{contact.leadScore}</span>
-                </div>
-              </div>
+
             </div>
           )}
 
@@ -726,9 +712,6 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
                       <Phone className="h-4 w-4" />
                     </Button>

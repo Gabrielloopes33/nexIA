@@ -130,7 +130,7 @@ function findContactByDeal(deal: Deal): Contact | undefined {
     cargo: "Diretor Comercial",
     empresa: deal.empresa,
     tags: ["pipeline"],
-    leadScore: Math.floor(Math.random() * 100),
+
     status: "ativo",
     origem: "Pipeline",
     criadoEm: deal.criadoEm,

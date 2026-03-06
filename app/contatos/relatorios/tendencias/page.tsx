@@ -145,9 +145,7 @@ export default function TendenciasPage() {
   // KPIs
   const totalContacts = MOCK_CONTACTS.length
   const activeContacts = MOCK_CONTACTS.filter((c) => c.status === "ativo").length
-  const avgScore = Math.round(
-    MOCK_CONTACTS.reduce((sum, c) => sum + c.leadScore, 0) / totalContacts
-  )
+
 
   // Novos este mês vs mês anterior (simulado)
   const currentMonthCount = newContactsByMonth[newContactsByMonth.length - 1]?.contatos || 0
@@ -235,8 +233,8 @@ export default function TendenciasPage() {
                 <BarChart3 className="h-6 w-6 text-[#9795e4]" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Score Médio</p>
-                <p className="text-2xl font-bold">{avgScore}</p>
+                <p className="text-sm text-muted-foreground">Taxa de Atividade</p>
+                <p className="text-2xl font-bold">{Math.round((activeContacts / totalContacts) * 100)}%</p>
               </div>
             </CardContent>
           </Card>

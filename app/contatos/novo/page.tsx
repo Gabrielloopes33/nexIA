@@ -73,7 +73,7 @@ const contactSchema = z.object({
   status: z.enum(["ativo", "inativo", "pendente", "convertido"]),
   origem: z.string().optional(),
   tags: z.array(z.string()).default([]),
-  leadScore: z.number().min(0).max(100).default(50),
+
   utmSource: z.string().optional(),
   utmMedium: z.string().optional(),
   utmCampaign: z.string().optional(),
@@ -104,13 +104,11 @@ export default function NovoContatoPage() {
     resolver: zodResolver(contactSchema),
     defaultValues: {
       status: "pendente",
-      leadScore: 50,
       tags: [],
     },
   })
 
   const selectedTags = watch("tags") || []
-  const leadScore = watch("leadScore") || 50
 
   const toggleTag = (tagId: string) => {
     const currentTags = selectedTags
@@ -138,7 +136,7 @@ export default function NovoContatoPage() {
       instagram: data.instagram,
       linkedin: data.linkedin,
       tags: data.tags,
-      leadScore: data.leadScore,
+
       status: data.status,
       origem: data.origem || "",
       utmSource: data.utmSource,
@@ -409,27 +407,7 @@ export default function NovoContatoPage() {
                     })}
                   </div>
                 </div>
-                <div className="space-y-3 md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="leadScore">Lead Score</Label>
-                    <span className="text-sm font-medium text-[#9795e4]">
-                      {leadScore}
-                    </span>
-                  </div>
-                  <input
-                    id="leadScore"
-                    type="range"
-                    min={0}
-                    max={100}
-                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-[#9795e4]"
-                    {...register("leadScore", { valueAsNumber: true })}
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>0</span>
-                    <span>50</span>
-                    <span>100</span>
-                  </div>
-                </div>
+
               </div>
             </CardContent>
           </Card>

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Mail, Phone, Edit, Trash2, Eye } from "lucide-react"
+import { MoreHorizontal, Phone, Edit, Trash2, Eye } from "lucide-react"
 import { Contact, getContactTags, CONTACT_STATUS_OPTIONS } from "@/lib/mock/contacts"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -72,7 +72,7 @@ export function ContactsTable({
             <TableHead className="w-[250px]">Contato</TableHead>
             <TableHead>Tags</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Lead Score</TableHead>
+
             <TableHead>Origem</TableHead>
             <TableHead>Última Atualização</TableHead>
             <TableHead className="w-[50px]"></TableHead>
@@ -155,17 +155,7 @@ export function ContactsTable({
                       <span className="text-sm">{getStatusLabel(contact.status)}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className="h-full rounded-full bg-[#9795e4]"
-                          style={{ width: `${Math.min(contact.leadScore, 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{contact.leadScore}</span>
-                    </div>
-                  </TableCell>
+        
                   <TableCell>
                     <span className="text-sm text-muted-foreground">{contact.origem}</span>
                   </TableCell>
@@ -193,10 +183,6 @@ export function ContactsTable({
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                          <Mail className="mr-2 h-4 w-4" />
-                          Enviar Email
-                        </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Phone className="mr-2 h-4 w-4" />
                           Ligar

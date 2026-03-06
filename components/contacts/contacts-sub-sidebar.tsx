@@ -44,7 +44,7 @@ const manageNavItems: NavItem[] = [
   { label: "Segmentos", href: "/contatos/segmentos", icon: Layers },
   { label: "Tags", href: "/contatos/tags", icon: Tags },
   { label: "Campos", href: "/contatos/campos", icon: Settings },
-  { label: "Pontuação", href: "/contatos/pontuacao", icon: BarChart3 },
+
 ]
 
 const dataNavItems: NavItem[] = [

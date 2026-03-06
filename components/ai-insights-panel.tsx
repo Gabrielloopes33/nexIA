@@ -38,7 +38,7 @@ export function AiInsightsPanel() {
       iconColor: 'text-green-600',
       iconBg: 'bg-green-100',
       title: '23 leads provavelmente converterão',
-      description: 'Baseado em lead score ≥80 e engajamento alto',
+      description: 'Baseado em engajamento alto e padrões históricos de conversão',
       value: 'Este mês',
       action: 'Ver lista'
     },

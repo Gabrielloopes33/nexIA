@@ -60,11 +60,10 @@ function DashboardContent() {
             isNegativeGood={true}
           />
           <VerticalKpiCard
-            label="Qualidade dos Leads"
-            value={kpis.score.value.toString()}
-            change={formatChange(kpis.score.change || 0).value}
+            label="Taxa de Conversão"
+            value={`${((stats?.conversionRate || 0) * 100).toFixed(1)}%`}
+            change={formatChange(5.2).value}
             icon={Target}
-            suffix=" / 100"
           />
         </div>
 
