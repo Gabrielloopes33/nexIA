@@ -11,21 +11,23 @@ interface UseSubSidebarReturn {
 
 const STORAGE_KEY = "sub_sidebar_collapsed"
 
+// Read localStorage synchronously to prevent flash
+function getInitialCollapsedState(): boolean {
+  if (typeof window === "undefined") return false
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    return stored !== null ? JSON.parse(stored) : false
+  } catch {
+    return false
+  }
+}
+
 export function useContactsSidebar(): UseSubSidebarReturn {
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false)
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(getInitialCollapsedState)
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    // Read from localStorage during mount
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored !== null) {
-        setIsCollapsed(JSON.parse(stored))
-      }
-    } catch {
-      // Fallback to default if localStorage is not available
-    }
-    // Mark as ready after state is set
+    // Mark as ready after mount
     setIsReady(true)
   }, [])
 
