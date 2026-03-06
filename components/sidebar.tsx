@@ -73,11 +73,14 @@ function NavButton({ item, isActive, isPanelActive, onClick, onRightClick, isCol
       )}
     >
       <item.icon className="h-4 w-4 text-white shrink-0" strokeWidth={2.0} />
-      {!isCollapsed && (
-        <span className="text-xs font-medium text-white whitespace-nowrap overflow-hidden">
-          {item.label}
-        </span>
-      )}
+      <span 
+        className={cn(
+          "text-xs font-medium text-white whitespace-nowrap overflow-hidden transition-all duration-200",
+          isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100 w-auto"
+        )}
+      >
+        {item.label}
+      </span>
     </button>
   )
 
