@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 
 interface UseMainSidebarReturn {
   isCollapsed: boolean
+  isReady: boolean
   toggle: () => void
   setCollapsed: (value: boolean) => void
 }
@@ -12,10 +13,10 @@ const STORAGE_KEY = "main_sidebar_collapsed"
 
 export function useMainSidebar(): UseMainSidebarReturn {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false)
-  const [isMounted, setIsMounted] = useState(false)
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    setIsMounted(true)
+    // Read from localStorage during mount
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored !== null) {
@@ -24,17 +25,19 @@ export function useMainSidebar(): UseMainSidebarReturn {
     } catch {
       // Fallback to default if localStorage is not available
     }
+    // Mark as ready after state is set
+    setIsReady(true)
   }, [])
 
   useEffect(() => {
-    if (isMounted) {
+    if (isReady) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(isCollapsed))
       } catch {
         // Ignore localStorage errors
       }
     }
-  }, [isCollapsed, isMounted])
+  }, [isCollapsed, isReady])
 
   const toggle = useCallback(() => {
     setIsCollapsed((prev) => !prev)
@@ -46,6 +49,7 @@ export function useMainSidebar(): UseMainSidebarReturn {
 
   return {
     isCollapsed,
+    isReady,
     toggle,
     setCollapsed,
   }

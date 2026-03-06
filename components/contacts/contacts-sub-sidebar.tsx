@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import {
@@ -155,15 +155,10 @@ function NavSection({ title, items, pathname, isCollapsed }: NavSectionProps) {
 
 export function ContactsSubSidebar() {
   const pathname = usePathname()
-  const { isCollapsed, toggle } = useContactsSidebar()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const { isCollapsed, isReady, toggle } = useContactsSidebar()
 
   // Prevent hydration mismatch by rendering expanded state initially
-  if (!mounted) {
+  if (!isReady) {
     return (
       <aside className="h-full w-[220px] border-0 bg-background shadow-sm">
         <div className="flex h-full flex-col">

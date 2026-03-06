@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+
 import {
   LayoutDashboard,
   MessageSquare,
@@ -88,12 +88,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { togglePanel, activeNavItem } = useSubSidebar()
-  const { isCollapsed, toggle } = useMainSidebar()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const { isCollapsed, isReady, toggle } = useMainSidebar()
 
   const handleNavClick = (href: string) => {
     router.push(href)
@@ -109,7 +104,7 @@ export function Sidebar() {
       <div 
         className={cn(
           "flex h-screen flex-col py-4 pl-3",
-          mounted && "transition-all duration-300 ease-in-out",
+          isReady && "transition-all duration-300 ease-in-out",
           isCollapsed ? "w-16" : "w-[160px]"
         )}
       >
@@ -129,7 +124,7 @@ export function Sidebar() {
         {/* Main sidebar container */}
         <div className={cn(
           "flex flex-1 flex-col rounded-sm bg-gradient-to-br from-[#9795e4] to-[#b3b3e5] py-4 border-r-2 border-white/20 relative",
-          mounted && "transition-all duration-300 ease-in-out",
+          isReady && "transition-all duration-300 ease-in-out",
           isCollapsed ? "px-1.5 items-center" : "px-2 items-center xl:items-stretch"
         )}>
           
@@ -167,7 +162,7 @@ export function Sidebar() {
                   onClick={() => handleNavClick(item.href)}
                   onRightClick={(e) => handleRightClick(e, item.key)}
                   isCollapsed={isCollapsed}
-                  mounted={mounted}
+                  mounted={isReady}
                 />
               )
             })}
@@ -190,7 +185,7 @@ export function Sidebar() {
                   onClick={() => handleNavClick(item.href)}
                   onRightClick={(e) => handleRightClick(e, item.key)}
                   isCollapsed={isCollapsed}
-                  mounted={mounted}
+                  mounted={isReady}
                 />
               )
             })}
