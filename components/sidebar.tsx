@@ -81,21 +81,6 @@ function NavButton({ item, isActive, isPanelActive, onClick, onRightClick, isCol
     </button>
   )
 
-  if (isCollapsed) {
-    const Icon = item.icon
-    return (
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>
-          {button}
-        </TooltipTrigger>
-        <TooltipContent side="right" className="bg-white text-gray-900 border border-gray-200 shadow-md flex items-center gap-2">
-          <Icon className="h-4 w-4 text-[#7573b8]" strokeWidth={2} />
-          {item.label}
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
-
   return button
 }
 
