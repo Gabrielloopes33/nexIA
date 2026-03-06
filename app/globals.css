@@ -222,3 +222,8 @@ body {
 * {
   font-family: inherit;
 }
+
+/* Prevent flash of labels in collapsed sidebar */
+.sidebar-container.collapsed .label-text {
+  display: none !important;
+}
