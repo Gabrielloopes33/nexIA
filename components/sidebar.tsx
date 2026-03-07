@@ -3,6 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 
 import {
   LayoutDashboard,
@@ -87,6 +88,11 @@ export function Sidebar() {
   const router = useRouter()
   const { togglePanel, activeNavItem } = useSubSidebar()
   const { isCollapsed, isReady, toggle } = useMainSidebar()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleNavClick = (href: string) => {
     router.push(href)
@@ -97,24 +103,27 @@ export function Sidebar() {
     togglePanel(key)
   }
 
+  // Use SSR-safe state: always render expanded during SSR, apply collapsed only after mount
+  const displayCollapsed = mounted && isCollapsed
+
   return (
     <TooltipProvider delayDuration={0}>
       <div 
         className={cn(
           "flex h-screen flex-col py-4 pl-3 sidebar-container",
-          isReady && "transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-16 collapsed" : "w-[160px]"
+          mounted && isReady && "transition-all duration-300 ease-in-out",
+          displayCollapsed ? "w-16 collapsed" : "w-[160px]"
         )}
       >
         {/* Logo */}
-        <div className={cn("mb-2 flex-shrink-0", isCollapsed && "flex justify-center")}>
+        <div className={cn("mb-2 flex-shrink-0", displayCollapsed && "flex justify-center")}>
           <Link href="/">
             <Image
               src="/images/nexia-logo.png"
               alt="NexIA Chat"
-              width={isCollapsed ? 36 : 40}
-              height={isCollapsed ? 36 : 40}
-              style={{ width: isCollapsed ? 36 : 40, height: "auto" }}
+              width={displayCollapsed ? 36 : 40}
+              height={displayCollapsed ? 36 : 40}
+              style={{ width: displayCollapsed ? 36 : 40, height: "auto" }}
             />
           </Link>
         </div>
@@ -123,7 +132,7 @@ export function Sidebar() {
         <div className={cn(
           "flex flex-1 flex-col rounded-sm bg-gradient-to-br from-[#9795e4] to-[#b3b3e5] py-4 border-r-2 border-white/20 relative",
           isReady && "transition-all duration-300 ease-in-out",
-          isCollapsed ? "px-1.5 items-center" : "px-2 items-center xl:items-stretch"
+          displayCollapsed ? "px-1.5 items-center" : "px-2 items-center xl:items-stretch"
         )}>
           
           {/* Toggle Button */}
@@ -146,7 +155,7 @@ export function Sidebar() {
           {/* Top navigation */}
           <nav className={cn(
             "flex flex-1 flex-col gap-1.5 w-full",
-            isCollapsed ? "items-center" : "items-stretch"
+            displayCollapsed ? "items-center" : "items-stretch"
           )}>
             {topNavItems.map((item) => {
               const isActive = pathname === item.href
@@ -159,7 +168,7 @@ export function Sidebar() {
                   isPanelActive={isPanelActive}
                   onClick={() => handleNavClick(item.href)}
                   onRightClick={(e) => handleRightClick(e, item.key)}
-                  isCollapsed={isCollapsed}
+                  isCollapsed={displayCollapsed}
                   mounted={isReady}
                 />
               )
@@ -169,7 +178,7 @@ export function Sidebar() {
           {/* Bottom navigation */}
           <div className={cn(
             "flex flex-col gap-1.5 border-t border-white/20 pt-3 w-full",
-            isCollapsed ? "items-center" : "items-stretch"
+            displayCollapsed ? "items-center" : "items-stretch"
           )}>
             {bottomNavItems.map((item) => {
               const isActive = pathname === item.href
@@ -182,7 +191,7 @@ export function Sidebar() {
                   isPanelActive={isPanelActive}
                   onClick={() => handleNavClick(item.href)}
                   onRightClick={(e) => handleRightClick(e, item.key)}
-                  isCollapsed={isCollapsed}
+                  isCollapsed={displayCollapsed}
                   mounted={isReady}
                 />
               )
@@ -191,14 +200,14 @@ export function Sidebar() {
         </div>
 
         {/* User icon at bottom */}
-        <div className={cn("mt-2 flex-shrink-0", isCollapsed && "flex justify-center")}>
+        <div className={cn("mt-2 flex-shrink-0", displayCollapsed && "flex justify-center")}>
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
                 title="Perfil"
                 className={cn(
                   "flex items-center justify-center rounded-sm text-[#9795e4] transition-all hover:bg-[#9795e4]/10",
-                  isCollapsed ? "h-9 w-9" : "h-8 w-8"
+                  displayCollapsed ? "h-9 w-9" : "h-8 w-8"
                 )}
               >
                 <User className="h-4 w-4" strokeWidth={2.0} />
