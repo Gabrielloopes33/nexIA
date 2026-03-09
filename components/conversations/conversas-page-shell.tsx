@@ -2,13 +2,12 @@
 
 import { Suspense } from "react"
 import { Sidebar } from "@/components/sidebar"
-import { ChatSubSidebar } from "@/components/conversations/chat-sub-sidebar"
 import { ConversationsPanel } from "@/components/conversations/conversations-panel"
 import { ChatWindow } from "@/components/chat-window"
 import { CustomerContextPanel } from "@/components/customer-context-panel"
 import { useConversasPage } from "@/lib/hooks/use-conversas-page"
 import { Conversation } from "@/lib/types/conversation"
-import { Inbox, MessageSquare } from "lucide-react"
+import { Inbox } from "lucide-react"
 
 export interface ConversasPageShellProps {
   /** Função de filtro para as conversas */
@@ -28,12 +27,11 @@ export interface ConversasPageShellProps {
 /**
  * ConversasPageShell - Wrapper reutilizável para páginas de conversas
  * 
- * Renderiza o layout padrão de 4 colunas:
- * 1. Sidebar principal (roxa)
- * 2. ChatSubSidebar (contextual)
- * 3. Lista de conversas
- * 4. Janela de chat
- * 5. Painel de contexto do cliente
+ * Renderiza o layout padrão de 3 colunas:
+ * 1. Sidebar principal (roxa) com dropdowns
+ * 2. Lista de conversas
+ * 3. Janela de chat
+ * 4. Painel de contexto do cliente
  * 
  * @example
  * ```tsx
@@ -65,11 +63,8 @@ function ConversasPageShellContent({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Main Sidebar */}
+      {/* Main Sidebar with Dropdowns */}
       <Sidebar />
-
-      {/* Chat Sub-Sidebar */}
-      <ChatSubSidebar />
 
       {/* Main Content Area */}
       <main className="flex-1 flex overflow-hidden min-w-0">

@@ -2,7 +2,7 @@
 
 import { Sidebar } from "@/components/sidebar"
 import { DashboardHeader } from "@/components/dashboard-header"
-import { ContextualSubSidebar } from "@/components/contextual-sub-sidebar"
+
 import { VerticalKpiCard } from "@/components/vertical-kpi-card"
 import { LeadTrendsChart } from "@/components/lead-trends-chart"
 import { ActivityHeatmap } from "@/components/activity-heatmap"
@@ -99,9 +99,6 @@ export default function DashboardPage() {
       <div className="flex h-screen overflow-hidden bg-white">
         {/* Main Sidebar */}
         <Sidebar />
-
-        {/* Contextual Sub-Sidebar - aparece apenas quando ativa */}
-        <ContextualSubSidebar />
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto px-4 py-4">

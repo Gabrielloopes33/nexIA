@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Sidebar } from "@/components/sidebar"
-import { ContactsSubSidebar } from "@/components/contacts/contacts-sub-sidebar"
 import { MOCK_TAGS, type Tag, UTM_SOURCES, UTM_MEDIUMS } from "@/lib/mock/tags"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,10 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useContactsSidebar } from "@/hooks/use-contacts-sidebar"
-
 export default function TagsPage() {
-  const { isCollapsed: isSidebarCollapsed } = useContactsSidebar()
   const [tags, setTags] = useState<Tag[]>(MOCK_TAGS)
   const [searchQuery, setSearchQuery] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -138,9 +134,7 @@ export default function TagsPage() {
       <Sidebar />
 
       {/* Contacts Sub-Sidebar */}
-      <div className="flex-shrink-0">
-        <ContactsSubSidebar />
-      </div>
+
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 min-w-0">
