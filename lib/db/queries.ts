@@ -3,6 +3,7 @@
  * 
  * Queries avançadas, agregações, joins e estatísticas para análise
  * de dados do WhatsApp Business.
+ * Schema flat simplificado - CICLO 2.
  * 
  * @module lib/db/queries
  */
@@ -45,11 +46,13 @@ export type DailyStats = {
 };
 
 export type ContactStats = {
+  id: string;
   phone: string;
   name: string | null;
   conversationCount: number;
   messageCount: number;
   lastMessageAt: Date | null;
+  leadScore: number;
 };
 
 export type TemplateStats = {
@@ -77,10 +80,10 @@ export type HourlyActivity = {
 // ============================================
 
 /**
- * Obtém métricas detalhadas de conversas de uma WABA
+ * Obtém métricas detalhadas de conversas de uma organização
  */
 export async function getConversationMetrics(
-  wabaId: string,
+  organizationId: string,
   startDate?: Date,
   endDate?: Date
 ): Promise<ConversationMetrics> {
@@ -99,23 +102,23 @@ export async function getConversationMetrics(
     userInitiated,
     businessInitiated,
   ] = await Promise.all([
-    prisma.whatsAppConversation.count({
-      where: { wabaId, ...dateFilter },
+    prisma.conversation.count({
+      where: { organizationId, ...dateFilter },
     }),
-    prisma.whatsAppConversation.count({
-      where: { wabaId, status: 'ACTIVE', ...dateFilter },
+    prisma.conversation.count({
+      where: { organizationId, status: 'ACTIVE', ...dateFilter },
     }),
-    prisma.whatsAppConversation.count({
-      where: { wabaId, status: 'EXPIRED', ...dateFilter },
+    prisma.conversation.count({
+      where: { organizationId, status: 'EXPIRED', ...dateFilter },
     }),
-    prisma.whatsAppConversation.count({
-      where: { wabaId, status: 'CLOSED', ...dateFilter },
+    prisma.conversation.count({
+      where: { organizationId, status: 'CLOSED', ...dateFilter },
     }),
-    prisma.whatsAppConversation.count({
-      where: { wabaId, type: 'USER_INITIATED', ...dateFilter },
+    prisma.conversation.count({
+      where: { organizationId, type: 'USER_INITIATED', ...dateFilter },
     }),
-    prisma.whatsAppConversation.count({
-      where: { wabaId, type: 'BUSINESS_INITIATED', ...dateFilter },
+    prisma.conversation.count({
+      where: { organizationId, type: 'BUSINESS_INITIATED', ...dateFilter },
     }),
   ]);
 
@@ -133,17 +136,17 @@ export async function getConversationMetrics(
  * Obtém a distribuição de conversas por dia
  */
 export async function getConversationsByDay(
-  wabaId: string,
+  organizationId: string,
   days: number = 30
 ): Promise<DailyStats[]> {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
   startDate.setHours(0, 0, 0, 0);
 
-  const conversations = await prisma.whatsAppConversation.groupBy({
+  const conversations = await prisma.conversation.groupBy({
     by: ['createdAt'],
     where: {
-      wabaId,
+      organizationId,
       createdAt: { gte: startDate },
     },
     _count: { id: true },
@@ -181,15 +184,15 @@ export async function getConversationsByDay(
  * Obtém conversas que expiram em breve (próximas 2 horas)
  */
 export async function getExpiringConversations(
-  wabaId: string,
+  organizationId: string,
   hours: number = 2
 ) {
   const now = new Date();
   const threshold = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
-  return prisma.whatsAppConversation.findMany({
+  return prisma.conversation.findMany({
     where: {
-      wabaId,
+      organizationId,
       status: 'ACTIVE',
       windowEnd: {
         gte: now,
@@ -201,6 +204,7 @@ export async function getExpiringConversations(
         orderBy: { createdAt: 'desc' },
         take: 1,
       },
+      contact: true,
     },
     orderBy: { windowEnd: 'asc' },
   });
@@ -214,7 +218,7 @@ export async function getExpiringConversations(
  * Obtém métricas detalhadas de mensagens
  */
 export async function getMessageMetrics(
-  wabaId: string,
+  organizationId: string,
   startDate?: Date,
   endDate?: Date
 ): Promise<MessageMetrics> {
@@ -226,7 +230,7 @@ export async function getMessageMetrics(
   } : {};
 
   const where = {
-    conversation: { wabaId },
+    conversation: { organizationId },
     ...dateFilter,
   };
 
@@ -240,26 +244,26 @@ export async function getMessageMetrics(
     failed,
     byType,
   ] = await Promise.all([
-    prisma.whatsAppMessage.count({ where }),
-    prisma.whatsAppMessage.count({
+    prisma.message.count({ where }),
+    prisma.message.count({
       where: { ...where, direction: 'INBOUND' },
     }),
-    prisma.whatsAppMessage.count({
+    prisma.message.count({
       where: { ...where, direction: 'OUTBOUND' },
     }),
-    prisma.whatsAppMessage.count({
+    prisma.message.count({
       where: { ...where, status: 'SENT' },
     }),
-    prisma.whatsAppMessage.count({
+    prisma.message.count({
       where: { ...where, status: 'DELIVERED' },
     }),
-    prisma.whatsAppMessage.count({
+    prisma.message.count({
       where: { ...where, status: 'READ' },
     }),
-    prisma.whatsAppMessage.count({
+    prisma.message.count({
       where: { ...where, status: 'FAILED' },
     }),
-    prisma.whatsAppMessage.groupBy({
+    prisma.message.groupBy({
       by: ['type'],
       where,
       _count: { type: true },
@@ -287,7 +291,7 @@ export async function getMessageMetrics(
  * Calcula taxas de entrega e leitura
  */
 export async function getDeliveryRates(
-  wabaId: string,
+  organizationId: string,
   startDate?: Date,
   endDate?: Date
 ) {
@@ -299,19 +303,19 @@ export async function getDeliveryRates(
   } : {};
 
   const where = {
-    conversation: { wabaId },
+    conversation: { organizationId },
     direction: 'OUTBOUND',
     ...dateFilter,
   };
 
   const [sent, delivered, read] = await Promise.all([
-    prisma.whatsAppMessage.count({
+    prisma.message.count({
       where: { ...where, status: { in: ['SENT', 'DELIVERED', 'READ'] } },
     }),
-    prisma.whatsAppMessage.count({
+    prisma.message.count({
       where: { ...where, status: { in: ['DELIVERED', 'READ'] } },
     }),
-    prisma.whatsAppMessage.count({
+    prisma.message.count({
       where: { ...where, status: 'READ' },
     }),
   ]);
@@ -329,15 +333,15 @@ export async function getDeliveryRates(
  * Obtém mensagens por hora do dia
  */
 export async function getMessagesByHour(
-  wabaId: string,
+  organizationId: string,
   days: number = 7
 ): Promise<HourlyActivity[]> {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  const messages = await prisma.whatsAppMessage.findMany({
+  const messages = await prisma.message.findMany({
     where: {
-      conversation: { wabaId },
+      conversation: { organizationId },
       createdAt: { gte: startDate },
     },
     select: {
@@ -362,18 +366,18 @@ export async function getMessagesByHour(
  * Obtém mensagens mais recentes de todas as conversas
  */
 export async function getRecentMessages(
-  wabaId: string,
+  organizationId: string,
   limit: number = 50
 ) {
-  return prisma.whatsAppMessage.findMany({
+  return prisma.message.findMany({
     where: {
-      conversation: { wabaId },
+      conversation: { organizationId },
     },
     include: {
-      conversation: {
+      contact: {
         select: {
-          contactPhone: true,
-          contactName: true,
+          phone: true,
+          name: true,
         },
       },
     },
@@ -390,74 +394,61 @@ export async function getRecentMessages(
  * Obtém estatísticas de contatos
  */
 export async function getContactStats(
-  wabaId: string,
+  organizationId: string,
   limit: number = 100
 ): Promise<ContactStats[]> {
-  const conversations = await prisma.whatsAppConversation.findMany({
-    where: { wabaId },
+  const contacts = await prisma.contact.findMany({
+    where: { organizationId },
     include: {
       _count: {
-        select: { messages: true },
+        select: { 
+          conversations: true,
+          messages: true,
+        },
       },
-      messages: {
-        orderBy: { createdAt: 'desc' },
+      conversations: {
+        orderBy: { lastMessageAt: 'desc' },
         take: 1,
-        select: { createdAt: true },
+        select: { lastMessageAt: true },
       },
     },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: { lastInteractionAt: 'desc' },
     take: limit,
   });
 
-  // Agrupa por contato
-  const contactMap = new Map<string, ContactStats>();
-
-  conversations.forEach((conv) => {
-    const phone = conv.contactPhone;
-    const existing = contactMap.get(phone);
-
-    if (existing) {
-      existing.conversationCount += 1;
-      existing.messageCount += conv._count.messages;
-      if (conv.messages[0]?.createdAt && (!existing.lastMessageAt || conv.messages[0].createdAt > existing.lastMessageAt)) {
-        existing.lastMessageAt = conv.messages[0].createdAt;
-      }
-    } else {
-      contactMap.set(phone, {
-        phone,
-        name: conv.contactName,
-        conversationCount: 1,
-        messageCount: conv._count.messages,
-        lastMessageAt: conv.messages[0]?.createdAt || null,
-      });
-    }
-  });
-
-  return Array.from(contactMap.values()).sort(
-    (a, b) => (b.lastMessageAt?.getTime() || 0) - (a.lastMessageAt?.getTime() || 0)
-  );
+  return contacts.map((contact) => ({
+    id: contact.id,
+    phone: contact.phone,
+    name: contact.name,
+    conversationCount: contact._count.conversations,
+    messageCount: contact._count.messages,
+    lastMessageAt: contact.conversations[0]?.lastMessageAt || contact.lastInteractionAt,
+    leadScore: contact.leadScore,
+  }));
 }
 
 /**
  * Busca contatos por nome ou telefone
  */
 export async function searchContacts(
-  wabaId: string,
+  organizationId: string,
   query: string,
   limit: number = 20
 ) {
-  return prisma.whatsAppConversation.findMany({
+  return prisma.contact.findMany({
     where: {
-      wabaId,
+      organizationId,
       OR: [
-        { contactPhone: { contains: query, mode: 'insensitive' } },
-        { contactName: { contains: query, mode: 'insensitive' } },
+        { phone: { contains: query } },
+        { name: { contains: query, mode: 'insensitive' } },
       ],
     },
-    distinct: ['contactPhone'],
     select: {
-      contactPhone: true,
-      contactName: true,
+      id: true,
+      phone: true,
+      name: true,
+      avatarUrl: true,
+      leadScore: true,
     },
     take: limit,
   });
@@ -470,9 +461,9 @@ export async function searchContacts(
 /**
  * Obtém estatísticas de uso de templates
  */
-export async function getTemplateStats(wabaId: string): Promise<TemplateStats[]> {
-  const templates = await prisma.messageTemplate.findMany({
-    where: { wabaId },
+export async function getTemplateStats(instanceId: string): Promise<TemplateStats[]> {
+  const templates = await prisma.whatsAppTemplate.findMany({
+    where: { instanceId },
     include: {
       _count: {
         select: { messages: true },
@@ -494,9 +485,9 @@ export async function getTemplateStats(wabaId: string): Promise<TemplateStats[]>
 /**
  * Obtém templates mais utilizados
  */
-export async function getTopTemplates(wabaId: string, limit: number = 10) {
-  const templates = await prisma.messageTemplate.findMany({
-    where: { wabaId, status: 'APPROVED' },
+export async function getTopTemplates(instanceId: string, limit: number = 10) {
+  const templates = await prisma.whatsAppTemplate.findMany({
+    where: { instanceId, status: 'APPROVED' },
     include: {
       _count: {
         select: { messages: true },
@@ -522,44 +513,47 @@ export async function getTopTemplates(wabaId: string, limit: number = 10) {
 // ============================================
 
 /**
- * Obtém métricas de qualidade dos números
+ * Obtém métricas de qualidade das instâncias
  */
-export async function getQualityMetrics(wabaId: string): Promise<QualityMetrics[]> {
-  const phones = await prisma.whatsAppPhoneNumber.groupBy({
+export async function getQualityMetrics(organizationId: string): Promise<QualityMetrics[]> {
+  const instances = await prisma.whatsAppInstance.groupBy({
     by: ['qualityRating'],
-    where: { wabaId },
+    where: { organizationId },
     _count: { qualityRating: true },
   });
 
-  const total = phones.reduce((sum, p) => sum + p._count.qualityRating, 0);
+  const total = instances.reduce((sum, i) => sum + i._count.qualityRating, 0);
 
-  return phones.map((p) => ({
-    rating: p.qualityRating,
-    count: p._count.qualityRating,
-    percentage: total > 0 ? (p._count.qualityRating / total) * 100 : 0,
+  return instances.map((i) => ({
+    rating: i.qualityRating,
+    count: i._count.qualityRating,
+    percentage: total > 0 ? (i._count.qualityRating / total) * 100 : 0,
   }));
 }
 
 /**
  * Obtém histórico de qualidade ao longo do tempo
+ * (Baseado nos logs de qualidade das instâncias)
  */
 export async function getQualityHistory(
-  wabaId: string,
+  organizationId: string,
   days: number = 30
 ) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  return prisma.whatsAppAnalytics.findMany({
+  // Busca mudanças de qualidade nos logs
+  return prisma.whatsAppLog.findMany({
     where: {
-      wabaId,
-      date: { gte: startDate },
+      instance: { organizationId },
+      type: 'quality_update',
+      createdAt: { gte: startDate },
     },
     select: {
-      date: true,
-      qualityRating: true,
+      createdAt: true,
+      payload: true,
     },
-    orderBy: { date: 'asc' },
+    orderBy: { createdAt: 'asc' },
   });
 }
 
@@ -570,7 +564,7 @@ export async function getQualityHistory(
 /**
  * Obtém dados consolidados para o dashboard
  */
-export async function getDashboardData(wabaId: string) {
+export async function getDashboardData(organizationId: string) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekAgo = new Date(today);
@@ -581,38 +575,45 @@ export async function getDashboardData(wabaId: string) {
   const [
     conversations,
     messages,
-    phones,
+    instances,
     templates,
+    contacts,
     todayStats,
     weekStats,
     recentMessages,
   ] = await Promise.all([
     // Total de conversas
-    prisma.whatsAppConversation.count({ where: { wabaId } }),
+    prisma.conversation.count({ where: { organizationId } }),
     
     // Total de mensagens
-    prisma.whatsAppMessage.count({
-      where: { conversation: { wabaId } },
+    prisma.message.count({
+      where: { conversation: { organizationId } },
     }),
     
-    // Números ativos
-    prisma.whatsAppPhoneNumber.count({
-      where: { wabaId, status: 'VERIFIED' },
+    // Instâncias ativas
+    prisma.whatsAppInstance.count({
+      where: { organizationId, status: 'CONNECTED' },
     }),
     
     // Templates aprovados
-    prisma.messageTemplate.count({
-      where: { wabaId, status: 'APPROVED' },
+    prisma.whatsAppTemplate.count({
+      where: { 
+        instance: { organizationId },
+        status: 'APPROVED' 
+      },
     }),
+
+    // Total de contatos
+    prisma.contact.count({ where: { organizationId } }),
     
     // Estatísticas de hoje
-    getMessageMetrics(wabaId, today, now),
+    getMessageMetrics(organizationId, today, now),
     
     // Estatísticas da semana
-    getMessageMetrics(wabaId, weekAgo, now),
+    getMessageMetrics(organizationId, weekAgo, now),
     
     // Mensagens recentes
-    getRecentMessages(wabaId, 10),
+    getRecentMessages(organizationId, 10),
   ]);
 
   // Calcula médias
@@ -624,7 +625,8 @@ export async function getDashboardData(wabaId: string) {
     overview: {
       totalConversations: conversations,
       totalMessages: messages,
-      activePhoneNumbers: phones,
+      totalContacts: contacts,
+      connectedInstances: instances,
       approvedTemplates: templates,
       avgMessagesPerConversation: Math.round(avgMessagesPerConversation * 10) / 10,
     },
@@ -635,46 +637,49 @@ export async function getDashboardData(wabaId: string) {
 }
 
 /**
- * Obtém overview para múltiplas WABAs (nível de usuário)
+ * Obtém overview para múltiplas organizações (nível de usuário)
  */
 export async function getUserOverview(userId: string) {
-  const wabas = await prisma.whatsAppBusinessAccount.findMany({
+  // Busca organizações do usuário
+  const memberships = await prisma.organizationMember.findMany({
     where: { userId },
     include: {
-      phoneNumbers: {
-        where: { status: 'VERIFIED' },
-      },
-      _count: {
-        select: {
-          conversations: true,
-          messageTemplates: true,
+      organization: {
+        include: {
+          _count: {
+            select: {
+              conversations: true,
+              contacts: true,
+              whatsappInstances: true,
+            },
+          },
         },
       },
     },
   });
 
-  const wabaIds = wabas.map((w) => w.id);
+  const organizationIds = memberships.map((m) => m.organizationId);
 
-  const totalMessages = await prisma.whatsAppMessage.count({
+  const totalMessages = await prisma.message.count({
     where: {
       conversation: {
-        wabaId: { in: wabaIds },
+        organizationId: { in: organizationIds },
       },
     },
   });
 
   return {
-    totalWABAs: wabas.length,
-    totalPhoneNumbers: wabas.reduce((sum, w) => sum + w.phoneNumbers.length, 0),
-    totalConversations: wabas.reduce((sum, w) => sum + w._count.conversations, 0),
+    totalOrganizations: memberships.length,
+    totalWhatsAppInstances: memberships.reduce((sum, m) => sum + m.organization._count.whatsappInstances, 0),
+    totalConversations: memberships.reduce((sum, m) => sum + m.organization._count.conversations, 0),
     totalMessages,
-    totalTemplates: wabas.reduce((sum, w) => sum + w._count.messageTemplates, 0),
-    wabas: wabas.map((w) => ({
-      id: w.id,
-      name: w.name,
-      status: w.status,
-      phoneNumbers: w.phoneNumbers.length,
-      conversations: w._count.conversations,
+    totalContacts: memberships.reduce((sum, m) => sum + m.organization._count.contacts, 0),
+    organizations: memberships.map((m) => ({
+      id: m.organization.id,
+      name: m.organization.name,
+      role: m.role,
+      whatsappInstances: m.organization._count.whatsappInstances,
+      conversations: m.organization._count.conversations,
     })),
   };
 }
@@ -684,9 +689,9 @@ export async function getUserOverview(userId: string) {
 // ============================================
 
 /**
- * Obtém estatísticas de eventos de webhook
+ * Obtém estatísticas de logs
  */
-export async function getWebhookStats(wabaId: string, days: number = 7) {
+export async function getWebhookStats(organizationId: string, days: number = 7) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
@@ -696,19 +701,33 @@ export async function getWebhookStats(wabaId: string, days: number = 7) {
     failed,
     byType,
   ] = await Promise.all([
-    prisma.webhookEvent.count({
-      where: { wabaId, createdAt: { gte: startDate } },
+    prisma.whatsAppLog.count({
+      where: { 
+        instance: { organizationId },
+        createdAt: { gte: startDate } 
+      },
     }),
-    prisma.webhookEvent.count({
-      where: { wabaId, createdAt: { gte: startDate }, processed: true },
+    prisma.whatsAppLog.count({
+      where: { 
+        instance: { organizationId },
+        createdAt: { gte: startDate }, 
+        processed: true 
+      },
     }),
-    prisma.webhookEvent.count({
-      where: { wabaId, createdAt: { gte: startDate }, error: { not: null } },
+    prisma.whatsAppLog.count({
+      where: { 
+        instance: { organizationId },
+        createdAt: { gte: startDate }, 
+        error: { not: null } 
+      },
     }),
-    prisma.webhookEvent.groupBy({
-      by: ['eventType'],
-      where: { wabaId, createdAt: { gte: startDate } },
-      _count: { eventType: true },
+    prisma.whatsAppLog.groupBy({
+      by: ['type'],
+      where: { 
+        instance: { organizationId },
+        createdAt: { gte: startDate } 
+      },
+      _count: { type: true },
     }),
   ]);
 
@@ -718,8 +737,8 @@ export async function getWebhookStats(wabaId: string, days: number = 7) {
     failed,
     pending: total - processed,
     byType: byType.map((t) => ({
-      type: t.eventType,
-      count: t._count.eventType,
+      type: t.type,
+      count: t._count.type,
     })),
   };
 }
@@ -727,24 +746,29 @@ export async function getWebhookStats(wabaId: string, days: number = 7) {
 /**
  * Verifica tamanho das tabelas (aproximado)
  */
-export async function getTableStats(wabaId: string) {
+export async function getTableStats(organizationId: string) {
   const [
     conversations,
     messages,
-    webhookEvents,
+    logs,
+    contacts,
   ] = await Promise.all([
-    prisma.whatsAppConversation.count({ where: { wabaId } }),
-    prisma.whatsAppMessage.count({
-      where: { conversation: { wabaId } },
+    prisma.conversation.count({ where: { organizationId } }),
+    prisma.message.count({
+      where: { conversation: { organizationId } },
     }),
-    prisma.webhookEvent.count({ where: { wabaId } }),
+    prisma.whatsAppLog.count({ 
+      where: { instance: { organizationId } } 
+    }),
+    prisma.contact.count({ where: { organizationId } }),
   ]);
 
   return {
     conversations,
     messages,
-    webhookEvents,
-    estimatedTotal: conversations + messages + webhookEvents,
+    logs,
+    contacts,
+    estimatedTotal: conversations + messages + logs + contacts,
   };
 }
 
@@ -756,13 +780,13 @@ export async function getTableStats(wabaId: string) {
  * Exporta conversas com todas as mensagens
  */
 export async function exportConversations(
-  wabaId: string,
+  organizationId: string,
   startDate: Date,
   endDate: Date
 ) {
-  return prisma.whatsAppConversation.findMany({
+  return prisma.conversation.findMany({
     where: {
-      wabaId,
+      organizationId,
       createdAt: {
         gte: startDate,
         lte: endDate,
@@ -772,8 +796,11 @@ export async function exportConversations(
       messages: {
         orderBy: { createdAt: 'asc' },
       },
-      phoneNumber: {
-        select: { displayPhoneNumber: true },
+      contact: {
+        select: { phone: true, name: true },
+      },
+      instance: {
+        select: { phoneNumber: true, name: true },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -784,23 +811,23 @@ export async function exportConversations(
  * Exporta mensagens em formato CSV-friendly
  */
 export async function exportMessages(
-  wabaId: string,
+  organizationId: string,
   startDate: Date,
   endDate: Date
 ) {
-  const messages = await prisma.whatsAppMessage.findMany({
+  const messages = await prisma.message.findMany({
     where: {
-      conversation: { wabaId },
+      conversation: { organizationId },
       createdAt: {
         gte: startDate,
         lte: endDate,
       },
     },
     include: {
-      conversation: {
+      contact: {
         select: {
-          contactPhone: true,
-          contactName: true,
+          phone: true,
+          name: true,
         },
       },
     },
@@ -811,8 +838,8 @@ export async function exportMessages(
     id: msg.id,
     messageId: msg.messageId,
     timestamp: msg.createdAt.toISOString(),
-    contactPhone: msg.conversation.contactPhone,
-    contactName: msg.conversation.contactName,
+    contactPhone: msg.contact.phone,
+    contactName: msg.contact.name,
     direction: msg.direction,
     type: msg.type,
     content: msg.content,

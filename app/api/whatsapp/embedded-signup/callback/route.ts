@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { prisma } from '@/lib/db/whatsapp';
 
 /**
  * POST /api/whatsapp/embedded-signup/callback
@@ -9,20 +10,14 @@ import { NextRequest, NextResponse } from "next/server"
  * 
  * Request Body:
  * {
- *   code: string  - The authorization code from Facebook
+ *   code: string           - The authorization code from Facebook
+ *   organizationId: string - Organization ID to associate the instance
  * }
  * 
  * Response:
  * {
  *   success: boolean
- *   account: {
- *     id: string
- *     name: string
- *     wabaId: string
- *     status: string
- *     phoneNumbers: array
- *   }
- *   accessToken: string
+ *   instance: WhatsAppInstance
  * }
  */
 
@@ -32,6 +27,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 interface CallbackRequestBody {
   code: string
+  organizationId: string
 }
 
 interface FacebookAccessTokenResponse {
@@ -67,24 +63,6 @@ interface WABAResponse {
   name: string
 }
 
-interface EmbeddedSignupResult {
-  success: boolean
-  account: {
-    id: string
-    name: string
-    wabaId: string
-    status: string
-    phoneNumbers: Array<{
-      id: string
-      displayPhoneNumber: string
-      verifiedName: string
-      status: string
-    }>
-  }
-  accessToken: string
-  error?: string
-}
-
 // ============================================
 // Configuration
 // ============================================
@@ -105,24 +83,28 @@ const GRAPH_API_BASE = `https://graph.facebook.com/${FACEBOOK_CONFIG.apiVersion}
 /**
  * Validates the request body
  */
-function validateRequestBody(body: unknown): { valid: boolean; code?: string; error?: string } {
+function validateRequestBody(body: unknown): { valid: boolean; code?: string; organizationId?: string; error?: string } {
   if (typeof body !== "object" || body === null) {
     return { valid: false, error: "Invalid request body" }
   }
 
-  const { code } = body as Record<string, unknown>
+  const { code, organizationId } = body as Record<string, unknown>
 
   if (typeof code !== "string" || !code.trim()) {
     return { valid: false, error: "Authorization code is required" }
   }
 
-  return { valid: true, code: code.trim() }
+  if (typeof organizationId !== "string" || !organizationId.trim()) {
+    return { valid: false, error: "Organization ID is required" }
+  }
+
+  return { valid: true, code: code.trim(), organizationId: organizationId.trim() }
 }
 
 /**
  * Exchanges the authorization code for an access token
  */
-async function exchangeCodeForToken(code: string): Promise<string> {
+async function exchangeCodeForToken(code: string): Promise<{ accessToken: string; expiresIn: number }> {
   console.log("[EmbeddedSignup Callback] Exchanging code for token...")
 
   const params = new URLSearchParams({
@@ -153,7 +135,10 @@ async function exchangeCodeForToken(code: string): Promise<string> {
   }
 
   console.log("[EmbeddedSignup Callback] Token exchanged successfully")
-  return data.access_token
+  return { 
+    accessToken: data.access_token, 
+    expiresIn: data.expires_in || 3600 
+  }
 }
 
 /**
@@ -224,7 +209,6 @@ async function fetchPhoneNumbers(wabaId: string, accessToken: string): Promise<W
 
   if (!response.ok) {
     console.error("[EmbeddedSignup Callback] Failed to fetch phone numbers:", data)
-    // Don't throw here, just return empty array
     return []
   }
 
@@ -233,97 +217,108 @@ async function fetchPhoneNumbers(wabaId: string, accessToken: string): Promise<W
 }
 
 /**
- * Fetches user info to get the name
+ * Saves or updates the WhatsApp instance in the database
  */
-async function fetchUserInfo(accessToken: string): Promise<{ id: string; name?: string }> {
-  console.log("[EmbeddedSignup Callback] Fetching user info...")
+async function saveWhatsAppInstance(
+  organizationId: string,
+  wabaId: string,
+  wabaName: string,
+  phoneNumber: WhatsAppPhoneNumber,
+  accessToken: string,
+  expiresIn: number
+): Promise<unknown> {
+  console.log("[EmbeddedSignup Callback] Saving WhatsApp instance to database...")
 
-  const url = `${GRAPH_API_BASE}/me?fields=id,name&access_token=${accessToken}`
+  const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000)
+  
+  // Format phone number (remove non-digits for storage)
+  const formattedPhone = phoneNumber.display_phone_number.replace(/\D/g, '')
+  
+  // Map quality rating
+  const qualityRating = (phoneNumber.quality_rating?.toUpperCase() as 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN') || 'UNKNOWN'
 
-  const response = await fetch(url, {
-    headers: {
-      "Accept": "application/json",
-    },
-  })
+  try {
+    // Check if instance already exists for this WABA
+    const existingInstance = await prisma.whatsAppInstance.findFirst({
+      where: {
+        organizationId,
+        wabaId,
+      },
+    })
 
-  const data = await response.json() as { id: string; name?: string; error?: { message: string } }
+    if (existingInstance) {
+      // Update existing instance
+      const updated = await prisma.whatsAppInstance.update({
+        where: { id: existingInstance.id },
+        data: {
+          name: wabaName,
+          phoneNumber: formattedPhone,
+          phoneNumberId: phoneNumber.id,
+          accessToken,
+          tokenExpiresAt,
+          status: 'CONNECTED',
+          qualityRating,
+          connectedAt: new Date(),
+        },
+      })
+      console.log("[EmbeddedSignup Callback] Updated existing instance:", updated.id)
+      return updated
+    }
 
-  if (!response.ok) {
-    console.error("[EmbeddedSignup Callback] Failed to fetch user info:", data)
-    return { id: "unknown", name: "Unknown" }
+    // Create new instance
+    const created = await prisma.whatsAppInstance.create({
+      data: {
+        organizationId,
+        name: wabaName,
+        phoneNumber: formattedPhone,
+        phoneNumberId: phoneNumber.id,
+        wabaId,
+        accessToken,
+        tokenExpiresAt,
+        status: 'CONNECTED',
+        qualityRating,
+        connectedAt: new Date(),
+      },
+    })
+    console.log("[EmbeddedSignup Callback] Created new instance:", created.id)
+    return created
+  } catch (error) {
+    console.error("[EmbeddedSignup Callback] Database error:", error)
+    throw new Error("Failed to save WhatsApp instance to database")
   }
-
-  return data
 }
 
 /**
  * Mock implementation for development
  */
-async function mockHandleCallback(code: string): Promise<EmbeddedSignupResult> {
+async function mockHandleCallback(code: string, organizationId: string): Promise<{ success: boolean; instance: unknown }> {
   console.log("[EmbeddedSignup Callback] Using mock implementation for development")
   console.log("[EmbeddedSignup Callback] Received code:", code.substring(0, 10) + "...")
 
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 1500))
 
-  // Return mock data
-  return {
-    success: true,
-    account: {
-      id: `waba_${Date.now()}`,
-      name: "NexIA Business",
-      wabaId: "123456789012345",
-      status: "connected",
-      phoneNumbers: [
-        {
-          id: "phone_001",
-          displayPhoneNumber: "+55 11 98765-4321",
-          verifiedName: "NexIA Suporte",
-          status: "VERIFIED",
-        },
-        {
-          id: "phone_002",
-          displayPhoneNumber: "+55 11 91234-5678",
-          verifiedName: "NexIA Vendas",
-          status: "VERIFIED",
-        },
-      ],
+  // Create mock instance
+  const mockPhoneNumber = "5511987654321"
+  const mockInstance = await prisma.whatsAppInstance.create({
+    data: {
+      organizationId,
+      name: "NexIA Business (Mock)",
+      phoneNumber: mockPhoneNumber,
+      phoneNumberId: "mock_phone_id",
+      wabaId: "mock_waba_id",
+      accessToken: "mock_token",
+      tokenExpiresAt: new Date(Date.now() + 3600 * 1000),
+      status: 'CONNECTED',
+      qualityRating: 'GREEN',
+      connectedAt: new Date(),
     },
-    accessToken: `mock_token_${Date.now()}`,
-  }
-}
-
-/**
- * Saves the account to the database
- * (Mock implementation - replace with actual database call)
- */
-async function saveAccountToDatabase(
-  account: EmbeddedSignupResult["account"],
-  accessToken: string
-): Promise<void> {
-  console.log("[EmbeddedSignup Callback] Saving account to database...")
-  console.log("[EmbeddedSignup Callback] Account:", {
-    ...account,
-    accessToken: "***",
   })
 
-  // TODO: Replace with actual database save
-  // Example with Prisma:
-  // await prisma.whatsappAccount.create({
-  //   data: {
-  //     id: account.id,
-  //     name: account.name,
-  //     wabaId: account.wabaId,
-  //     status: account.status,
-  //     accessToken: encrypt(accessToken), // Encrypt the token!
-  //     phoneNumbers: {
-  //       create: account.phoneNumbers,
-  //     },
-  //   },
-  // })
-
-  // For now, just log it
-  console.log("[EmbeddedSignup Callback] Account saved (mock)")
+  return {
+    success: true,
+    instance: mockInstance,
+  }
 }
 
 // ============================================
@@ -332,7 +327,7 @@ async function saveAccountToDatabase(
 
 export async function POST(
   request: NextRequest
-): Promise<NextResponse<EmbeddedSignupResult | { error: string; details?: string }>> {
+): Promise<NextResponse> {
   console.log("[EmbeddedSignup Callback] Request received")
 
   try {
@@ -357,12 +352,12 @@ export async function POST(
       )
     }
 
-    const { code } = validation
+    const { code, organizationId } = validation
 
     // Use mock implementation in development if no credentials configured
     if (process.env.NODE_ENV === "development" && !FACEBOOK_CONFIG.appSecret) {
       console.log("[EmbeddedSignup Callback] Using mock mode (no app secret configured)")
-      const mockResult = await mockHandleCallback(code!)
+      const mockResult = await mockHandleCallback(code!, organizationId!)
       return NextResponse.json(mockResult, { status: 200 })
     }
 
@@ -376,19 +371,15 @@ export async function POST(
     }
 
     // Step 1: Exchange code for access token
-    const accessToken = await exchangeCodeForToken(code!)
+    const { accessToken, expiresIn } = await exchangeCodeForToken(code!)
 
-    // Step 2: Fetch user info
-    const userInfo = await fetchUserInfo(accessToken)
-    console.log("[EmbeddedSignup Callback] User:", userInfo.id)
-
-    // Step 3: Fetch businesses
+    // Step 2: Fetch businesses
     const businesses = await fetchUserBusinesses(accessToken)
     if (businesses.length === 0) {
       throw new Error("No businesses found for this user")
     }
 
-    // Step 4: Get the first business and fetch its WABAs
+    // Step 3: Get the first business and fetch its WABAs
     const business = businesses[0]
     console.log("[EmbeddedSignup Callback] Using business:", business.id)
 
@@ -397,36 +388,36 @@ export async function POST(
       throw new Error("No WhatsApp Business Accounts found")
     }
 
-    // Step 5: Get the first WABA
+    // Step 4: Get the first WABA
     const waba = wabas[0]
     console.log("[EmbeddedSignup Callback] Using WABA:", waba.id)
 
-    // Step 6: Fetch phone numbers for this WABA
+    // Step 5: Fetch phone numbers for this WABA
     const phoneNumbers = await fetchPhoneNumbers(waba.id, accessToken)
-
-    // Step 7: Build the result
-    const result: EmbeddedSignupResult = {
-      success: true,
-      account: {
-        id: `waba_${Date.now()}`,
-        name: waba.name || business.name || "WhatsApp Business",
-        wabaId: waba.id,
-        status: "connected",
-        phoneNumbers: phoneNumbers.map((phone) => ({
-          id: phone.id,
-          displayPhoneNumber: phone.display_phone_number,
-          verifiedName: phone.verified_name,
-          status: phone.status || "UNKNOWN",
-        })),
-      },
-      accessToken: accessToken,
+    
+    if (phoneNumbers.length === 0) {
+      throw new Error("No phone numbers found for this WABA")
     }
 
-    // Step 8: Save to database
-    await saveAccountToDatabase(result.account, accessToken)
+    // Use the first phone number
+    const phoneNumber = phoneNumbers[0]
+    const wabaName = waba.name || business.name || "WhatsApp Business"
+
+    // Step 6: Save to database
+    const instance = await saveWhatsAppInstance(
+      organizationId!,
+      waba.id,
+      wabaName,
+      phoneNumber,
+      accessToken,
+      expiresIn
+    )
 
     console.log("[EmbeddedSignup Callback] Success!")
-    return NextResponse.json(result, { status: 200 })
+    return NextResponse.json({
+      success: true,
+      instance,
+    }, { status: 200 })
   } catch (error) {
     console.error("[EmbeddedSignup Callback] Error:", error)
 
@@ -435,8 +426,6 @@ export async function POST(
     return NextResponse.json(
       {
         success: false,
-        account: null as unknown as EmbeddedSignupResult["account"],
-        accessToken: "",
         error: errorMessage,
       },
       { status: 500 }
@@ -454,13 +443,13 @@ export async function GET(
   const code = searchParams.get("code")
   const error = searchParams.get("error")
   const errorDescription = searchParams.get("error_description")
+  const organizationId = searchParams.get("organization_id")
 
   console.log("[EmbeddedSignup Callback] GET request received")
 
   // Handle error from Facebook
   if (error) {
     console.error("[EmbeddedSignup Callback] Facebook error:", error, errorDescription)
-    // Redirect to error page
     const redirectUrl = new URL("/integracoes/whatsapp", process.env.NEXT_PUBLIC_APP_URL)
     redirectUrl.searchParams.set("error", error)
     redirectUrl.searchParams.set("error_description", errorDescription || "")
@@ -468,7 +457,7 @@ export async function GET(
   }
 
   // Handle success with code
-  if (code) {
+  if (code && organizationId) {
     console.log("[EmbeddedSignup Callback] Received code via GET, processing...")
     
     try {
@@ -476,7 +465,7 @@ export async function GET(
       const result = await POST(
         new NextRequest(request.url, {
           method: "POST",
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code, organizationId }),
           headers: { "Content-Type": "application/json" },
         })
       )
@@ -484,7 +473,6 @@ export async function GET(
       const data = await result.json()
 
       if (data.success) {
-        // Redirect to success page
         const redirectUrl = new URL("/integracoes/whatsapp", process.env.NEXT_PUBLIC_APP_URL)
         redirectUrl.searchParams.set("success", "true")
         return NextResponse.redirect(redirectUrl)
@@ -502,7 +490,7 @@ export async function GET(
 
   // No code or error - invalid request
   return NextResponse.json(
-    { error: "Invalid request. Missing code or error parameter." },
+    { error: "Invalid request. Missing code or organization_id parameter." },
     { status: 400 }
   )
 }

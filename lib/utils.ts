@@ -100,3 +100,36 @@ export function formatCurrency(value: number): string {
     currency: "BRL",
   }).format(value)
 }
+
+/**
+ * Formata data como "há X tempo" (similar ao date-fns formatDistanceToNow)
+ * @param date Data
+ * @returns String formatada (ex: "há 2 minutos", "há 3 dias")
+ */
+export function formatDistanceToNow(date: Date): string {
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffSeconds = Math.floor(diffMs / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+  const diffWeeks = Math.floor(diffDays / 7)
+  const diffMonths = Math.floor(diffDays / 30)
+  const diffYears = Math.floor(diffDays / 365)
+
+  if (diffSeconds < 60) {
+    return "agora"
+  } else if (diffMinutes < 60) {
+    return `há ${diffMinutes} ${diffMinutes === 1 ? "minuto" : "minutos"}`
+  } else if (diffHours < 24) {
+    return `há ${diffHours} ${diffHours === 1 ? "hora" : "horas"}`
+  } else if (diffDays < 7) {
+    return `há ${diffDays} ${diffDays === 1 ? "dia" : "dias"}`
+  } else if (diffWeeks < 4) {
+    return `há ${diffWeeks} ${diffWeeks === 1 ? "semana" : "semanas"}`
+  } else if (diffMonths < 12) {
+    return `há ${diffMonths} ${diffMonths === 1 ? "mês" : "meses"}`
+  } else {
+    return `há ${diffYears} ${diffYears === 1 ? "ano" : "anos"}`
+  }
+}
