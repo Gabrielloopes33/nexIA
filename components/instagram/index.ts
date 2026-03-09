@@ -1,5 +1,6 @@
-export { InstagramAccountSection } from "./InstagramAccountSection";
-export { InstagramDirectSection } from "./InstagramDirectSection";
-export { InstagramMetricsSection } from "./InstagramMetricsSection";
-export { InstagramMediaSection } from "./InstagramMediaSection";
-export { InstagramConnectButton } from "./InstagramConnectButton";
+export { InstagramAccountSection } from "./instagram-account-section"
+export { InstagramDirectSection } from "./instagram-direct-section"
+export { InstagramMetricsSection } from "./instagram-metrics-section"
+export { InstagramMediaSection } from "./instagram-media-section"
+export { InstagramLogsSection } from "./instagram-logs-section"
+export { InstagramConnectButton } from "./InstagramConnectButton"

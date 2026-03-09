@@ -20,13 +20,17 @@ export default function InstagramConnectPage() {
             Voltar
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Instagram className="h-6 w-6 text-pink-500" />
-          Conectar Instagram
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Conecte sua conta Instagram Business para gerenciar mensagens e métricas
-        </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#833AB4] via-[#FD1D1D] to-[#F77737] flex items-center justify-center">
+            <Instagram className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Conectar Instagram</h1>
+            <p className="text-muted-foreground mt-1">
+              Conecte sua conta Instagram Business para gerenciar mensagens e métricas
+            </p>
+          </div>
+        </div>
       </div>
 
       <Suspense fallback={<div>Carregando...</div>}>
@@ -34,7 +38,7 @@ export default function InstagramConnectPage() {
       </Suspense>
 
       {/* Requirements Card */}
-      <Card className="mb-6">
+      <Card className="mb-6 border-border">
         <CardHeader>
           <CardTitle>Requisitos</CardTitle>
           <CardDescription>
@@ -72,9 +76,9 @@ export default function InstagramConnectPage() {
             </li>
           </ul>
 
-          <Alert className="bg-blue-50 border-blue-200">
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
+          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-800 dark:text-blue-200">
               Durante o processo de autorização, você precisará conceder permissões para:
               <ul className="mt-2 ml-4 list-disc">
                 <li>Acessar informações básicas da conta</li>
@@ -88,7 +92,7 @@ export default function InstagramConnectPage() {
       </Card>
 
       {/* Connect Card */}
-      <Card>
+      <Card className="border-border">
         <CardHeader>
           <CardTitle>Iniciar Conexão</CardTitle>
           <CardDescription>
@@ -106,7 +110,7 @@ export default function InstagramConnectPage() {
       {/* Help Text */}
       <p className="text-center text-sm text-muted-foreground mt-6">
         Precisa de ajuda?{" "}
-        <Link href="/docs/instagram-setup" className="text-primary hover:underline">
+        <Link href="/docs/instagram-setup" className="text-[#833AB4] hover:underline">
           Consulte nossa documentação
         </Link>
       </p>
