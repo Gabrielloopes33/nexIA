@@ -59,7 +59,7 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        "flex h-screen flex-col py-4 pl-3 sidebar-container w-[160px] flex-shrink-0",
+        "flex h-screen flex-col py-4 pl-3 sidebar-container w-[220px] flex-shrink-0",
         mounted && isReady && "transition-all duration-300 ease-in-out"
       )}
     >
