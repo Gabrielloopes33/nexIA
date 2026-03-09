@@ -142,13 +142,14 @@ export function Sidebar() {
               "absolute -right-3 top-4 z-50 flex h-6 w-6 items-center justify-center rounded-full bg-background border border-border shadow-sm transition-all duration-200 hover:shadow-md hover:scale-110",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9795e4] focus-visible:ring-offset-2"
             )}
-            aria-label={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
-            title={isCollapsed ? "Expandir menu" : "Colapsar menu"}
+            aria-label={displayCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+            title={displayCollapsed ? "Expandir menu" : "Colapsar menu"}
+            suppressHydrationWarning
           >
-            {isCollapsed ? (
-              <ChevronRight className="h-3 w-3 text-[#9795e4]" />
+            {displayCollapsed ? (
+              <ChevronRight className="h-3 w-3 text-[#9795e4]" suppressHydrationWarning />
             ) : (
-              <ChevronLeft className="h-3 w-3 text-foreground/60" />
+              <ChevronLeft className="h-3 w-3 text-foreground/60" suppressHydrationWarning />
             )}
           </button>
 
