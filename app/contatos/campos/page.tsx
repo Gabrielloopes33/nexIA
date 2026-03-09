@@ -19,7 +19,6 @@ import {
 } from "lucide-react"
 
 import { Sidebar } from "@/components/sidebar"
-import { ContactsSubSidebar } from "@/components/contacts/contacts-sub-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -212,9 +211,6 @@ export default function CamposPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
-      <div className="flex-shrink-0">
-        <ContactsSubSidebar />
-      </div>
       <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 min-w-0">
         {/* Header */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

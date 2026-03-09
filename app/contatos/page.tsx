@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react"
 import { Sidebar } from "@/components/sidebar"
-import { ContactsSubSidebar } from "@/components/contacts/contacts-sub-sidebar"
 import { ContactsTable } from "@/components/contacts/contacts-table"
 import { ContactFilters } from "@/components/contacts/contact-filters"
 import { ContactDetailPanel } from "@/components/contact-detail-panel"
@@ -10,6 +9,7 @@ import { MOCK_CONTACTS, Contact } from "@/lib/mock/contacts"
 import { Button } from "@/components/ui/button"
 import { Download, Upload, UserPlus } from "lucide-react"
 import Link from "next/link"
+
 export default function ContactsPage() {
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -79,13 +79,6 @@ export default function ContactsPage() {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Main Sidebar */}
       <Sidebar />
-
-
-
-      {/* Contacts Sub-Sidebar - agora no fluxo flex */}
-      <div className="flex-shrink-0">
-        <ContactsSubSidebar />
-      </div>
 
       {/* Main Content - ocupa o resto */}
       <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 min-w-0">

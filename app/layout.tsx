@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { SubSidebarProvider } from '@/lib/contexts/sidebar-context'
 import { ContactPanelProvider } from '@/lib/contexts/contact-panel-context'
 import './globals.css'
 
@@ -31,11 +30,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${inter.variable} antialiased`} style={{ fontFamily: 'var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif' }}>
-        <SubSidebarProvider>
-          <ContactPanelProvider>
-            {children}
-          </ContactPanelProvider>
-        </SubSidebarProvider>
+        <ContactPanelProvider>
+          {children}
+        </ContactPanelProvider>
         <Analytics />
       </body>
     </html>

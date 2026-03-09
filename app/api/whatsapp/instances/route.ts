@@ -71,11 +71,36 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
-    const { organizationId, name, phoneNumber, wabaId, accessToken, phoneNumberId } = body;
+    const { 
+      organizationId, 
+      name, 
+      phoneNumber, 
+      wabaId, 
+      accessToken, 
+      phoneNumberId,
+      displayPhoneNumber,
+      verifiedName,
+    } = body;
 
+    // Validate required fields
     if (!organizationId || !name || !phoneNumber) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Missing required fields: organizationId, name, phoneNumber' },
+        { status: 400 }
+      );
+    }
+
+    // Validate WABA ID and Phone Number ID for manual connection
+    if (wabaId && !/^\d+$/.test(wabaId)) {
+      return NextResponse.json(
+        { success: false, error: 'WABA ID must contain only numbers' },
+        { status: 400 }
+      );
+    }
+
+    if (phoneNumberId && !/^\d+$/.test(phoneNumberId)) {
+      return NextResponse.json(
+        { success: false, error: 'Phone Number ID must contain only numbers' },
         { status: 400 }
       );
     }
@@ -88,6 +113,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         phoneNumberId: phoneNumberId || null,
         wabaId: wabaId || null,
         accessToken: accessToken || null,
+        displayPhoneNumber: displayPhoneNumber || null,
+        verifiedName: verifiedName || null,
         status: accessToken ? 'CONNECTED' : 'DISCONNECTED',
         qualityRating: 'UNKNOWN',
         connectedAt: accessToken ? new Date() : null,
@@ -99,6 +126,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       id: instance.id,
       name: instance.name,
       phoneNumber: instance.phoneNumber,
+      displayPhoneNumber: instance.displayPhoneNumber,
+      verifiedName: instance.verifiedName,
       status: instance.status,
       qualityRating: instance.qualityRating,
       createdAt: instance.createdAt,

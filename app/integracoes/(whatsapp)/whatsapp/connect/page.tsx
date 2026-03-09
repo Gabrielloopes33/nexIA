@@ -4,12 +4,14 @@ import { ComplianceBannerList } from "@/components/whatsapp/shared/compliance-ba
 import { EmbeddedSignupButton } from "@/components/whatsapp/connect/embedded-signup-button"
 import { ConnectionStatusCard } from "@/components/whatsapp/connect/connection-status"
 import { ComplianceNotice } from "@/components/whatsapp/connect/compliance-notice"
+import { ManualConnectionForm } from "@/components/whatsapp/connect/manual-connection-form"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { WhatsAppIcon } from "@/components/whatsapp/shared/whatsapp-icon"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useWhatsApp } from "@/hooks/use-whatsapp"
 import { GENERAL_COMPLIANCE_MESSAGES } from "@/lib/whatsapp/compliance-messages"
-import { CheckCircle2, Shield, ExternalLink } from "lucide-react"
+import { CheckCircle2, Shield, ExternalLink, Facebook, KeyRound } from "lucide-react"
 import Link from "next/link"
 
 export default function WhatsAppConnectPage() {
@@ -26,7 +28,7 @@ export default function WhatsAppConnectPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Conectar WhatsApp Business</h1>
           <p className="text-sm text-muted-foreground">
-            Conecte sua conta usando o Embedded Signup da Meta
+            Conecte sua conta usando o Embedded Signup da Meta ou insira os dados manualmente
           </p>
         </div>
 
@@ -40,86 +42,129 @@ export default function WhatsAppConnectPage() {
           <ConnectionStatusCard />
         </div>
 
-        {/* Connection Steps */}
+        {/* Connection Options - Only show if not connected */}
         {!isConnected && (
           <div className="mb-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-[#9795e4]" />
-                  Passos para Conexão
-                </CardTitle>
-                <CardDescription>
-                  Siga estas etapas para conectar sua conta WhatsApp Business
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
-                      1
-                    </div>
-                    <div>
-                      <p className="font-medium">Tenha uma conta Business Manager</p>
-                      <p className="text-sm text-muted-foreground">
-                        Você precisa ser administrador de um Business Manager da Meta.{' '}
-                        <Link 
-                          href="https://business.facebook.com/" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-[#9795e4] hover:underline"
-                        >
-                          Criar Business Manager
-                          <ExternalLink className="ml-1 inline-block h-3 w-3" />
-                        </Link>
-                      </p>
-                    </div>
-                  </div>
+            <Tabs defaultValue="embedded" className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+                <TabsTrigger value="embedded" className="flex items-center gap-2">
+                  <Facebook className="h-4 w-4" />
+                  Embedded Signup
+                </TabsTrigger>
+                <TabsTrigger value="manual" className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4" />
+                  Conexão Manual
+                </TabsTrigger>
+              </TabsList>
 
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
-                      2
-                    </div>
-                    <div>
-                      <p className="font-medium">Verifique seu negócio</p>
-                      <p className="text-sm text-muted-foreground">
-                        Complete a verificação de negócio no Business Manager para 
-                        poder enviar mensagens de template.
-                      </p>
-                    </div>
-                  </div>
+              {/* Embedded Signup Tab */}
+              <TabsContent value="embedded" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-[#9795e4]" />
+                      Passos para Conexão
+                    </CardTitle>
+                    <CardDescription>
+                      Siga estas etapas para conectar sua conta WhatsApp Business via Facebook
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
+                          1
+                        </div>
+                        <div>
+                          <p className="font-medium">Tenha uma conta Business Manager</p>
+                          <p className="text-sm text-muted-foreground">
+                            Você precisa ser administrador de um Business Manager da Meta.{" "}
+                            <Link 
+                              href="https://business.facebook.com/" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-[#9795e4] hover:underline"
+                            >
+                              Criar Business Manager
+                              <ExternalLink className="ml-1 inline-block h-3 w-3" />
+                            </Link>
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
-                      3
-                    </div>
-                    <div>
-                      <p className="font-medium">Conecte via Embedded Signup</p>
-                      <p className="text-sm text-muted-foreground">
-                        Use o botão abaixo para autorizar o NexIA a acessar sua 
-                        conta WhatsApp Business.
-                      </p>
-                    </div>
-                  </div>
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
+                          2
+                        </div>
+                        <div>
+                          <p className="font-medium">Verifique seu negócio</p>
+                          <p className="text-sm text-muted-foreground">
+                            Complete a verificação de negócio no Business Manager para 
+                            poder enviar mensagens de template.
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
-                      4
-                    </div>
-                    <div>
-                      <p className="font-medium">Adicione números de telefone</p>
-                      <p className="text-sm text-muted-foreground">
-                        Após a conexão, adicione e verifique seus números de telefone.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
+                          3
+                        </div>
+                        <div>
+                          <p className="font-medium">Conecte via Embedded Signup</p>
+                          <p className="text-sm text-muted-foreground">
+                            Use o botão abaixo para autorizar o NexIA a acessar sua 
+                            conta WhatsApp Business.
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="mt-6 flex justify-center">
-                  <EmbeddedSignupButton />
-                </div>
-              </CardContent>
-            </Card>
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
+                          4
+                        </div>
+                        <div>
+                          <p className="font-medium">Adicione números de telefone</p>
+                          <p className="text-sm text-muted-foreground">
+                            Após a conexão, adicione e verifique seus números de telefone.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-center">
+                      <EmbeddedSignupButton />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Note about domain verification */}
+                <Alert className="bg-amber-50 border-amber-200">
+                  <Shield className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-700 text-sm">
+                    <strong>Nota:</strong> O método Embedded Signup requer que você configure 
+                    o domínio do aplicativo no Facebook Developer Console. Se você não tem 
+                    acesso para fazer isso, use a opção de{" "}
+                    <Link href="#" onClick={() => {
+                      const manualTab = document.querySelector('[data-value="manual"]') as HTMLButtonElement
+                      manualTab?.click()
+                    }} className="font-medium underline">
+                      Conexão Manual
+                    </Link>.
+                  </AlertDescription>
+                </Alert>
+              </TabsContent>
+
+              {/* Manual Connection Tab */}
+              <TabsContent value="manual">
+                <ManualConnectionForm 
+                  organizationId="temp-org-id" // TODO: Replace with actual organization ID from context
+                  onSuccess={() => {
+                    // Refresh the page or update status
+                    window.location.reload()
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
