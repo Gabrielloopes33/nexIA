@@ -11,306 +11,579 @@ datasource db {
 }
 
 // ============================================
-// MODELOS DO WHATSAPP BUSINESS API
+// MULTI-TENANCY - CICLO 1
 // ============================================
 
-/**
- * WhatsApp Business Account (WABA)
- * Representa uma conta de negócio do WhatsApp na API da Meta
- */
-model WhatsAppBusinessAccount {
-  id              String   @id @default(uuid())
-  wabaId          String   @unique @map("waba_id") // ID da Meta
-  name            String
-  displayName     String?  @map("display_name")
-  timezoneId      String?  @map("timezone_id")
-  messageTemplateNamespace String? @map("message_template_namespace")
-  
-  // Relacionamentos
-  phoneNumbers    WhatsAppPhoneNumber[]
-  messageTemplates MessageTemplate[]
-  conversations   WhatsAppConversation[]
-  webhookEvents   WebhookEvent[]
-  analytics       WhatsAppAnalytics[]
-  
-  // Status
-  status          WhatsAppStatus @default(NOT_CONNECTED)
-  qualityRating   QualityRating? @map("quality_rating")
-  
-  // Timestamps
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  connectedAt     DateTime? @map("connected_at")
-  
-  // Usuário/Workspace
-  userId          String   @map("user_id")
-  user            User     @relation(fields: [userId], references: [id])
+/// Organization - Tenant principal do sistema
+/// Cada organização pode ter múltiplos usuários com diferentes roles
+model Organization {
+  id   String @id @default(uuid())
+  name String
+  slug String @unique
 
-  @@map("whatsapp_business_accounts")
+  // Owner/Criador
+  ownerId String @map("owner_id")
+  owner   User   @relation(fields: [ownerId], references: [id], name: "OwnedOrganizations")
+
+  // Configurações
+  logoUrl      String? @map("logo_url")
+  featureFlags Json?   @map("feature_flags")
+  settings     Json?
+
+  // Status
+  status OrganizationStatus @default(ACTIVE)
+
+  // Relacionamentos
+  members OrganizationMember[]
+  units   OrganizationUnit[]
+
+  // Integrações
+  whatsappInstances  WhatsAppInstance[]
+  instagramInstances InstagramInstance[]
+
+  // CRM
+  pipelineStages PipelineStage[]
+  deals          Deal[]
+  contacts       Contact[]
+  conversations  Conversation[]
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([slug])
+  @@map("organizations")
+}
+
+/// OrganizationMember - Relacionamento many-to-many entre User e Organization
+/// Um usuário pode ter roles diferentes em organizações diferentes
+model OrganizationMember {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role     OrganizationRole @default(MEMBER)
+  status   MemberStatus     @default(ACTIVE)
+  joinedAt DateTime         @default(now()) @map("joined_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
   @@index([userId])
   @@index([status])
-  @@index([wabaId])
+  @@map("organization_members")
 }
 
-/**
- * Números de Telefone do WhatsApp Business
- * Cada número associado a uma WABA
- */
-model WhatsAppPhoneNumber {
-  id                String   @id @default(uuid())
-  phoneNumberId     String   @unique @map("phone_number_id") // ID da Meta
-  displayPhoneNumber String  @map("display_phone_number")
-  verifiedName      String?  @map("verified_name")
-  
-  // Status
-  status            PhoneStatus @default(PENDING)
-  qualityRating     QualityRating @default(UNKNOWN) @map("quality_rating")
-  
-  // Tier e limites
-  messagingTier     Int      @default(1) @map("messaging_tier") // 1, 2, 3...
-  messagingLimit    Int      @default(250) @map("messaging_limit") // mensagens/dia
-  
+/// OrganizationUnit - Unidades/Filiais de uma organização
+model OrganizationUnit {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name      String
+  slug      String
+  isDefault Boolean @default(false) @map("is_default")
+  settings  Json?
+
+  // Relacionamentos
+  deals Deal[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@map("organization_units")
+}
+
+/// User - Usuário do sistema
+model User {
+  id        String  @id @default(uuid())
+  email     String  @unique
+  name      String?
+  avatarUrl String? @map("avatar_url")
+
+  // Relacionamentos
+  ownedOrganizations Organization[]       @relation(name: "OwnedOrganizations")
+  memberships        OrganizationMember[]
+  assignedDeals      Deal[]               @relation(name: "AssignedDeals")
+  activities         DealActivity[]       @relation(name: "PerformedActivities")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// ============================================
+// WHATSAPP - CICLO 2 (Schema Flat)
+// ============================================
+
+/// WhatsAppInstance - Instância WhatsApp Business
+/// Modelo flat que substitui a estrutura complexa anterior
+model WhatsAppInstance {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name          String
+  phoneNumber   String  @map("phone_number")
+  phoneNumberId String? @map("phone_number_id")
+  wabaId        String? @map("waba_id")
+
+  // Tokens (em produção, usar criptografia)
+  accessToken    String?   @map("access_token")
+  refreshToken   String?   @map("refresh_token")
+  tokenExpiresAt DateTime? @map("token_expires_at")
+
+  // Status e Qualidade
+  status         WhatsAppInstanceStatus @default(DISCONNECTED)
+  qualityRating  QualityRating          @default(UNKNOWN) @map("quality_rating")
+  messagingTier  Int                    @default(1) @map("messaging_tier")
+  messagingLimit Int                    @default(250) @map("messaging_limit")
+
+  // Webhook
+  webhookVerifyToken String? @map("webhook_verify_token")
+
   // Configurações
-  isDefault         Boolean  @default(false) @map("is_default")
-  
-  // Relacionamentos
-  wabaId            String   @map("waba_id")
-  waba              WhatsAppBusinessAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
-  
-  conversations     WhatsAppConversation[]
-  
-  // Código de verificação (temporário)
-  verificationCode  String?  @map("verification_code")
-  codeExpiresAt     DateTime? @map("code_expires_at")
-  
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  settings Json?
 
-  @@map("whatsapp_phone_numbers")
-  @@index([wabaId])
+  // Relacionamentos
+  templates     WhatsAppTemplate[]
+  logs          WhatsAppLog[]
+  conversations Conversation[]
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  connectedAt DateTime? @map("connected_at")
+
+  @@index([organizationId])
   @@index([status])
-  @@index([phoneNumberId])
-  @@index([displayPhoneNumber])
+  @@index([phoneNumber])
+  @@map("whatsapp_instances")
 }
 
-/**
- * Templates de Mensagem
- * Templates aprovados pela Meta para envio de mensagens
- */
-model MessageTemplate {
-  id              String   @id @default(uuid())
-  templateId      String?  @unique @map("template_id") // ID da Meta (após aprovação)
-  name            String
-  category        TemplateCategory
-  language        String   // pt_BR, en_US, etc
-  
-  // Componentes do template (JSON)
-  components      Json     // Header, Body, Footer, Buttons
-  
-  // Status
-  status          TemplateStatus @default(DRAFT)
-  reason          String?  // Motivo da rejeição
-  
-  // Conteúdo
-  body            String
-  header          String?
-  footer          String?
-  
-  // Relacionamentos
-  wabaId          String   @map("waba_id")
-  waba            WhatsAppBusinessAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
-  
-  messages        WhatsAppMessage[]
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  submittedAt     DateTime? @map("submitted_at")
-  approvedAt      DateTime? @map("approved_at")
+/// WhatsAppTemplate - Templates de mensagem
+model WhatsAppTemplate {
+  id String @id @default(uuid())
 
-  @@map("message_templates")
-  @@index([wabaId])
+  instanceId String           @map("instance_id")
+  instance   WhatsAppInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  templateId String?          @unique @map("template_id")
+  name       String
+  category   TemplateCategory
+  language   String
+
+  // Componentes (JSON estruturado)
+  components Json
+
+  // Conteúdo
+  body   String
+  header String?
+  footer String?
+
+  // Status
+  status TemplateStatus @default(DRAFT)
+  reason String?
+
+  // Relacionamentos
+  messages Message[]
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  submittedAt DateTime? @map("submitted_at")
+  approvedAt  DateTime? @map("approved_at")
+
+  @@index([instanceId])
   @@index([status])
   @@index([category])
   @@index([language])
-  @@index([name, wabaId])
+  @@index([name, instanceId])
+  @@map("whatsapp_templates")
 }
 
-/**
- * Conversas (24h window)
- * Janela de conversação de 24 horas com cada contato
- */
-model WhatsAppConversation {
-  id              String   @id @default(uuid())
-  conversationId  String?  @unique @map("conversation_id") // ID da Meta
-  
-  // Contato
-  contactPhone    String   @map("contact_phone")
-  contactName     String?  @map("contact_name")
-  
-  // Tipo
-  type            ConversationType
-  
-  // Status
-  status          ConversationStatus @default(ACTIVE)
-  
-  // Janela de 24h
-  windowStart     DateTime @map("window_start")
-  windowEnd       DateTime @map("window_end")
-  
-  // Relacionamentos
-  wabaId          String   @map("waba_id")
-  waba            WhatsAppBusinessAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
-  phoneNumberId   String   @map("phone_number_id")
-  phoneNumber     WhatsAppPhoneNumber @relation(fields: [phoneNumberId], references: [id])
-  
-  messages        WhatsAppMessage[]
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+/// WhatsAppLog - Logs de eventos e operações
+model WhatsAppLog {
+  id String @id @default(uuid())
 
-  @@map("whatsapp_conversations")
-  @@index([wabaId])
-  @@index([contactPhone])
+  instanceId String           @map("instance_id")
+  instance   WhatsAppInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  type      String // message_received, message_sent, template_update, etc
+  eventType String? @map("event_type")
+  payload   Json
+
+  // Processamento
+  processed   Boolean   @default(false)
+  processedAt DateTime? @map("processed_at")
+  error       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([instanceId])
+  @@index([type])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("whatsapp_logs")
+}
+
+// ============================================
+// CONTACTS & MESSAGING - CICLO 2
+// ============================================
+
+/// Contact - Contatos unificados (WhatsApp, Instagram, etc)
+model Contact {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  phone     String
+  name      String?
+  avatarUrl String? @map("avatar_url")
+
+  // Dados customizados
+  metadata  Json?
+  tags      String[]
+  leadScore Int      @default(0) @map("lead_score")
+
+  // Status
+  status ContactStatus @default(ACTIVE)
+
+  // Tracking
+  lastInteractionAt DateTime? @map("last_interaction_at")
+
+  // Relacionamentos
+  conversations Conversation[]
+  messages      Message[]
+  deals         Deal[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, phone])
+  @@index([organizationId])
+  @@index([status])
+  @@index([tags])
+  @@index([leadScore])
+  @@map("contacts")
+}
+
+/// Conversation - Conversas (janela de 24h)
+model Conversation {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  instanceId String           @map("instance_id")
+  instance   WhatsAppInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  contactId String  @map("contact_id")
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  conversationId String?            @unique @map("conversation_id")
+  type           ConversationType
+  status         ConversationStatus @default(ACTIVE)
+
+  // Janela de 24h
+  windowStart DateTime @map("window_start")
+  windowEnd   DateTime @map("window_end")
+
+  // Tracking
+  lastMessageAt DateTime? @map("last_message_at")
+  messageCount  Int       @default(0) @map("message_count")
+
+  // Relacionamentos
+  messages Message[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([instanceId])
+  @@index([contactId])
   @@index([status])
   @@index([windowEnd])
-  @@index([wabaId, contactPhone])
-  @@index([phoneNumberId])
+  @@index([organizationId, contactId])
+  @@map("conversations")
 }
 
-/**
- * Mensagens
- * Mensagens enviadas e recebidas
- */
-model WhatsAppMessage {
-  id              String   @id @default(uuid())
-  messageId       String?  @unique @map("message_id") // ID da Meta
-  
-  // Direção
-  direction       MessageDirection
-  
-  // Tipo
-  type            MessageType
-  
-  // Conteúdo
-  content         String   // Texto ou JSON para mídia
-  mediaUrl        String?  @map("media_url")
-  caption         String?
-  
-  // Status
-  status          MessageStatus @default(SENT)
-  
-  // Timestamps de status
-  sentAt          DateTime? @map("sent_at")
-  deliveredAt     DateTime? @map("delivered_at")
-  readAt          DateTime? @map("read_at")
-  failedAt        DateTime? @map("failed_at")
-  failedReason    String?  @map("failed_reason")
-  
-  // Template (se aplicável)
-  templateId      String?  @map("template_id")
-  template        MessageTemplate? @relation(fields: [templateId], references: [id])
-  
-  // Relacionamento
-  conversationId  String   @map("conversation_id")
-  conversation    WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
-  createdAt       DateTime @default(now()) @map("created_at")
+/// Message - Mensagens
+model Message {
+  id String @id @default(uuid())
 
-  @@map("whatsapp_messages")
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  contactId String  @map("contact_id")
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  messageId String? @unique @map("message_id")
+
+  // Direção e Tipo
+  direction MessageDirection
+  type      MessageType
+
+  // Conteúdo
+  content  String
+  mediaUrl String? @map("media_url")
+  caption  String?
+
+  // Template (se aplicável)
+  templateId String?           @map("template_id")
+  template   WhatsAppTemplate? @relation(fields: [templateId], references: [id])
+
+  // Status
+  status MessageStatus @default(SENT)
+
+  // Timestamps de status
+  sentAt       DateTime? @map("sent_at")
+  deliveredAt  DateTime? @map("delivered_at")
+  readAt       DateTime? @map("read_at")
+  failedAt     DateTime? @map("failed_at")
+  failedReason String?   @map("failed_reason")
+
+  // Dados adicionais
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
   @@index([conversationId])
+  @@index([contactId])
   @@index([messageId])
   @@index([status])
   @@index([direction])
   @@index([type])
   @@index([createdAt])
   @@index([conversationId, createdAt])
+  @@map("messages")
 }
 
-/**
- * Eventos de Webhook
- * Logs de eventos recebidos da API da Meta
- */
-model WebhookEvent {
-  id              String   @id @default(uuid())
-  
-  // Tipo do objeto
-  objectType      String   @map("object_type") // whatsapp_business_account
-  
-  // Dados do evento
-  eventType       String   @map("event_type") // messages, message_template_status_update, etc
-  payload         Json     // Payload completo do evento
-  
-  // Status de processamento
-  processed       Boolean  @default(false)
-  processedAt     DateTime? @map("processed_at")
-  error           String?
-  
-  // Relacionamento
-  wabaId          String   @map("waba_id")
-  waba            WhatsAppBusinessAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
-  
-  createdAt       DateTime @default(now()) @map("created_at")
+// ============================================
+// INSTAGRAM - CICLO 3
+// ============================================
 
-  @@map("webhook_events")
-  @@index([wabaId])
-  @@index([eventType])
-  @@index([processed])
+/// InstagramInstance - Instância Instagram Business
+model InstagramInstance {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name String
+
+  // IDs da Meta
+  pageId                     String @map("page_id")
+  instagramBusinessAccountId String @map("instagram_business_account_id")
+
+  // Tokens
+  accessToken    String?   @map("access_token")
+  refreshToken   String?   @map("refresh_token")
+  tokenExpiresAt DateTime? @map("token_expires_at")
+
+  // Perfil
+  username          String?
+  profilePictureUrl String? @map("profile_picture_url")
+
+  // Status
+  status InstagramInstanceStatus @default(DISCONNECTED)
+
+  // Webhook
+  webhookVerifyToken String? @map("webhook_verify_token")
+
+  // Configurações
+  settings Json?
+
+  // Sync
+  lastSyncAt DateTime? @map("last_sync_at")
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  connectedAt DateTime? @map("connected_at")
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([instagramBusinessAccountId])
+  @@map("instagram_instances")
+}
+
+// ============================================
+// PIPELINE CRM - CICLO 3
+// ============================================
+
+/// PipelineStage - Etapas do funil de vendas
+model PipelineStage {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  position    Int // Ordenação no pipeline
+  color       String?
+  probability Int     @default(0) // % de probabilidade de fechamento
+
+  // Flags
+  isDefault Boolean @default(false) @map("is_default")
+  isClosed  Boolean @default(false) @map("is_closed") // Etapa de fechamento
+
+  settings Json?
+
+  // Relacionamentos
+  deals Deal[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([position])
+  @@map("pipeline_stages")
+}
+
+/// Deal - Oportunidades no pipeline
+model Deal {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  contactId String  @map("contact_id")
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  stageId String        @map("stage_id")
+  stage   PipelineStage @relation(fields: [stageId], references: [id])
+
+  unitId String?           @map("unit_id")
+  unit   OrganizationUnit? @relation(fields: [unitId], references: [id])
+
+  // Informações básicas
+  title       String
+  description String?
+
+  // Valor
+  amount   Decimal? @db.Decimal(15, 2)
+  currency String   @default("BRL")
+
+  // Lead Score e Probabilidade
+  leadScore   Int  @default(0) @map("lead_score")
+  probability Int? // Sobrescreve stage.probability se definido
+
+  // Datas
+  expectedCloseDate DateTime? @map("expected_close_date")
+  actualCloseDate   DateTime? @map("actual_close_date")
+
+  // Origem
+  source   String? // whatsapp, instagram, manual, etc
+  sourceId String? @map("source_id") // ID da conversa/origem
+
+  // Responsável
+  assignedTo String? @map("assigned_to")
+  assignee   User?   @relation(fields: [assignedTo], references: [id], name: "AssignedDeals")
+
+  // Status
+  status   DealStatus   @default(OPEN)
+  priority DealPriority @default(MEDIUM)
+
+  // Dados customizados
+  metadata Json?
+  tags     String[]
+
+  // Relacionamentos
+  activities DealActivity[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([stageId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([priority])
+  @@index([leadScore])
+  @@index([source])
+  @@index([tags])
+  @@index([expectedCloseDate])
+  @@map("deals")
+}
+
+/// DealActivity - Atividades e timeline do deal
+model DealActivity {
+  id String @id @default(uuid())
+
+  dealId String @map("deal_id")
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  type     ActivityType
+  title    String
+  content  String?
+  metadata Json?
+
+  // Impacto no lead score
+  scoreImpact Int @default(0) @map("score_impact")
+
+  // Quem executou
+  performedBy String? @map("performed_by")
+  performer   User?   @relation(fields: [performedBy], references: [id], name: "PerformedActivities")
+
+  // Automação (se triggered por automação)
+  automationId String? @map("automation_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([dealId])
+  @@index([type])
+  @@index([performedBy])
   @@index([createdAt])
-  @@index([wabaId, eventType])
-}
-
-/**
- * Analytics/Métricas
- * Métricas diárias de uso do WhatsApp Business
- */
-model WhatsAppAnalytics {
-  id              String   @id @default(uuid())
-  
-  // Data
-  date            DateTime
-  
-  // Métricas
-  conversationsTotal    Int @default(0) @map("conversations_total")
-  conversationsUserInitiated Int @default(0) @map("conversations_user_initiated")
-  conversationsBusinessInitiated Int @default(0) @map("conversations_business_initiated")
-  
-  messagesSent      Int @default(0) @map("messages_sent")
-  messagesDelivered Int @default(0) @map("messages_delivered")
-  messagesRead      Int @default(0) @map("messages_read")
-  messagesFailed    Int @default(0) @map("messages_failed")
-  
-  // Templates
-  templatesSent     Int @default(0) @map("templates_sent")
-  
-  // Qualidade
-  qualityRating     QualityRating @default(UNKNOWN) @map("quality_rating")
-  
-  // Relacionamento
-  wabaId            String   @map("waba_id")
-  waba              WhatsAppBusinessAccount @relation(fields: [wabaId], references: [id], onDelete: Cascade)
-
-  @@unique([wabaId, date])
-  @@index([wabaId, date])
-  @@map("whatsapp_analytics")
+  @@map("deal_activities")
 }
 
 // ============================================
 // ENUMS
 // ============================================
 
-enum WhatsAppStatus {
-  NOT_CONNECTED
+// Multi-tenancy
+enum OrganizationStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+// WhatsApp
+enum WhatsAppInstanceStatus {
+  DISCONNECTED
   CONNECTING
   CONNECTED
   ERROR
   SUSPENDED
-}
-
-enum PhoneStatus {
-  PENDING
-  VERIFIED
-  BLOCKED
-  DELETED
 }
 
 enum QualityRating {
@@ -371,24 +644,47 @@ enum MessageStatus {
   FAILED
 }
 
-// ============================================
-// MODELO DE USUÁRIO (REFERÊNCIA)
-// ============================================
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
 
-/**
- * Modelo de User básico para referência
- * Estabelece a relação com as contas WhatsApp Business
- */
-model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  name          String?
-  
-  // Relacionamentos
-  whatsappAccounts WhatsAppBusinessAccount[]
-  
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+// Instagram
+enum InstagramInstanceStatus {
+  DISCONNECTED
+  CONNECTING
+  CONNECTED
+  ERROR
+  SUSPENDED
+}
 
-  @@map("users")
+// Pipeline
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+  PAUSED
+}
+
+enum DealPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  WHATSAPP
+  INSTAGRAM
+  STAGE_CHANGE
+  TASK_CREATED
+  TASK_COMPLETED
+  DOCUMENT
+  AUTOMATION
+  SYSTEM
 }

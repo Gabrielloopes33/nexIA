@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { Facebook, Loader2, AlertCircle } from "lucide-react"
+import { useState, useCallback, useMemo } from "react"
+import { Facebook, Loader2, AlertCircle, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -121,12 +121,14 @@ function EmbeddedSignupFlowDialog({
   onStart,
   status,
   error,
+  isHttps,
 }: {
   isOpen: boolean
   onClose: () => void
   onStart: () => void
   status: ReturnType<typeof useEmbeddedSignup>["status"]
   error: string | null
+  isHttps: boolean
 }) {
   const isLoading = status !== "idle" && status !== "error" && status !== "success"
   const hasError = status === "error" && error
@@ -211,6 +213,17 @@ function EmbeddedSignupFlowDialog({
                   do Facebook para completar esta conexão.
                 </AlertDescription>
               </Alert>
+
+              {!isHttps && (
+                <Alert className="border-red-200 bg-red-50">
+                  <Lock className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-700">
+                    <strong>HTTPS obrigatório:</strong> O Facebook Login só funciona em 
+                    conexões seguras. Esta funcionalidade não está disponível em ambiente 
+                    local (HTTP). Use o modo de simulação para testes.
+                  </AlertDescription>
+                </Alert>
+              )}
             </>
           )}
         </div>
@@ -226,10 +239,11 @@ function EmbeddedSignupFlowDialog({
           {!isLoading && !hasError && (
             <Button
               onClick={onStart}
+              disabled={!isHttps}
               className="gap-2 bg-[#1877F2] hover:bg-[#166fe5]"
             >
               <Facebook className="h-4 w-4" />
-              Conectar com Facebook
+              {isHttps ? "Conectar com Facebook" : "HTTPS obrigatório"}
             </Button>
           )}
           {hasError && (
@@ -282,6 +296,12 @@ export function EmbeddedSignupButton({
   const [isLegacyLoading, setIsLegacyLoading] = useState(false)
   const { connect } = useWhatsApp()
   const { status, error, result, launchSignup, reset } = useEmbeddedSignup()
+
+  // Check if running on HTTPS (required for Facebook SDK)
+  const isHttps = useMemo(() => {
+    if (typeof window === "undefined") return true
+    return window.location.protocol === "https:"
+  }, [])
 
   // Handle legacy mock flow
   const handleLegacyConnect = useCallback(async () => {
@@ -390,6 +410,7 @@ export function EmbeddedSignupButton({
           onStart={handleStartSignup}
           status={status}
           error={error}
+          isHttps={isHttps}
         />
       )}
     </>

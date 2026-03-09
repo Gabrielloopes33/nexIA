@@ -2,7 +2,7 @@
  * WhatsApp Database Operations
  * 
  * Funções de acesso ao banco de dados para a integração WhatsApp Business API.
- * Inclui CRUD completo para todos os modelos e funções específicas de negócio.
+ * Schema flat simplificado - CICLO 2.
  * 
  * @module lib/db/whatsapp
  */
@@ -15,36 +15,24 @@ const prisma = new PrismaClient();
 // TIPOS AUXILIARES
 // ============================================
 
-export type CreateWABAInput = {
-  wabaId: string;
+export type CreateInstanceInput = {
   name: string;
-  displayName?: string;
-  timezoneId?: string;
-  messageTemplateNamespace?: string;
-  userId: string;
+  phoneNumber: string;
+  phoneNumberId?: string;
+  wabaId?: string;
+  organizationId: string;
+  accessToken?: string;
+  refreshToken?: string;
+  tokenExpiresAt?: Date;
+  settings?: Record<string, unknown>;
 };
 
-export type UpdateWABAInput = Partial<Omit<CreateWABAInput, 'wabaId' | 'userId'>> & {
-  status?: 'NOT_CONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR' | 'SUSPENDED';
-  qualityRating?: 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN';
-  connectedAt?: Date;
-};
-
-export type CreatePhoneNumberInput = {
-  phoneNumberId: string;
-  displayPhoneNumber: string;
-  verifiedName?: string;
-  wabaId: string;
-  isDefault?: boolean;
-};
-
-export type UpdatePhoneNumberInput = Partial<Omit<CreatePhoneNumberInput, 'phoneNumberId' | 'wabaId'>> & {
-  status?: 'PENDING' | 'VERIFIED' | 'BLOCKED' | 'DELETED';
+export type UpdateInstanceInput = Partial<Omit<CreateInstanceInput, 'organizationId'>> & {
+  status?: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR' | 'SUSPENDED';
   qualityRating?: 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN';
   messagingTier?: number;
   messagingLimit?: number;
-  verificationCode?: string;
-  codeExpiresAt?: Date;
+  connectedAt?: Date;
 };
 
 export type CreateTemplateInput = {
@@ -55,10 +43,10 @@ export type CreateTemplateInput = {
   body: string;
   header?: string;
   footer?: string;
-  wabaId: string;
+  instanceId: string;
 };
 
-export type UpdateTemplateInput = Partial<Omit<CreateTemplateInput, 'wabaId'>> & {
+export type UpdateTemplateInput = Partial<Omit<CreateTemplateInput, 'instanceId'>> & {
   templateId?: string;
   status?: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAUSED' | 'DISABLED';
   reason?: string;
@@ -66,19 +54,35 @@ export type UpdateTemplateInput = Partial<Omit<CreateTemplateInput, 'wabaId'>> &
   approvedAt?: Date;
 };
 
+export type CreateContactInput = {
+  phone: string;
+  name?: string;
+  avatarUrl?: string;
+  organizationId: string;
+  metadata?: Record<string, unknown>;
+  tags?: string[];
+};
+
+export type UpdateContactInput = Partial<Omit<CreateContactInput, 'organizationId'>> & {
+  status?: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+  leadScore?: number;
+  lastInteractionAt?: Date;
+};
+
 export type CreateConversationInput = {
-  contactPhone: string;
-  contactName?: string;
   type: 'USER_INITIATED' | 'BUSINESS_INITIATED' | 'REFERRAL_INITIATED';
   windowStart: Date;
   windowEnd: Date;
-  wabaId: string;
-  phoneNumberId: string;
+  organizationId: string;
+  instanceId: string;
+  contactId: string;
   conversationId?: string;
 };
 
-export type UpdateConversationInput = Partial<Omit<CreateConversationInput, 'wabaId' | 'phoneNumberId'>> & {
+export type UpdateConversationInput = Partial<Omit<CreateConversationInput, 'organizationId' | 'instanceId' | 'contactId'>> & {
   status?: 'ACTIVE' | 'EXPIRED' | 'CLOSED';
+  lastMessageAt?: Date;
+  messageCount?: number;
 };
 
 export type CreateMessageInput = {
@@ -88,11 +92,13 @@ export type CreateMessageInput = {
   mediaUrl?: string;
   caption?: string;
   conversationId: string;
+  contactId: string;
   templateId?: string;
   messageId?: string;
+  metadata?: Record<string, unknown>;
 };
 
-export type UpdateMessageInput = Partial<Omit<CreateMessageInput, 'conversationId'>> & {
+export type UpdateMessageInput = Partial<Omit<CreateMessageInput, 'conversationId' | 'contactId'>> & {
   status?: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
   sentAt?: Date;
   deliveredAt?: Date;
@@ -101,80 +107,52 @@ export type UpdateMessageInput = Partial<Omit<CreateMessageInput, 'conversationI
   failedReason?: string;
 };
 
-export type CreateWebhookEventInput = {
-  objectType: string;
-  eventType: string;
+export type CreateLogInput = {
+  type: string;
+  eventType?: string;
   payload: Record<string, unknown>;
-  wabaId: string;
-};
-
-export type CreateAnalyticsInput = {
-  date: Date;
-  wabaId: string;
-  conversationsTotal?: number;
-  conversationsUserInitiated?: number;
-  conversationsBusinessInitiated?: number;
-  messagesSent?: number;
-  messagesDelivered?: number;
-  messagesRead?: number;
-  messagesFailed?: number;
-  templatesSent?: number;
-  qualityRating?: 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN';
+  instanceId: string;
 };
 
 // ============================================
-// WHATSAPP BUSINESS ACCOUNT (WABA)
+// WHATSAPP INSTANCE
 // ============================================
 
 /**
- * Cria uma nova conta WhatsApp Business
+ * Cria uma nova instância WhatsApp
  */
-export async function createWABA(data: CreateWABAInput) {
-  return prisma.whatsAppBusinessAccount.create({
+export async function createInstance(data: CreateInstanceInput) {
+  return prisma.whatsAppInstance.create({
     data: {
       ...data,
-      status: 'NOT_CONNECTED',
+      status: 'DISCONNECTED',
+      qualityRating: 'UNKNOWN',
+      messagingTier: 1,
+      messagingLimit: 250,
     },
   });
 }
 
 /**
- * Busca uma WABA pelo ID interno
+ * Busca uma instância pelo ID
  */
-export async function getWABAById(id: string) {
-  return prisma.whatsAppBusinessAccount.findUnique({
+export async function getInstanceById(id: string) {
+  return prisma.whatsAppInstance.findUnique({
     where: { id },
     include: {
-      phoneNumbers: true,
-      messageTemplates: true,
-      user: true,
+      templates: true,
+      organization: true,
     },
   });
 }
 
 /**
- * Busca uma WABA pelo ID da Meta (wabaId)
+ * Lista instâncias de uma organização
  */
-export async function getWABAByWabaId(wabaId: string) {
-  return prisma.whatsAppBusinessAccount.findUnique({
-    where: { wabaId },
+export async function getInstancesByOrganization(organizationId: string) {
+  return prisma.whatsAppInstance.findMany({
+    where: { organizationId },
     include: {
-      phoneNumbers: true,
-      messageTemplates: true,
-    },
-  });
-}
-
-/**
- * Lista todas as WABAs de um usuário
- */
-export async function getWABAsByUser(userId: string) {
-  return prisma.whatsAppBusinessAccount.findMany({
-    where: { userId },
-    include: {
-      phoneNumbers: {
-        where: { status: 'VERIFIED' },
-      },
       _count: {
         select: {
           conversations: {
@@ -188,20 +166,20 @@ export async function getWABAsByUser(userId: string) {
 }
 
 /**
- * Atualiza uma WABA
+ * Atualiza uma instância
  */
-export async function updateWABA(id: string, data: UpdateWABAInput) {
-  return prisma.whatsAppBusinessAccount.update({
+export async function updateInstance(id: string, data: UpdateInstanceInput) {
+  return prisma.whatsAppInstance.update({
     where: { id },
     data,
   });
 }
 
 /**
- * Marca uma WABA como conectada
+ * Marca uma instância como conectada
  */
-export async function markWABAAsConnected(id: string) {
-  return prisma.whatsAppBusinessAccount.update({
+export async function markInstanceAsConnected(id: string) {
+  return prisma.whatsAppInstance.update({
     where: { id },
     data: {
       status: 'CONNECTED',
@@ -211,147 +189,23 @@ export async function markWABAAsConnected(id: string) {
 }
 
 /**
- * Remove uma WABA (e todos os dados relacionados via cascade)
+ * Remove uma instância
  */
-export async function deleteWABA(id: string) {
-  return prisma.whatsAppBusinessAccount.delete({
+export async function deleteInstance(id: string) {
+  return prisma.whatsAppInstance.delete({
     where: { id },
   });
 }
 
 // ============================================
-// PHONE NUMBERS
+// TEMPLATES
 // ============================================
 
 /**
- * Adiciona um número de telefone à WABA
- */
-export async function createPhoneNumber(data: CreatePhoneNumberInput) {
-  // Se for default, remove o default dos outros números
-  if (data.isDefault) {
-    await prisma.whatsAppPhoneNumber.updateMany({
-      where: { wabaId: data.wabaId, isDefault: true },
-      data: { isDefault: false },
-    });
-  }
-
-  return prisma.whatsAppPhoneNumber.create({
-    data: {
-      ...data,
-      status: 'PENDING',
-      qualityRating: 'UNKNOWN',
-      messagingTier: 1,
-      messagingLimit: 250,
-    },
-  });
-}
-
-/**
- * Busca um número de telefone pelo ID interno
- */
-export async function getPhoneNumberById(id: string) {
-  return prisma.whatsAppPhoneNumber.findUnique({
-    where: { id },
-    include: { waba: true },
-  });
-}
-
-/**
- * Busca um número de telefone pelo ID da Meta
- */
-export async function getPhoneNumberByPhoneNumberId(phoneNumberId: string) {
-  return prisma.whatsAppPhoneNumber.findUnique({
-    where: { phoneNumberId },
-    include: { waba: true },
-  });
-}
-
-/**
- * Lista números de telefone de uma WABA
- */
-export async function getPhoneNumbersByWABA(wabaId: string) {
-  return prisma.whatsAppPhoneNumber.findMany({
-    where: { wabaId },
-    orderBy: [
-      { isDefault: 'desc' },
-      { createdAt: 'desc' },
-    ],
-  });
-}
-
-/**
- * Obtém o número padrão de uma WABA
- */
-export async function getDefaultPhoneNumber(wabaId: string) {
-  return prisma.whatsAppPhoneNumber.findFirst({
-    where: { wabaId, isDefault: true },
-  });
-}
-
-/**
- * Atualiza um número de telefone
- */
-export async function updatePhoneNumber(id: string, data: UpdatePhoneNumberInput) {
-  // Se for definido como default, remove dos outros
-  if (data.isDefault) {
-    const phone = await prisma.whatsAppPhoneNumber.findUnique({
-      where: { id },
-      select: { wabaId: true },
-    });
-    if (phone) {
-      await prisma.whatsAppPhoneNumber.updateMany({
-        where: { wabaId: phone.wabaId, isDefault: true },
-        data: { isDefault: false },
-      });
-    }
-  }
-
-  return prisma.whatsAppPhoneNumber.update({
-    where: { id },
-    data,
-  });
-}
-
-/**
- * Define um número como padrão para a WABA
- */
-export async function setDefaultPhoneNumber(id: string) {
-  const phone = await prisma.whatsAppPhoneNumber.findUnique({
-    where: { id },
-    select: { wabaId: true },
-  });
-
-  if (!phone) throw new Error('Phone number not found');
-
-  await prisma.whatsAppPhoneNumber.updateMany({
-    where: { wabaId: phone.wabaId, isDefault: true },
-    data: { isDefault: false },
-  });
-
-  return prisma.whatsAppPhoneNumber.update({
-    where: { id },
-    data: { isDefault: true },
-  });
-}
-
-/**
- * Remove um número de telefone
- */
-export async function deletePhoneNumber(id: string) {
-  return prisma.whatsAppPhoneNumber.delete({
-    where: { id },
-  });
-}
-
-// ============================================
-// MESSAGE TEMPLATES
-// ============================================
-
-/**
- * Cria um novo template de mensagem
+ * Cria um novo template
  */
 export async function createTemplate(data: CreateTemplateInput) {
-  return prisma.messageTemplate.create({
+  return prisma.whatsAppTemplate.create({
     data: {
       ...data,
       status: 'DRAFT',
@@ -360,12 +214,12 @@ export async function createTemplate(data: CreateTemplateInput) {
 }
 
 /**
- * Busca um template pelo ID interno
+ * Busca um template pelo ID
  */
 export async function getTemplateById(id: string) {
-  return prisma.messageTemplate.findUnique({
+  return prisma.whatsAppTemplate.findUnique({
     where: { id },
-    include: { waba: true },
+    include: { instance: true },
   });
 }
 
@@ -373,38 +227,38 @@ export async function getTemplateById(id: string) {
  * Busca um template pelo ID da Meta
  */
 export async function getTemplateByTemplateId(templateId: string) {
-  return prisma.messageTemplate.findUnique({
+  return prisma.whatsAppTemplate.findUnique({
     where: { templateId },
   });
 }
 
 /**
- * Lista templates de uma WABA
+ * Lista templates de uma instância
  */
-export async function getTemplatesByWABA(wabaId: string, options?: {
+export async function getTemplatesByInstance(instanceId: string, options?: {
   status?: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAUSED' | 'DISABLED';
   category?: 'AUTHENTICATION' | 'MARKETING' | 'UTILITY';
   language?: string;
 }) {
-  const where: Record<string, unknown> = { wabaId };
+  const where: Record<string, unknown> = { instanceId };
   
   if (options?.status) where.status = options.status;
   if (options?.category) where.category = options.category;
   if (options?.language) where.language = options.language;
 
-  return prisma.messageTemplate.findMany({
+  return prisma.whatsAppTemplate.findMany({
     where,
     orderBy: { createdAt: 'desc' },
   });
 }
 
 /**
- * Busca templates aprovados de uma WABA
+ * Busca templates aprovados
  */
-export async function getApprovedTemplates(wabaId: string, language?: string) {
-  return prisma.messageTemplate.findMany({
+export async function getApprovedTemplates(instanceId: string, language?: string) {
+  return prisma.whatsAppTemplate.findMany({
     where: {
-      wabaId,
+      instanceId,
       status: 'APPROVED',
       ...(language && { language }),
     },
@@ -416,7 +270,7 @@ export async function getApprovedTemplates(wabaId: string, language?: string) {
  * Atualiza um template
  */
 export async function updateTemplate(id: string, data: UpdateTemplateInput) {
-  return prisma.messageTemplate.update({
+  return prisma.whatsAppTemplate.update({
     where: { id },
     data,
   });
@@ -426,7 +280,7 @@ export async function updateTemplate(id: string, data: UpdateTemplateInput) {
  * Submete um template para aprovação
  */
 export async function submitTemplate(id: string, templateId: string) {
-  return prisma.messageTemplate.update({
+  return prisma.whatsAppTemplate.update({
     where: { id },
     data: {
       templateId,
@@ -440,7 +294,7 @@ export async function submitTemplate(id: string, templateId: string) {
  * Marca um template como aprovado
  */
 export async function approveTemplate(id: string) {
-  return prisma.messageTemplate.update({
+  return prisma.whatsAppTemplate.update({
     where: { id },
     data: {
       status: 'APPROVED',
@@ -453,7 +307,7 @@ export async function approveTemplate(id: string) {
  * Marca um template como rejeitado
  */
 export async function rejectTemplate(id: string, reason: string) {
-  return prisma.messageTemplate.update({
+  return prisma.whatsAppTemplate.update({
     where: { id },
     data: {
       status: 'REJECTED',
@@ -466,7 +320,116 @@ export async function rejectTemplate(id: string, reason: string) {
  * Remove um template
  */
 export async function deleteTemplate(id: string) {
-  return prisma.messageTemplate.delete({
+  return prisma.whatsAppTemplate.delete({
+    where: { id },
+  });
+}
+
+// ============================================
+// CONTACTS
+// ============================================
+
+/**
+ * Cria um novo contato
+ */
+export async function createContact(data: CreateContactInput) {
+  return prisma.contact.create({
+    data: {
+      ...data,
+      status: 'ACTIVE',
+      leadScore: 0,
+    },
+  });
+}
+
+/**
+ * Busca um contato pelo ID
+ */
+export async function getContactById(id: string) {
+  return prisma.contact.findUnique({
+    where: { id },
+    include: {
+      conversations: {
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      },
+    },
+  });
+}
+
+/**
+ * Busca contato por telefone em uma organização
+ */
+export async function getContactByPhone(organizationId: string, phone: string) {
+  return prisma.contact.findUnique({
+    where: {
+      organizationId_phone: {
+        organizationId,
+        phone,
+      },
+    },
+  });
+}
+
+/**
+ * Lista contatos de uma organização
+ */
+export async function getContactsByOrganization(
+  organizationId: string,
+  options?: {
+    status?: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+    tags?: string[];
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }
+) {
+  const where: Record<string, unknown> = { organizationId };
+  
+  if (options?.status) where.status = options.status;
+  if (options?.tags?.length) where.tags = { hasSome: options.tags };
+  if (options?.search) {
+    where.OR = [
+      { name: { contains: options.search, mode: 'insensitive' } },
+      { phone: { contains: options.search } },
+    ];
+  }
+
+  return prisma.contact.findMany({
+    where,
+    orderBy: { lastInteractionAt: 'desc' },
+    take: options?.limit,
+    skip: options?.offset,
+  });
+}
+
+/**
+ * Atualiza um contato
+ */
+export async function updateContact(id: string, data: UpdateContactInput) {
+  return prisma.contact.update({
+    where: { id },
+    data,
+  });
+}
+
+/**
+ * Atualiza o lead score de um contato
+ */
+export async function updateContactLeadScore(id: string, scoreDelta: number) {
+  return prisma.contact.update({
+    where: { id },
+    data: {
+      leadScore: { increment: scoreDelta },
+    },
+  });
+}
+
+/**
+ * Remove um contato
+ */
+export async function deleteContact(id: string) {
+  return prisma.contact.delete({
     where: { id },
   });
 }
@@ -479,7 +442,7 @@ export async function deleteTemplate(id: string) {
  * Cria uma nova conversa
  */
 export async function createConversation(data: CreateConversationInput) {
-  return prisma.whatsAppConversation.create({
+  return prisma.conversation.create({
     data: {
       ...data,
       status: 'ACTIVE',
@@ -488,30 +451,31 @@ export async function createConversation(data: CreateConversationInput) {
 }
 
 /**
- * Busca uma conversa pelo ID interno
+ * Busca uma conversa pelo ID
  */
 export async function getConversationById(id: string) {
-  return prisma.whatsAppConversation.findUnique({
+  return prisma.conversation.findUnique({
     where: { id },
     include: {
       messages: {
         orderBy: { createdAt: 'asc' },
       },
-      phoneNumber: true,
+      contact: true,
+      instance: true,
     },
   });
 }
 
 /**
- * Busca conversa ativa entre WABA e contato
+ * Busca conversa ativa entre organização e contato
  */
-export async function getActiveConversation(wabaId: string, contactPhone: string) {
+export async function getActiveConversation(organizationId: string, contactId: string) {
   const now = new Date();
   
-  return prisma.whatsAppConversation.findFirst({
+  return prisma.conversation.findFirst({
     where: {
-      wabaId,
-      contactPhone,
+      organizationId,
+      contactId,
       status: 'ACTIVE',
       windowEnd: { gt: now },
     },
@@ -524,26 +488,32 @@ export async function getActiveConversation(wabaId: string, contactPhone: string
 }
 
 /**
- * Lista conversas de uma WABA
+ * Lista conversas de uma organização
  */
-export async function getConversationsByWABA(wabaId: string, options?: {
-  status?: 'ACTIVE' | 'EXPIRED' | 'CLOSED';
-  contactPhone?: string;
-  limit?: number;
-  offset?: number;
-}) {
-  const where: Record<string, unknown> = { wabaId };
+export async function getConversationsByOrganization(
+  organizationId: string,
+  options?: {
+    status?: 'ACTIVE' | 'EXPIRED' | 'CLOSED';
+    contactId?: string;
+    instanceId?: string;
+    limit?: number;
+    offset?: number;
+  }
+) {
+  const where: Record<string, unknown> = { organizationId };
   
   if (options?.status) where.status = options.status;
-  if (options?.contactPhone) where.contactPhone = options.contactPhone;
+  if (options?.contactId) where.contactId = options.contactId;
+  if (options?.instanceId) where.instanceId = options.instanceId;
 
-  return prisma.whatsAppConversation.findMany({
+  return prisma.conversation.findMany({
     where,
     include: {
       messages: {
         orderBy: { createdAt: 'desc' },
         take: 1,
       },
+      contact: true,
       _count: {
         select: { messages: true },
       },
@@ -557,14 +527,17 @@ export async function getConversationsByWABA(wabaId: string, options?: {
 /**
  * Lista conversas ativas (com janela aberta)
  */
-export async function getActiveConversations(wabaId: string) {
+export async function getActiveConversations(organizationId: string) {
   const now = new Date();
   
-  return prisma.whatsAppConversation.findMany({
+  return prisma.conversation.findMany({
     where: {
-      wabaId,
+      organizationId,
       status: 'ACTIVE',
       windowEnd: { gt: now },
+    },
+    include: {
+      contact: true,
     },
     orderBy: { updatedAt: 'desc' },
   });
@@ -574,7 +547,7 @@ export async function getActiveConversations(wabaId: string) {
  * Atualiza uma conversa
  */
 export async function updateConversation(id: string, data: UpdateConversationInput) {
-  return prisma.whatsAppConversation.update({
+  return prisma.conversation.update({
     where: { id },
     data,
   });
@@ -584,7 +557,7 @@ export async function updateConversation(id: string, data: UpdateConversationInp
  * Estende a janela de 24h de uma conversa
  */
 export async function extendConversationWindow(id: string, newWindowEnd: Date) {
-  return prisma.whatsAppConversation.update({
+  return prisma.conversation.update({
     where: { id },
     data: { windowEnd: newWindowEnd },
   });
@@ -594,7 +567,7 @@ export async function extendConversationWindow(id: string, newWindowEnd: Date) {
  * Fecha uma conversa
  */
 export async function closeConversation(id: string) {
-  return prisma.whatsAppConversation.update({
+  return prisma.conversation.update({
     where: { id },
     data: { status: 'CLOSED' },
   });
@@ -604,7 +577,7 @@ export async function closeConversation(id: string) {
  * Remove uma conversa
  */
 export async function deleteConversation(id: string) {
-  return prisma.whatsAppConversation.delete({
+  return prisma.conversation.delete({
     where: { id },
   });
 }
@@ -619,7 +592,7 @@ export async function deleteConversation(id: string) {
 export async function createMessage(data: CreateMessageInput) {
   const now = new Date();
   
-  return prisma.whatsAppMessage.create({
+  const message = await prisma.message.create({
     data: {
       ...data,
       status: data.direction === 'OUTBOUND' ? 'SENT' : 'DELIVERED',
@@ -630,16 +603,36 @@ export async function createMessage(data: CreateMessageInput) {
       conversation: true,
     },
   });
+
+  // Atualiza a conversa
+  await prisma.conversation.update({
+    where: { id: data.conversationId },
+    data: {
+      lastMessageAt: now,
+      messageCount: { increment: 1 },
+    },
+  });
+
+  // Atualiza o contato
+  await prisma.contact.update({
+    where: { id: data.contactId },
+    data: {
+      lastInteractionAt: now,
+    },
+  });
+
+  return message;
 }
 
 /**
- * Busca uma mensagem pelo ID interno
+ * Busca uma mensagem pelo ID
  */
 export async function getMessageById(id: string) {
-  return prisma.whatsAppMessage.findUnique({
+  return prisma.message.findUnique({
     where: { id },
     include: {
       conversation: true,
+      contact: true,
       template: true,
     },
   });
@@ -649,7 +642,7 @@ export async function getMessageById(id: string) {
  * Busca uma mensagem pelo ID da Meta
  */
 export async function getMessageByMessageId(messageId: string) {
-  return prisma.whatsAppMessage.findUnique({
+  return prisma.message.findUnique({
     where: { messageId },
     include: {
       conversation: true,
@@ -664,13 +657,14 @@ export async function getMessagesByConversation(
   conversationId: string,
   options?: { limit?: number; before?: Date }
 ) {
-  return prisma.whatsAppMessage.findMany({
+  return prisma.message.findMany({
     where: {
       conversationId,
       ...(options?.before && { createdAt: { lt: options.before } }),
     },
     include: {
       template: true,
+      contact: true,
     },
     orderBy: { createdAt: 'desc' },
     take: options?.limit,
@@ -704,7 +698,7 @@ export async function updateMessageStatus(
       break;
   }
 
-  return prisma.whatsAppMessage.update({
+  return prisma.message.update({
     where: { messageId },
     data,
   });
@@ -714,7 +708,7 @@ export async function updateMessageStatus(
  * Atualiza uma mensagem
  */
 export async function updateMessage(id: string, data: UpdateMessageInput) {
-  return prisma.whatsAppMessage.update({
+  return prisma.message.update({
     where: { id },
     data,
   });
@@ -724,20 +718,20 @@ export async function updateMessage(id: string, data: UpdateMessageInput) {
  * Remove uma mensagem
  */
 export async function deleteMessage(id: string) {
-  return prisma.whatsAppMessage.delete({
+  return prisma.message.delete({
     where: { id },
   });
 }
 
 // ============================================
-// WEBHOOK EVENTS
+// LOGS
 // ============================================
 
 /**
- * Registra um evento de webhook
+ * Registra um log
  */
-export async function createWebhookEvent(data: CreateWebhookEventInput) {
-  return prisma.webhookEvent.create({
+export async function createLog(data: CreateLogInput) {
+  return prisma.whatsAppLog.create({
     data: {
       ...data,
       processed: false,
@@ -746,10 +740,10 @@ export async function createWebhookEvent(data: CreateWebhookEventInput) {
 }
 
 /**
- * Busca eventos de webhook não processados
+ * Busca logs não processados
  */
-export async function getUnprocessedWebhookEvents(limit = 100) {
-  return prisma.webhookEvent.findMany({
+export async function getUnprocessedLogs(limit = 100) {
+  return prisma.whatsAppLog.findMany({
     where: { processed: false },
     orderBy: { createdAt: 'asc' },
     take: limit,
@@ -757,19 +751,19 @@ export async function getUnprocessedWebhookEvents(limit = 100) {
 }
 
 /**
- * Busca eventos de webhook de uma WABA
+ * Busca logs de uma instância
  */
-export async function getWebhookEventsByWABA(wabaId: string, options?: {
-  eventType?: string;
+export async function getLogsByInstance(instanceId: string, options?: {
+  type?: string;
   processed?: boolean;
   limit?: number;
 }) {
-  const where: Record<string, unknown> = { wabaId };
+  const where: Record<string, unknown> = { instanceId };
   
-  if (options?.eventType) where.eventType = options.eventType;
+  if (options?.type) where.type = options.type;
   if (options?.processed !== undefined) where.processed = options.processed;
 
-  return prisma.webhookEvent.findMany({
+  return prisma.whatsAppLog.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: options?.limit,
@@ -777,10 +771,10 @@ export async function getWebhookEventsByWABA(wabaId: string, options?: {
 }
 
 /**
- * Marca evento como processado
+ * Marca log como processado
  */
-export async function markWebhookEventAsProcessed(id: string, error?: string) {
-  return prisma.webhookEvent.update({
+export async function markLogAsProcessed(id: string, error?: string) {
+  return prisma.whatsAppLog.update({
     where: { id },
     data: {
       processed: true,
@@ -791,163 +785,13 @@ export async function markWebhookEventAsProcessed(id: string, error?: string) {
 }
 
 /**
- * Remove eventos antigos processados
+ * Remove logs antigos processados
  */
-export async function cleanupOldWebhookEvents(before: Date) {
-  return prisma.webhookEvent.deleteMany({
+export async function cleanupOldLogs(before: Date) {
+  return prisma.whatsAppLog.deleteMany({
     where: {
       processed: true,
       createdAt: { lt: before },
-    },
-  });
-}
-
-// ============================================
-// ANALYTICS
-// ============================================
-
-/**
- * Cria ou atualiza métricas do dia
- */
-export async function upsertAnalytics(data: CreateAnalyticsInput) {
-  const date = new Date(data.date);
-  date.setHours(0, 0, 0, 0);
-
-  return prisma.whatsAppAnalytics.upsert({
-    where: {
-      wabaId_date: {
-        wabaId: data.wabaId,
-        date,
-      },
-    },
-    create: {
-      ...data,
-      date,
-    },
-    update: {
-      ...data,
-      date,
-    },
-  });
-}
-
-/**
- * Busca analytics de uma WABA por período
- */
-export async function getAnalyticsByWABA(wabaId: string, startDate: Date, endDate: Date) {
-  return prisma.whatsAppAnalytics.findMany({
-    where: {
-      wabaId,
-      date: {
-        gte: startDate,
-        lte: endDate,
-      },
-    },
-    orderBy: { date: 'asc' },
-  });
-}
-
-/**
- * Obtém métricas agregadas de uma WABA
- */
-export async function getAggregatedAnalytics(wabaId: string, startDate: Date, endDate: Date) {
-  const result = await prisma.whatsAppAnalytics.aggregate({
-    where: {
-      wabaId,
-      date: {
-        gte: startDate,
-        lte: endDate,
-      },
-    },
-    _sum: {
-      conversationsTotal: true,
-      conversationsUserInitiated: true,
-      conversationsBusinessInitiated: true,
-      messagesSent: true,
-      messagesDelivered: true,
-      messagesRead: true,
-      messagesFailed: true,
-      templatesSent: true,
-    },
-  });
-
-  return {
-    conversationsTotal: result._sum.conversationsTotal || 0,
-    conversationsUserInitiated: result._sum.conversationsUserInitiated || 0,
-    conversationsBusinessInitiated: result._sum.conversationsBusinessInitiated || 0,
-    messagesSent: result._sum.messagesSent || 0,
-    messagesDelivered: result._sum.messagesDelivered || 0,
-    messagesRead: result._sum.messagesRead || 0,
-    messagesFailed: result._sum.messagesFailed || 0,
-    templatesSent: result._sum.templatesSent || 0,
-  };
-}
-
-/**
- * Incrementa métricas
- */
-export async function incrementAnalytics(
-  wabaId: string,
-  date: Date,
-  metrics: Partial<Omit<CreateAnalyticsInput, 'wabaId' | 'date'>>
-) {
-  const normalizedDate = new Date(date);
-  normalizedDate.setHours(0, 0, 0, 0);
-
-  const existing = await prisma.whatsAppAnalytics.findUnique({
-    where: {
-      wabaId_date: { wabaId, date: normalizedDate },
-    },
-  });
-
-  if (existing) {
-    return prisma.whatsAppAnalytics.update({
-      where: { id: existing.id },
-      data: {
-        ...(metrics.conversationsTotal && {
-          conversationsTotal: { increment: metrics.conversationsTotal },
-        }),
-        ...(metrics.conversationsUserInitiated && {
-          conversationsUserInitiated: { increment: metrics.conversationsUserInitiated },
-        }),
-        ...(metrics.conversationsBusinessInitiated && {
-          conversationsBusinessInitiated: { increment: metrics.conversationsBusinessInitiated },
-        }),
-        ...(metrics.messagesSent && {
-          messagesSent: { increment: metrics.messagesSent },
-        }),
-        ...(metrics.messagesDelivered && {
-          messagesDelivered: { increment: metrics.messagesDelivered },
-        }),
-        ...(metrics.messagesRead && {
-          messagesRead: { increment: metrics.messagesRead },
-        }),
-        ...(metrics.messagesFailed && {
-          messagesFailed: { increment: metrics.messagesFailed },
-        }),
-        ...(metrics.templatesSent && {
-          templatesSent: { increment: metrics.templatesSent },
-        }),
-        ...(metrics.qualityRating && {
-          qualityRating: metrics.qualityRating,
-        }),
-      },
-    });
-  }
-
-  return prisma.whatsAppAnalytics.create({
-    data: {
-      wabaId,
-      date: normalizedDate,
-      conversationsTotal: metrics.conversationsTotal || 0,
-      conversationsUserInitiated: metrics.conversationsUserInitiated || 0,
-      conversationsBusinessInitiated: metrics.conversationsBusinessInitiated || 0,
-      messagesSent: metrics.messagesSent || 0,
-      messagesDelivered: metrics.messagesDelivered || 0,
-      messagesRead: metrics.messagesRead || 0,
-      messagesFailed: metrics.messagesFailed || 0,
-      templatesSent: metrics.templatesSent || 0,
-      qualityRating: metrics.qualityRating || 'UNKNOWN',
     },
   });
 }
@@ -962,7 +806,7 @@ export async function incrementAnalytics(
 export async function expireOldConversations() {
   const now = new Date();
   
-  return prisma.whatsAppConversation.updateMany({
+  return prisma.conversation.updateMany({
     where: {
       status: 'ACTIVE',
       windowEnd: { lt: now },
@@ -975,7 +819,7 @@ export async function expireOldConversations() {
  * Remove mensagens antigas de uma conversa
  */
 export async function cleanupOldMessages(conversationId: string, before: Date) {
-  return prisma.whatsAppMessage.deleteMany({
+  return prisma.message.deleteMany({
     where: {
       conversationId,
       createdAt: { lt: before },
@@ -986,10 +830,10 @@ export async function cleanupOldMessages(conversationId: string, before: Date) {
 /**
  * Busca conversas com mensagens recentes
  */
-export async function getConversationsWithRecentMessages(wabaId: string, since: Date) {
-  return prisma.whatsAppConversation.findMany({
+export async function getConversationsWithRecentMessages(organizationId: string, since: Date) {
+  return prisma.conversation.findMany({
     where: {
-      wabaId,
+      organizationId,
       messages: {
         some: {
           createdAt: { gte: since },
@@ -998,12 +842,83 @@ export async function getConversationsWithRecentMessages(wabaId: string, since: 
     },
     include: {
       messages: {
-        where: { createdAt: { gte: since } },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
       },
+      contact: true,
     },
-    orderBy: { updatedAt: 'desc' },
   });
 }
 
+// ============================================
+// MÉTRICAS E ESTATÍSTICAS
+// ============================================
+
+/**
+ * Obtém estatísticas de uma organização
+ */
+export async function getOrganizationStats(organizationId: string, startDate: Date, endDate: Date) {
+  const [
+    totalConversations,
+    activeConversations,
+    totalMessages,
+    messagesByDirection,
+    messagesByStatus,
+  ] = await Promise.all([
+    prisma.conversation.count({
+      where: { organizationId, createdAt: { gte: startDate, lte: endDate } },
+    }),
+    prisma.conversation.count({
+      where: { organizationId, status: 'ACTIVE' },
+    }),
+    prisma.message.count({
+      where: {
+        conversation: { organizationId },
+        createdAt: { gte: startDate, lte: endDate },
+      },
+    }),
+    prisma.message.groupBy({
+      by: ['direction'],
+      where: {
+        conversation: { organizationId },
+        createdAt: { gte: startDate, lte: endDate },
+      },
+      _count: { direction: true },
+    }),
+    prisma.message.groupBy({
+      by: ['status'],
+      where: {
+        conversation: { organizationId },
+        createdAt: { gte: startDate, lte: endDate },
+      },
+      _count: { status: true },
+    }),
+  ]);
+
+  return {
+    totalConversations,
+    activeConversations,
+    totalMessages,
+    messagesByDirection,
+    messagesByStatus,
+  };
+}
+
+/**
+ * Busca contatos mais engajados
+ */
+export async function getTopContacts(organizationId: string, limit = 10) {
+  return prisma.contact.findMany({
+    where: { organizationId },
+    orderBy: { leadScore: 'desc' },
+    take: limit,
+    include: {
+      _count: {
+        select: { conversations: true },
+      },
+    },
+  });
+}
+
+// Exporta o prisma client para uso direto se necessário
 export { prisma };

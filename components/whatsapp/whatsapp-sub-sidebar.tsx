@@ -122,13 +122,13 @@ export function WhatsAppSubSidebar() {
   const supportNavItems: NavItem[] = [
     { 
       label: "Compliance", 
-      href: "/integracoes/whatsapp/compliance", 
+      href: "/integracoes/whatsapp-compliance", 
       icon: Shield,
       disabled: !isConnected,
     },
     { 
       label: "Configurações", 
-      href: "/integracoes/whatsapp/settings", 
+      href: "/integracoes/whatsapp-settings", 
       icon: Settings,
       disabled: !isConnected,
     },

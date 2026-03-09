@@ -1,9 +1,10 @@
 /**
  * WhatsApp Status API Route
- * GET: Check connection status
+ * GET: Check connection status (from Meta API or local database)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/whatsapp';
 import {
   validateAccessToken,
   getWABADetails,
@@ -12,78 +13,151 @@ import {
   extractErrorDetails,
 } from '@/lib/whatsapp/cloud-api';
 
-interface StatusQueryParams {
-  accessToken: string;
-  wabaId: string;
-}
-
-function validateQueryParams(searchParams: URLSearchParams): StatusQueryParams | null {
-  const accessToken = searchParams.get('accessToken');
-  const wabaId = searchParams.get('wabaId');
-
-  if (!accessToken || !wabaId) {
-    return null;
-  }
-
-  return { accessToken, wabaId };
-}
-
 /**
  * GET /api/whatsapp/status
  * Check WhatsApp Business Account connection status
+ * 
+ * Query params:
+ * - instanceId: string (to check status from database)
+ * - organizationId: string (to get overall status)
+ * OR
+ * - accessToken: string (to check via Meta API)
+ * - wabaId: string
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const params = validateQueryParams(searchParams);
+    const { searchParams } = new URL(request.url);
+    
+    const instanceId = searchParams.get('instanceId');
+    const organizationId = searchParams.get('organizationId');
+    const accessToken = searchParams.get('accessToken');
+    const wabaId = searchParams.get('wabaId');
 
-    if (!params) {
+    // If instanceId provided, get status from database
+    if (instanceId) {
+      const instance = await prisma.whatsAppInstance.findUnique({
+        where: { id: instanceId },
+        include: {
+          _count: {
+            select: {
+              conversations: true,
+              templates: true,
+            },
+          },
+        },
+      });
+
+      if (!instance) {
+        return NextResponse.json(
+          { success: false, error: 'Instance not found' },
+          { status: 404 }
+        );
+      }
+
+      // Check if token is expired
+      const tokenExpired = instance.tokenExpiresAt && instance.tokenExpiresAt < new Date();
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          connected: instance.status === 'CONNECTED' && !tokenExpired,
+          status: tokenExpired ? 'expired' : instance.status.toLowerCase(),
+          instance: {
+            id: instance.id,
+            name: instance.name,
+            phoneNumber: instance.phoneNumber,
+            qualityRating: instance.qualityRating,
+            messagingLimit: instance.messagingLimit,
+            messagingTier: instance.messagingTier,
+            connectedAt: instance.connectedAt,
+            tokenExpiresAt: instance.tokenExpiresAt,
+            _count: instance._count,
+          },
+        },
+      });
+    }
+
+    // If organizationId provided, get overall status
+    if (organizationId) {
+      const [instances, totalConversations, lastMessage] = await Promise.all([
+        prisma.whatsAppInstance.findMany({
+          where: { organizationId },
+          select: {
+            id: true,
+            status: true,
+            phoneNumber: true,
+            name: true,
+          },
+        }),
+        prisma.conversation.count({
+          where: { organizationId },
+        }),
+        prisma.message.findFirst({
+          where: {
+            conversation: { organizationId },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true },
+        }),
+      ]);
+
+      const connectedInstances = instances.filter(
+        (i) => i.status === 'CONNECTED'
+      );
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          connected: connectedInstances.length > 0,
+          instances: instances.length,
+          connectedCount: connectedInstances.length,
+          totalConversations,
+          lastMessageAt: lastMessage?.createdAt || null,
+          instanceList: instances,
+        },
+      });
+    }
+
+    // Otherwise use Meta API
+    if (!accessToken || !wabaId) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing required query parameters: accessToken, wabaId',
+          error: 'Missing required parameters. Provide either instanceId, organizationId, or (accessToken + wabaId)',
         },
         { status: 400 }
       );
     }
 
-    const { accessToken, wabaId } = params;
-
     // Validate token
     const tokenInfo = await validateAccessToken(accessToken);
 
     if (!tokenInfo.is_valid) {
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            connected: false,
-            status: 'disconnected',
-            reason: 'invalid_token',
-            message: 'Access token is invalid or expired',
-          },
+      return NextResponse.json({
+        success: true,
+        data: {
+          connected: false,
+          status: 'disconnected',
+          reason: 'invalid_token',
+          message: 'Access token is invalid or expired',
         },
-        { status: 200 }
-      );
+      }, { status: 200 });
     }
 
     // Get WABA details
     let wabaDetails;
     try {
       wabaDetails = await getWABADetails(wabaId, accessToken);
-    } catch (wabaError) {
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            connected: false,
-            status: 'error',
-            reason: 'waba_not_found',
-            message: 'WhatsApp Business Account not found or access denied',
-          },
+    } catch {
+      return NextResponse.json({
+        success: true,
+        data: {
+          connected: false,
+          status: 'error',
+          reason: 'waba_not_found',
+          message: 'WhatsApp Business Account not found or access denied',
         },
-        { status: 200 }
-      );
+      }, { status: 200 });
     }
 
     // Get phone numbers

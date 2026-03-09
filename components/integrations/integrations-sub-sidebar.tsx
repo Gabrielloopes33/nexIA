@@ -34,8 +34,8 @@ const mainNavItems: NavItem[] = []
 const whatsappNavItems: NavItem[] = [
   { label: "WhatsApp Oficial", href: "/integracoes/whatsapp", icon: Smartphone },
   { label: "WhatsApp Não Oficial", href: "/integracoes/whatsapp-nao-oficial", icon: Smartphone },
-  { label: "Compliance", href: "/integracoes/whatsapp/compliance", icon: Shield },
-  { label: "Configurações WPP", href: "/integracoes/whatsapp/settings", icon: Settings },
+  { label: "Compliance", href: "/integracoes/whatsapp-compliance", icon: Shield },
+  { label: "Configurações WPP", href: "/integracoes/whatsapp-settings", icon: Settings },
 ]
 
 const actionsNavItems: NavItem[] = [

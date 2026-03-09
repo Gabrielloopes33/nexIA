@@ -6,36 +6,25 @@
  * 
  * @example
  * ```typescript
- * import { createWABA, getDashboardData } from '@/lib/db';
+ * import { createInstance, getDashboardData } from '@/lib/db';
  * ```
  */
 
-// Exporta funções CRUD do WhatsApp
+// Exporta funções CRUD do WhatsApp (novo schema flat)
 export {
-  // WABA
-  createWABA,
-  getWABAById,
-  getWABAByWabaId,
-  getWABAsByUser,
-  updateWABA,
-  markWABAAsConnected,
-  deleteWABA,
-  
-  // Phone Numbers
-  createPhoneNumber,
-  getPhoneNumberById,
-  getPhoneNumberByPhoneNumberId,
-  getPhoneNumbersByWABA,
-  getDefaultPhoneNumber,
-  updatePhoneNumber,
-  setDefaultPhoneNumber,
-  deletePhoneNumber,
+  // Instances
+  createInstance,
+  getInstanceById,
+  getInstancesByOrganization,
+  updateInstance,
+  markInstanceAsConnected,
+  deleteInstance,
   
   // Templates
   createTemplate,
   getTemplateById,
   getTemplateByTemplateId,
-  getTemplatesByWABA,
+  getTemplatesByInstance,
   getApprovedTemplates,
   updateTemplate,
   submitTemplate,
@@ -43,11 +32,20 @@ export {
   rejectTemplate,
   deleteTemplate,
   
+  // Contacts
+  createContact,
+  getContactById,
+  getContactByPhone,
+  getContactsByOrganization,
+  updateContact,
+  updateContactLeadScore,
+  deleteContact,
+  
   // Conversations
   createConversation,
   getConversationById,
   getActiveConversation,
-  getConversationsByWABA,
+  getConversationsByOrganization,
   getActiveConversations,
   updateConversation,
   extendConversationWindow,
@@ -63,41 +61,36 @@ export {
   updateMessage,
   deleteMessage,
   
-  // Webhook Events
-  createWebhookEvent,
-  getUnprocessedWebhookEvents,
-  getWebhookEventsByWABA,
-  markWebhookEventAsProcessed,
-  cleanupOldWebhookEvents,
-  
-  // Analytics
-  upsertAnalytics,
-  getAnalyticsByWABA,
-  getAggregatedAnalytics,
-  incrementAnalytics,
+  // Logs
+  createLog,
+  getUnprocessedLogs,
+  getLogsByInstance,
+  markLogAsProcessed,
+  cleanupOldLogs,
   
   // Utilities
   expireOldConversations,
   cleanupOldMessages,
   getConversationsWithRecentMessages,
+  getOrganizationStats,
+  getTopContacts,
   prisma,
   
   // Types
-  type CreateWABAInput,
-  type UpdateWABAInput,
-  type CreatePhoneNumberInput,
-  type UpdatePhoneNumberInput,
+  type CreateInstanceInput,
+  type UpdateInstanceInput,
   type CreateTemplateInput,
   type UpdateTemplateInput,
+  type CreateContactInput,
+  type UpdateContactInput,
   type CreateConversationInput,
   type UpdateConversationInput,
   type CreateMessageInput,
   type UpdateMessageInput,
-  type CreateWebhookEventInput,
-  type CreateAnalyticsInput,
+  type CreateLogInput,
 } from './whatsapp';
 
-// Exporta queries complexas
+// Exporta queries complexas (mantidas se necessário, mas podem precisar de atualização)
 export {
   // Conversation metrics
   getConversationMetrics,
