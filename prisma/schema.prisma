@@ -47,6 +47,9 @@ model Organization {
   contacts       Contact[]
   conversations  Conversation[]
 
+  // Webhook Logs
+  metaWebhookLogs MetaWebhookLog[]
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -129,115 +132,148 @@ model User {
 // ============================================
 
 /// WhatsAppInstance - Instância WhatsApp Business
-/// Modelo flat que substitui a estrutura complexa anterior
+/// Modelo adaptado para tabela whatsapp_cloud_instances do Aurea
 model WhatsAppInstance {
   id String @id @default(uuid())
 
+  // Relacionamentos principais
+  agentId        String?      @map("agent_id")
   organizationId String       @map("organization_id")
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  unitId         String?      @map("unit_id")
 
-  name          String
-  phoneNumber   String  @map("phone_number")
-  phoneNumberId String? @map("phone_number_id")
+  // Identificadores da Meta
   wabaId        String? @map("waba_id")
+  phoneNumberId String? @map("phone_number_id")
+  businessId    String? @map("business_id")
+
+  // Informações do telefone
+  displayPhoneNumber String? @map("display_phone_number")
+  verifiedName       String? @map("verified_name")
 
   // Tokens (em produção, usar criptografia)
-  accessToken    String?   @map("access_token")
-  refreshToken   String?   @map("refresh_token")
-  tokenExpiresAt DateTime? @map("token_expires_at")
+  accessToken  String? @map("access_token")
+  refreshToken String? @map("refresh_token")
 
   // Status e Qualidade
-  status         WhatsAppInstanceStatus @default(DISCONNECTED)
-  qualityRating  QualityRating          @default(UNKNOWN) @map("quality_rating")
-  messagingTier  Int                    @default(1) @map("messaging_tier")
-  messagingLimit Int                    @default(250) @map("messaging_limit")
+  status           String  @default("DISCONNECTED") @map("status")
+  webhookVerified  Boolean @default(false) @map("webhook_verified")
+  qualityRating    String? @map("quality_rating")
+  messagingLimit   String? @map("messaging_limit")
+  channelType      String? @map("channel_type")
 
-  // Webhook
+  // Scopes e expiração
+  scopes         String[]  @map("scopes")
+  tokenExpiresAt DateTime? @map("token_expires_at")
+  lastSyncAt     DateTime? @map("last_sync_at")
+
+  // Erros e campos customizados
+  errorMessage String? @map("error_message")
+  customFields Json?   @map("custom_fields")
+
+  // Campos mantidos para compatibilidade (não existem no Aurea, mas são usados no código)
+  name          String
+  phoneNumber   String  @map("phone_number")
+  messagingTier Int     @default(1) @map("messaging_tier")
   webhookVerifyToken String? @map("webhook_verify_token")
-
-  // Configurações
   settings Json?
+  connectedAt DateTime? @map("connected_at")
 
   // Relacionamentos
-  templates     WhatsAppTemplate[]
-  logs          WhatsAppLog[]
-  conversations Conversation[]
+  templates         WhatsAppTemplate[]
+  logs              WhatsAppLog[]
+  conversations     Conversation[]
+  metaWebhookLogs   MetaWebhookLog[]
 
   // Timestamps
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  connectedAt DateTime? @map("connected_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([organizationId])
   @@index([status])
   @@index([phoneNumber])
-  @@map("whatsapp_instances")
+  @@index([agentId])
+  @@index([unitId])
+  @@index([wabaId])
+  @@index([phoneNumberId])
+  @@map("whatsapp_cloud_instances")
 }
 
 /// WhatsAppTemplate - Templates de mensagem
+/// Modelo adaptado para tabela whatsapp_cloud_templates do Aurea
 model WhatsAppTemplate {
   id String @id @default(uuid())
 
   instanceId String           @map("instance_id")
   instance   WhatsAppInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
-  templateId String?          @unique @map("template_id")
+  templateId String? @unique @map("template_id")
   name       String
-  category   TemplateCategory
-  language   String
+  category   String   @map("category")
+  language   String   @map("language")
 
   // Componentes (JSON estruturado)
-  components Json
+  components Json @map("components")
 
-  // Conteúdo
-  body   String
-  header String?
-  footer String?
+  // Conteúdo extraído
+  body   String  @map("body")
+  header String? @map("header")
+  footer String? @map("footer")
 
   // Status
-  status TemplateStatus @default(DRAFT)
-  reason String?
+  status String  @default("DRAFT") @map("status")
+  reason String? @map("reason")
+
+  // Campos de timestamp do Aurea
+  submittedAt DateTime? @map("submitted_at")
+  approvedAt  DateTime? @map("approved_at")
 
   // Relacionamentos
   messages Message[]
 
   // Timestamps
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  submittedAt DateTime? @map("submitted_at")
-  approvedAt  DateTime? @map("approved_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([instanceId])
   @@index([status])
   @@index([category])
   @@index([language])
   @@index([name, instanceId])
-  @@map("whatsapp_templates")
+  @@map("whatsapp_cloud_templates")
 }
 
 /// WhatsAppLog - Logs de eventos e operações
+/// Modelo adaptado para tabela whatsapp_cloud_logs do Aurea
 model WhatsAppLog {
   id String @id @default(uuid())
 
   instanceId String           @map("instance_id")
   instance   WhatsAppInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 
-  type      String // message_received, message_sent, template_update, etc
-  eventType String? @map("event_type")
-  payload   Json
+  // Campos mapeados para o Aurea
+  eventType String  @map("event_type")
+  payload   Json    @map("payload")
+  level     String? @map("level")
 
   // Processamento
-  processed   Boolean   @default(false)
+  processed   Boolean   @default(false) @map("processed")
   processedAt DateTime? @map("processed_at")
-  error       String?
+  error       String?   @map("error_message")
 
+  // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Campo type mantido para compatibilidade
+  type String @default("") // message_received, message_sent, template_update, etc
 
   @@index([instanceId])
   @@index([type])
+  @@index([eventType])
   @@index([processed])
   @@index([createdAt])
-  @@map("whatsapp_logs")
+  @@map("whatsapp_cloud_logs")
 }
 
 // ============================================
@@ -416,6 +452,9 @@ model InstagramInstance {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   connectedAt DateTime? @map("connected_at")
 
+  // Relacionamentos
+  metaWebhookLogs MetaWebhookLog[]
+
   @@index([organizationId])
   @@index([status])
   @@index([instagramBusinessAccountId])
@@ -554,6 +593,44 @@ model DealActivity {
 }
 
 // ============================================
+// META WEBHOOK LOGS - CICLO 4
+// ============================================
+
+/// MetaWebhookLog - Logs de webhooks da Meta (WhatsApp/Instagram)
+/// Tabela unificada para rastrear todos os eventos de webhook
+model MetaWebhookLog {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  whatsappInstanceId  String?          @map("whatsapp_instance_id")
+  whatsappInstance    WhatsAppInstance? @relation(fields: [whatsappInstanceId], references: [id], onDelete: SetNull)
+
+  instagramInstanceId String?           @map("instagram_instance_id")
+  instagramInstance   InstagramInstance? @relation(fields: [instagramInstanceId], references: [id], onDelete: SetNull)
+
+  eventType String @map("event_type")
+  payload   Json?
+
+  // Processamento
+  forwardedToN8n Boolean   @default(false) @map("forwarded_to_n8n")
+  processed    Boolean   @default(false)
+  processedAt  DateTime? @map("processed_at")
+  errorMessage String?   @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId])
+  @@index([whatsappInstanceId])
+  @@index([instagramInstanceId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([processed])
+  @@map("meta_webhook_logs")
+}
+
+// ============================================
 // ENUMS
 // ============================================
 
@@ -584,6 +661,7 @@ enum WhatsAppInstanceStatus {
   CONNECTED
   ERROR
   SUSPENDED
+  PENDING_SETUP
 }
 
 enum QualityRating {

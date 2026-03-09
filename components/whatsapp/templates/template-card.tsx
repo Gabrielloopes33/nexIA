@@ -1,6 +1,6 @@
 "use client"
 
-import { FileText, Clock, Globe, ChevronRight } from "lucide-react"
+import { FileText, Globe, ChevronRight, Trash2, RefreshCw } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,35 +11,48 @@ import {
 } from "@/components/ui/collapsible"
 import type { WhatsAppTemplate } from "@/lib/whatsapp/types"
 import { TemplateStatusBadge, TemplateCategoryBadge } from "./template-status-badge"
+import { TemplatePreview } from "./template-preview"
 import { cn } from "@/lib/utils"
 
 interface TemplateCardProps {
   template: WhatsAppTemplate
   onDelete?: (id: string) => void
+  onSync?: (id: string) => void
+  isSyncing?: boolean
 }
 
-export function TemplateCard({ template, onDelete }: TemplateCardProps) {
+export function TemplateCard({ template, onDelete, onSync, isSyncing }: TemplateCardProps) {
   const bodyComponent = template.components.find(c => c.type === 'BODY')
   const headerComponent = template.components.find(c => c.type === 'HEADER')
   const footerComponent = template.components.find(c => c.type === 'FOOTER')
   const buttonsComponent = template.components.find(c => c.type === 'BUTTONS')
 
-  const formatPreview = (text: string) => {
+  const formatPreview = (text?: string) => {
+    if (!text) return ''
     // Replace {{1}}, {{2}} etc with placeholder text
     return text.replace(/\{\{\d+\}\}/g, '___')
   }
 
+  // Truncate text for preview
+  const truncateText = (text?: string, maxLength: number = 100) => {
+    if (!text) return ''
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
+  }
+
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-border hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-              <FileText className="h-5 w-5 text-muted-foreground" />
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#9795e4]/10">
+              <FileText className="h-5 w-5 text-[#9795e4]" />
             </div>
-            <div>
-              <h3 className="font-semibold">{template.name}</h3>
-              <div className="flex items-center gap-2 mt-1">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold truncate" title={template.name}>
+                {template.name}
+              </h3>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <TemplateCategoryBadge category={template.category} />
                 <Badge variant="outline" className="h-5 text-[10px]">
                   <Globe className="mr-1 h-3 w-3" />
@@ -56,17 +69,50 @@ export function TemplateCard({ template, onDelete }: TemplateCardProps) {
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Template Preview */}
+        {/* Quick Preview */}
+        <div className="text-sm text-muted-foreground">
+          {headerComponent?.text && (
+            <p className="font-medium text-foreground truncate">
+              {formatPreview(headerComponent.text)}
+            </p>
+          )}
+          {bodyComponent?.text && (
+            <p className="mt-1 line-clamp-2">
+              {formatPreview(truncateText(bodyComponent.text, 120))}
+            </p>
+          )}
+          {footerComponent?.text && (
+            <p className="mt-1 text-xs text-muted-foreground truncate">
+              {formatPreview(footerComponent.text)}
+            </p>
+          )}
+          {buttonsComponent && buttonsComponent.buttons && buttonsComponent.buttons.length > 0 && (
+            <div className="mt-2 flex gap-2 flex-wrap">
+              {buttonsComponent.buttons.slice(0, 2).map((button, index) => (
+                <Badge key={index} variant="secondary" className="text-[10px]">
+                  {button.text}
+                </Badge>
+              ))}
+              {buttonsComponent.buttons.length > 2 && (
+                <Badge variant="secondary" className="text-[10px]">
+                  +{buttonsComponent.buttons.length - 2}
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Full Preview Collapsible */}
         <Collapsible>
           <CollapsibleTrigger asChild>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="w-full justify-between text-muted-foreground hover:text-foreground"
+              className="w-full justify-between text-muted-foreground hover:text-foreground h-8"
             >
               <span className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Visualizar conteúdo
+                Visualizar conteúdo completo
               </span>
               <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
             </Button>
@@ -111,17 +157,29 @@ export function TemplateCard({ template, onDelete }: TemplateCardProps) {
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Meta Info */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              Criado em: {new Date(template.createdAt).toLocaleDateString('pt-BR')}
-            </span>
-            {template.allowCategoryChange && (
-              <Badge variant="outline" className="h-5 text-[10px]">
-                Alteração de categoria permitida
-              </Badge>
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+          <div className="flex items-center gap-2">
+            <TemplatePreview 
+              template={template}
+              trigger={
+                <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5">
+                  <FileText className="h-3.5 w-3.5" />
+                  Detalhes
+                </Button>
+              }
+            />
+            {onSync && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 text-xs gap-1.5"
+                onClick={() => onSync(template.id)}
+                disabled={isSyncing}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
+                Atualizar
+              </Button>
             )}
           </div>
           
@@ -129,9 +187,10 @@ export function TemplateCard({ template, onDelete }: TemplateCardProps) {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="h-8 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 gap-1.5"
               onClick={() => onDelete(template.id)}
             >
+              <Trash2 className="h-3.5 w-3.5" />
               Excluir
             </Button>
           )}
@@ -144,6 +203,11 @@ export function TemplateCard({ template, onDelete }: TemplateCardProps) {
             <p className="mt-1 text-xs">
               Este template não atende às diretrizes da Meta. Revise e recrie conforme necessário.
             </p>
+            {template.rejectedReason && (
+              <p className="mt-1 text-xs font-medium">
+                Motivo: {template.rejectedReason}
+              </p>
+            )}
           </div>
         )}
 

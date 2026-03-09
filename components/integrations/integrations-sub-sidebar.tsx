@@ -18,6 +18,7 @@ import {
   Key,
   Smartphone,
   Shield,
+  Instagram,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -34,6 +35,7 @@ const mainNavItems: NavItem[] = []
 const whatsappNavItems: NavItem[] = [
   { label: "WhatsApp Oficial", href: "/integracoes/whatsapp", icon: Smartphone },
   { label: "WhatsApp Não Oficial", href: "/integracoes/whatsapp-nao-oficial", icon: Smartphone },
+  { label: "Instagram", href: "/integracoes/instagram", icon: Instagram },
   { label: "Compliance", href: "/integracoes/whatsapp-compliance", icon: Shield },
   { label: "Configurações WPP", href: "/integracoes/whatsapp-settings", icon: Settings },
 ]

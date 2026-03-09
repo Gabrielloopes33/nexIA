@@ -13,6 +13,8 @@ import {
   HelpCircle,
   Shield,
   AlertCircle,
+  Send,
+  ScrollText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useWhatsApp } from "@/hooks/use-whatsapp"
@@ -103,9 +105,21 @@ export function WhatsAppSubSidebar() {
       disabled: !isConnected,
     },
     { 
+      label: "Enviar", 
+      href: "/integracoes/whatsapp/send", 
+      icon: Send,
+      disabled: !isConnected,
+    },
+    { 
       label: "Webhooks", 
       href: "/integracoes/whatsapp/webhooks", 
       icon: Webhook,
+      disabled: !isConnected,
+    },
+    { 
+      label: "Logs", 
+      href: "/integracoes/whatsapp/logs", 
+      icon: ScrollText,
       disabled: !isConnected,
     },
   ]

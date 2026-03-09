@@ -28,7 +28,7 @@ export type CreateInstanceInput = {
 };
 
 export type UpdateInstanceInput = Partial<Omit<CreateInstanceInput, 'organizationId'>> & {
-  status?: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR' | 'SUSPENDED';
+  status?: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR' | 'SUSPENDED' | 'PENDING_SETUP';
   qualityRating?: 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN';
   messagingTier?: number;
   messagingLimit?: number;
@@ -195,6 +195,83 @@ export async function deleteInstance(id: string) {
   return prisma.whatsAppInstance.delete({
     where: { id },
   });
+}
+
+/**
+ * Busca uma instância pelo WABA ID e Organization ID
+ */
+export async function getInstanceByWabaId(organizationId: string, wabaId: string) {
+  return prisma.whatsAppInstance.findFirst({
+    where: {
+      organizationId,
+      wabaId,
+    },
+  });
+}
+
+/**
+ * Busca uma instância pelo Phone Number ID e Organization ID
+ */
+export async function getInstanceByPhoneNumberId(organizationId: string, phoneNumberId: string) {
+  return prisma.whatsAppInstance.findFirst({
+    where: {
+      organizationId,
+      phoneNumberId,
+    },
+  });
+}
+
+/**
+ * Upsert de instância WhatsApp (cria ou atualiza)
+ * Busca existente por organization_id + waba_id ou organization_id + phone_number_id
+ */
+export async function upsertWhatsAppInstance(params: {
+  organizationId: string;
+  wabaId?: string;
+  phoneNumberId?: string;
+  data: CreateInstanceInput & Partial<UpdateInstanceInput>;
+}) {
+  const { organizationId, wabaId, phoneNumberId, data } = params;
+
+  let existingInstance: { id: string } | null = null;
+
+  // Buscar por waba_id
+  if (wabaId) {
+    existingInstance = await prisma.whatsAppInstance.findFirst({
+      where: {
+        organizationId,
+        wabaId,
+      },
+      select: { id: true },
+    });
+  }
+
+  // Buscar por phone_number_id
+  if (!existingInstance && phoneNumberId) {
+    existingInstance = await prisma.whatsAppInstance.findFirst({
+      where: {
+        organizationId,
+        phoneNumberId,
+      },
+      select: { id: true },
+    });
+  }
+
+  if (existingInstance) {
+    // Atualizar instância existente
+    // Não sobrescrever token se não estiver sendo enviado
+    const updateData: UpdateInstanceInput = { ...data };
+    if (!data.accessToken) delete updateData.accessToken;
+    if (!data.tokenExpiresAt) delete updateData.tokenExpiresAt;
+
+    return prisma.whatsAppInstance.update({
+      where: { id: existingInstance.id },
+      data: updateData,
+    });
+  }
+
+  // Criar nova instância
+  return createInstance(data as CreateInstanceInput);
 }
 
 // ============================================

@@ -1,14 +1,12 @@
 /**
- * Custom React Hooks
+ * React Hooks
  * 
- * Exporta todos os hooks customizados da aplicação.
+ * Custom hooks para o projeto nexIA
  */
 
-export { useWhatsApp } from "./use-whatsapp"
-export { 
-  useEmbeddedSignup,
-  type EmbeddedSignupStatus,
-  type EmbeddedSignupConfig,
-  type EmbeddedSignupResult,
-  type UseEmbeddedSignupReturn,
-} from "./use-embedded-signup"
+// WhatsApp Hooks
+export { useWhatsAppInstances, type WhatsAppInstance } from './use-whatsapp-instances'
+export { useWhatsAppTemplatesSync } from './use-whatsapp-templates-sync'
+export { useWhatsAppTemplates } from './use-whatsapp-templates'
+export { useWhatsApp } from './use-whatsapp'
+export { useSendMessage, type SendMessageRequest, type MessageType } from './use-send-message'
