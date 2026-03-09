@@ -20,6 +20,8 @@ interface SubSidebarContextType {
   activeNavItem: NavItemKey | null
   isAnimating: boolean
   sidebarWidth: number
+  sidebarMounted: boolean
+  setSidebarMounted: (value: boolean) => void
   togglePanel: (item: NavItemKey) => void
   closePanel: () => void
   openPanel: (item: NavItemKey) => void
@@ -32,6 +34,7 @@ export function SubSidebarProvider({ children }: { children: ReactNode }) {
   const [activeNavItem, setActiveNavItem] = useState<NavItemKey | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(0)
+  const [sidebarMounted, setSidebarMounted] = useState(false)
 
   const togglePanel = (item: NavItemKey) => {
     setIsAnimating(true)
@@ -77,7 +80,7 @@ export function SubSidebarProvider({ children }: { children: ReactNode }) {
 
   return (
     <SubSidebarContext.Provider 
-      value={{ isOpen, activeNavItem, isAnimating, sidebarWidth, togglePanel, closePanel, openPanel }}
+      value={{ isOpen, activeNavItem, isAnimating, sidebarWidth, sidebarMounted, setSidebarMounted, togglePanel, closePanel, openPanel }}
     >
       {children}
     </SubSidebarContext.Provider>

@@ -52,10 +52,10 @@ interface NavButtonProps {
   onClick: () => void
   onRightClick: (e: React.MouseEvent) => void
   isCollapsed: boolean
-  mounted: boolean
+  sidebarMounted: boolean
 }
 
-function NavButton({ item, isActive, isPanelActive, onClick, onRightClick, isCollapsed, mounted }: NavButtonProps) {
+function NavButton({ item, isActive, isPanelActive, onClick, onRightClick, isCollapsed, sidebarMounted }: NavButtonProps) {
   const button = (
     <button
       onClick={onClick}
@@ -63,7 +63,7 @@ function NavButton({ item, isActive, isPanelActive, onClick, onRightClick, isCol
       title={isCollapsed ? item.label : undefined}
       className={cn(
         "flex items-center rounded-sm",
-        mounted && "transition-all duration-200",
+        sidebarMounted && "transition-all duration-200",
         isCollapsed 
           ? "h-9 w-9 justify-center" 
           : "h-9 w-full justify-start px-3 gap-3",
@@ -86,13 +86,14 @@ function NavButton({ item, isActive, isPanelActive, onClick, onRightClick, isCol
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { togglePanel, activeNavItem } = useSubSidebar()
+  const { togglePanel, activeNavItem, sidebarMounted, setSidebarMounted } = useSubSidebar()
   const { isCollapsed, isReady, toggle } = useMainSidebar()
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    if (!sidebarMounted) {
+      setSidebarMounted(true)
+    }
+  }, [sidebarMounted, setSidebarMounted])
 
   const handleNavClick = (href: string) => {
     router.push(href)
@@ -104,14 +105,14 @@ export function Sidebar() {
   }
 
   // Use SSR-safe state: always render expanded during SSR, apply collapsed only after mount
-  const displayCollapsed = mounted && isCollapsed
+  const displayCollapsed = sidebarMounted && isCollapsed
 
   return (
     <TooltipProvider delayDuration={0}>
       <div 
         className={cn(
           "flex h-screen flex-col py-4 pl-3 sidebar-container",
-          mounted && isReady && "transition-all duration-300 ease-in-out",
+          sidebarMounted && isReady && "transition-all duration-300 ease-in-out",
           displayCollapsed ? "w-16 collapsed" : "w-[160px]"
         )}
       >
@@ -170,7 +171,7 @@ export function Sidebar() {
                   onClick={() => handleNavClick(item.href)}
                   onRightClick={(e) => handleRightClick(e, item.key)}
                   isCollapsed={displayCollapsed}
-                  mounted={isReady}
+                  sidebarMounted={sidebarMounted}
                 />
               )
             })}
@@ -193,7 +194,7 @@ export function Sidebar() {
                   onClick={() => handleNavClick(item.href)}
                   onRightClick={(e) => handleRightClick(e, item.key)}
                   isCollapsed={displayCollapsed}
-                  mounted={isReady}
+                  sidebarMounted={sidebarMounted}
                 />
               )
             })}
