@@ -24,8 +24,8 @@ export interface EmbeddedSignupConfigResponse {
 // Facebook API Configuration
 // These values should be set in environment variables
 const FACEBOOK_CONFIG = {
-  configId: process.env.FACEBOOK_EMBEDDED_SIGNUP_CONFIG_ID || "",
-  appId: process.env.FACEBOOK_APP_ID || "",
+  configId: process.env.FACEBOOK_EMBEDDED_SIGNUP_CONFIG_ID || process.env.VITE_META_CONFIG_ID || "",
+  appId: process.env.FACEBOOK_APP_ID || process.env.VITE_META_APP_ID || process.env.META_APP_ID || "",
   apiVersion: process.env.FACEBOOK_API_VERSION || "v18.0",
 }
 
@@ -36,10 +36,10 @@ function validateConfig(): { valid: boolean; missing: string[] } {
   const missing: string[] = []
 
   if (!FACEBOOK_CONFIG.configId) {
-    missing.push("FACEBOOK_EMBEDDED_SIGNUP_CONFIG_ID")
+    missing.push("FACEBOOK_EMBEDDED_SIGNUP_CONFIG_ID or VITE_META_CONFIG_ID")
   }
   if (!FACEBOOK_CONFIG.appId) {
-    missing.push("FACEBOOK_APP_ID")
+    missing.push("FACEBOOK_APP_ID or VITE_META_APP_ID or META_APP_ID")
   }
 
   return {
