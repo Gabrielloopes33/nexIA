@@ -138,13 +138,13 @@ function AuthCard() {
           
           {/* Header com Logo */}
           <div className="mb-8 flex flex-col items-center">
-            <div className="mb-4 relative h-16 w-auto">
+            <div className="mb-4 relative h-8 w-auto">
               <Image
                 src="/images/nexia-logo.png"
                 alt="NexIA"
-                width={160}
-                height={64}
-                className="h-16 w-auto object-contain"
+                width={80}
+                height={32}
+                className="h-8 w-auto object-contain"
                 priority
               />
             </div>
