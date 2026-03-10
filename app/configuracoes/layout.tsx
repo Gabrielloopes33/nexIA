@@ -1,6 +1,6 @@
 import { Sidebar } from "@/components/sidebar"
 
-export default function CobrancasLayout({
+export default function ConfiguracoesLayout({
   children,
 }: {
   children: React.ReactNode

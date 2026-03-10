@@ -5,7 +5,6 @@ import {
   BarChart3,
   Calendar,
   Puzzle,
-  DollarSign,
   Store,
   Settings,
   LucideIcon,
@@ -35,7 +34,7 @@ export function isGroupActive(item: SidebarNavItem, pathname: string): boolean {
 export const topNavItems: SidebarNavItem[] = [
   {
     key: "overview",
-    label: "Overview",
+    label: "Início",
     href: "/",
     icon: LayoutDashboard,
   },
@@ -111,21 +110,29 @@ export const topNavItems: SidebarNavItem[] = [
     ],
   },
   {
-    key: "cobrancas",
-    label: "Cobranças",
-    icon: DollarSign,
+    key: "configuracoes",
+    label: "Configurações",
+    icon: Settings,
     children: [
-      { label: "Visão Geral", href: "/cobrancas", section: "Principal" },
-      { label: "Assinaturas", href: "/cobrancas/assinaturas", section: "Principal" },
-      { label: "Faturas", href: "/cobrancas/faturas", section: "Principal" },
-      { label: "Clientes", href: "/cobrancas/clientes", section: "Principal" },
-      { label: "Métodos", href: "/cobrancas/pagamentos", section: "Gestão" },
-      { label: "Histórico", href: "/cobrancas/historico", section: "Gestão" },
-      { label: "Reembolsos", href: "/cobrancas/reembolsos", section: "Gestão" },
-      { label: "Descontos", href: "/cobrancas/cupons", section: "Gestão" },
-      { label: "Planos", href: "/cobrancas/planos", section: "Configurações" },
-      { label: "Taxas", href: "/cobrancas/taxas", section: "Configurações" },
-      { label: "Config", href: "/cobrancas/configuracoes", section: "Configurações" },
+      // Conta
+      { label: "Perfil", href: "/configuracoes/perfil", section: "Conta" },
+      { label: "Empresa", href: "/configuracoes/empresa", section: "Conta" },
+      { label: "Usuários", href: "/configuracoes/usuarios", section: "Conta" },
+      // Assinaturas (antiga Cobranças)
+      { label: "Visão Geral", href: "/configuracoes/assinaturas", section: "Assinaturas" },
+      { label: "Assinaturas", href: "/configuracoes/assinaturas/assinaturas", section: "Assinaturas" },
+      { label: "Faturas", href: "/configuracoes/assinaturas/faturas", section: "Assinaturas" },
+      { label: "Clientes", href: "/configuracoes/assinaturas/clientes", section: "Assinaturas" },
+      { label: "Métodos", href: "/configuracoes/assinaturas/pagamentos", section: "Assinaturas" },
+      { label: "Histórico", href: "/configuracoes/assinaturas/historico", section: "Assinaturas" },
+      { label: "Reembolsos", href: "/configuracoes/assinaturas/reembolsos", section: "Assinaturas" },
+      { label: "Descontos", href: "/configuracoes/assinaturas/cupons", section: "Assinaturas" },
+      { label: "Planos", href: "/configuracoes/assinaturas/planos", section: "Assinaturas" },
+      { label: "Taxas", href: "/configuracoes/assinaturas/taxas", section: "Assinaturas" },
+      { label: "Config", href: "/configuracoes/assinaturas/configuracoes", section: "Assinaturas" },
+      // Comunicação
+      { label: "Canais", href: "/configuracoes/canais", section: "Comunicação" },
+      { label: "Notificações", href: "/configuracoes/notificacoes", section: "Comunicação" },
     ],
   },
 ]
@@ -136,12 +143,6 @@ export const bottomNavItems: SidebarNavItem[] = [
     label: "Loja",
     href: "/loja",
     icon: Store,
-  },
-  {
-    key: "configuracoes",
-    label: "Configurações",
-    href: "/configuracoes",
-    icon: Settings,
   },
 ]
 

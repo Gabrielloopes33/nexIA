@@ -59,7 +59,7 @@ export default function NovaAssinaturaPage() {
   const handleSubmit = () => {
     // TODO: Integrar com Stripe
     alert("Assinatura criada com sucesso! (Integração com Stripe pendente)")
-    router.push("/cobrancas/assinaturas")
+    router.push("/configuracoes/assinaturas/assinaturas")
   }
 
   const plano = planos.find(p => p.id === planoSelecionado)
@@ -68,7 +68,7 @@ export default function NovaAssinaturaPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/cobrancas">
+        <Link href="/configuracoes/assinaturas">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>

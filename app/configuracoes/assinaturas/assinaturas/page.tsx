@@ -93,7 +93,7 @@ export default function AssinaturasPage() {
             Gerencie todas as assinaturas dos seus clientes
           </p>
         </div>
-        <Link href="/cobrancas/nova">
+        <Link href="/configuracoes/assinaturas/nova">
           <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
             <Plus className="h-4 w-4" />
             Nova Assinatura

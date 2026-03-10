@@ -114,7 +114,7 @@ export function DashboardHeader() {
   return (
     <header className="flex items-start justify-between">
       <div>
-        <h1 className="text-[28px] font-bold leading-tight text-foreground">Dashboard</h1>
+        <h1 className="text-[28px] font-bold leading-tight text-foreground">Início</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Oi John, bem-vindo de volta
         </p>
