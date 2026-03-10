@@ -1,0 +1,77 @@
+{
+  "name": "NexIA",
+  "version": "1.0.0",
+  "description": "Sistema de CRM e Atendimento",
+  "type": "docker",
+  "dockerfile": "Dockerfile",
+  "port": 3000,
+  "healthCheck": {
+    "path": "/api/health",
+    "port": 3000
+  },
+  "environmentVariables": [
+    {
+      "name": "NODE_ENV",
+      "value": "production",
+      "description": "Ambiente da aplicação"
+    },
+    {
+      "name": "DATABASE_URL",
+      "value": "",
+      "description": "URL de conexão PostgreSQL (será preenchido automaticamente se usar DB do EasyPanel)",
+      "required": true
+    },
+    {
+      "name": "AUTH_SECRET",
+      "value": "",
+      "description": "Chave secreta para autenticação (gerar com: openssl rand -hex 32)",
+      "required": true
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_URL",
+      "value": "https://wqbppfngjolnxbwqngfo.supabase.co",
+      "description": "URL do Supabase",
+      "required": true
+    },
+    {
+      "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "value": "",
+      "description": "Anon Key do Supabase",
+      "required": true
+    },
+    {
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "value": "",
+      "description": "Service Role Key do Supabase",
+      "required": false
+    },
+    {
+      "name": "NEXT_TELEMETRY_DISABLED",
+      "value": "1",
+      "description": "Desabilitar telemetria Next.js"
+    }
+  ],
+  "databases": [
+    {
+      "type": "postgres",
+      "version": "15",
+      "name": "nexia-db",
+      "description": "Banco de dados principal",
+      "envVar": "DATABASE_URL"
+    }
+  ],
+  "volumes": [
+    {
+      "name": "uploads",
+      "path": "/app/public/uploads",
+      "description": "Storage para uploads"
+    }
+  ],
+  "buildCommand": "npx prisma generate && npx prisma migrate deploy && npm run build",
+  "startCommand": "npm start",
+  "resources": {
+    "cpu": 1,
+    "memory": 2048,
+    "swap": 512
+  }
+}

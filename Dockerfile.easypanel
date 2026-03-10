@@ -1,0 +1,87 @@
+# ============================================
+# Dockerfile Otimizado para EasyPanel
+# ============================================
+
+FROM node:20-alpine AS base
+
+# Instalar dependências do sistema
+RUN apk add --no-cache libc6-compat openssl
+
+# ============================================
+# Stage 1: Instalação de dependências
+# ============================================
+FROM base AS deps
+WORKDIR /app
+
+# Copiar arquivos de dependências
+COPY package.json pnpm-lock.yaml ./
+
+# Instalar pnpm e dependências
+RUN npm install -g pnpm && \
+    pnpm install --frozen-lockfile
+
+# ============================================
+# Stage 2: Build da aplicação
+# ============================================
+FROM base AS builder
+WORKDIR /app
+
+# Copiar dependências
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Variáveis de ambiente para build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Gerar Prisma Client e buildar
+RUN npx prisma generate
+RUN npm run build
+
+# ============================================
+# Stage 3: Runtime
+# ============================================
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Criar usuário não-root
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Criar diretório para uploads
+RUN mkdir -p /app/public/uploads && \
+    chown -R nextjs:nodejs /app
+
+# Copiar arquivos necessários
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma/
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma/
+
+# Copiar scripts
+COPY --chown=nextjs:nodejs scripts/easypanel-entrypoint.sh ./
+RUN chmod +x easypanel-entrypoint.sh
+
+# Mudar para usuário não-root
+USER nextjs
+
+# Expor porta
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+# Entrypoint para executar migrações antes de iniciar
+ENTRYPOINT ["./easypanel-entrypoint.sh"]
+
+# Comando padrão
+CMD ["node", "server.js"]

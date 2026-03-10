@@ -35,7 +35,7 @@ export function VerticalKpiCard({
     <Card className="group rounded-sm shadow-sm p-2.5 transition-all hover:shadow-md">
       {/* Icon e Change Badge no topo */}
       <div className="mb-2 flex items-center justify-between">
-        <div className="bg-gradient-to-br from-[#46347F] to-[#46347F] p-1.5 rounded-sm">
+        <div className="bg-gradient-to-br from-[#8B7DB8] to-[#8B7DB8] p-1.5 rounded-sm">
           <Icon className="h-3.5 w-3.5 text-white" />
         </div>
         <div
@@ -51,7 +51,7 @@ export function VerticalKpiCard({
       </div>
 
       {/* Label */}
-      <h3 className="mb-1 text-xs font-medium text-[#46347F] leading-tight">{label}</h3>
+      <h3 className="mb-1 text-xs font-medium text-[#8B7DB8] leading-tight">{label}</h3>
 
       {/* Value em destaque - fonte responsiva */}
       <div className="flex items-baseline gap-1 min-w-0">
