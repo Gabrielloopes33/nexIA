@@ -138,14 +138,14 @@ function AuthCard() {
           
           {/* Header com Logo */}
           <div className="mb-8 flex flex-col items-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8B7DB8] to-[#46347F] shadow-lg shadow-purple-500/25">
+            <div className="mb-4 relative h-16 w-auto">
               <Image
                 src="/images/nexia-logo.png"
                 alt="NexIA"
-                width={40}
-                height={40}
-                className="brightness-0 invert"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                width={160}
+                height={64}
+                className="h-16 w-auto object-contain"
+                priority
               />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">
