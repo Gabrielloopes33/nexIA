@@ -13,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'NexIA Chat - Dashboard',
-  description: 'CRM Dashboard - NexIA Chat',
+  title: 'NexIA Chat - Início',
+  description: 'CRM Início - NexIA Chat',
   icons: {
     icon: '/images/nexia-logo.png',
     shortcut: '/images/nexia-logo.png',

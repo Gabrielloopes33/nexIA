@@ -34,7 +34,7 @@ export default function ConfiguracoesPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
           <p className="text-sm text-muted-foreground">
-            Configure as preferências do módulo de cobranças
+            Configure as preferências do módulo de assinaturas
           </p>
         </div>
         <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">

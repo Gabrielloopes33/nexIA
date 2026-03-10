@@ -892,7 +892,7 @@ export function AgendamentosView({
         </div>
       </div>
 
-      {/* ── 3-Column Grid Layout - Seguindo padrão Dashboard/Cobranças ── */}
+      {/* ── 3-Column Grid Layout - Seguindo padrão Dashboard/Assinaturas ── */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[220px_minmax(0,1fr)_280px] flex-1 min-h-0">
 
         {/* COLUNA 1 (ESQUERDA): KPIs Verticais */}
