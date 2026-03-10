@@ -14,6 +14,8 @@ export const SCORE_IMPACT: Record<ActivityType, number> = {
   TASK_CREATED: 2,
   TASK_COMPLETED: 5,
   DOCUMENT: 3,
+  AUTOMATION: 0,
+  SYSTEM: 0,
 };
 
 /**

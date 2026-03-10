@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { Priority, DealStatus, ActivityType } from "@prisma/client";
+import { DealPriority, DealStatus, ActivityType } from "@prisma/client";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -21,9 +21,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           select: {
             id: true,
             name: true,
-            email: true,
             phone: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
         stage: {
@@ -95,8 +94,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         ...(status && { status: status as DealStatus }),
         ...(title && { title }),
         ...(description !== undefined && { description }),
-        ...(value !== undefined && { value }),
-        ...(priority && { priority: priority as Priority }),
+        ...(value !== undefined && { amount: value }),
+        ...(priority && { priority: priority as DealPriority }),
         ...(expectedCloseDate && { expectedCloseDate: new Date(expectedCloseDate) }),
         ...(metadata && { metadata }),
       },
@@ -105,9 +104,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           select: {
             id: true,
             name: true,
-            email: true,
             phone: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
         stage: {
@@ -131,7 +129,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         data: {
           dealId: id,
           type: ActivityType.STAGE_CHANGE,
-          description: `Movido de '${currentDeal.stage.name}' para '${newStage?.name}'`,
+          title: "Mudança de estágio",
+          content: `Movido de '${currentDeal.stage.name}' para '${newStage?.name}'`,
           metadata: {
             fromStageId: currentDeal.stageId,
             toStageId: stageId,
@@ -148,8 +147,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         await prisma.dealActivity.create({
           data: {
             dealId: id,
-            type: ActivityType.TASK,
-            description: "Deal marcado como GANHO",
+            type: ActivityType.SYSTEM,
+            title: "Deal ganho",
+            content: "Deal marcado como GANHO",
             metadata: { status: "WON" },
           },
         });
@@ -161,8 +161,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         await prisma.dealActivity.create({
           data: {
             dealId: id,
-            type: ActivityType.TASK,
-            description: "Deal marcado como PERDIDO",
+            type: ActivityType.SYSTEM,
+            title: "Deal perdido",
+            content: "Deal marcado como PERDIDO",
             metadata: { status: "LOST" },
           },
         });

@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DealCard } from "./DealCard"
 import { DealDetailModal } from "./DealDetailModal"
-import { PipelineStage, Deal, DealActivity, Priority, DealStatus } from "@prisma/client"
+import { PipelineStage, Deal, DealActivity, DealPriority, DealStatus } from "@prisma/client"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -41,9 +41,8 @@ interface DealWithRelations extends Deal {
   contact?: {
     id: string
     name: string
-    email?: string
     phone?: string
-    avatar?: string | null
+    avatarUrl?: string | null
   }
   stage?: {
     id: string
@@ -84,7 +83,7 @@ function PipelineColumn({
   onDealClick,
   selectedDealId,
 }: PipelineColumnProps) {
-  const totalValue = deals.reduce((sum, d) => sum + d.value, 0)
+  const totalValue = deals.reduce((sum, d) => sum + Number(d.amount), 0)
   const openDeals = deals.filter(d => d.status === "OPEN")
 
   return (
@@ -104,7 +103,7 @@ function PipelineColumn({
           </div>
           <div 
             className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: stage.color }}
+            style={{ backgroundColor: stage.color || undefined }}
           />
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -121,7 +120,7 @@ function PipelineColumn({
             deal={{
               id: deal.id,
               title: deal.title,
-              value: deal.value,
+              value: Number(deal.amount),
               currency: deal.currency,
               priority: deal.priority,
               leadScore: deal.leadScore,
@@ -173,7 +172,7 @@ function DealListView({
     deals: deals.filter(d => d.stageId === stage.id)
   }))
 
-  const getPriorityLabel = (priority: Priority) => {
+  const getPriorityLabel = (priority: DealPriority) => {
     switch (priority) {
       case "HIGH": return "alta"
       case "MEDIUM": return "media"
@@ -186,7 +185,7 @@ function DealListView({
     <div className="flex-1 overflow-auto p-4">
       <div className="space-y-4">
         {dealsByStage.map(({ stage, deals: stageDeals }) => {
-          const totalValue = stageDeals.reduce((sum, d) => sum + d.value, 0)
+          const totalValue = stageDeals.reduce((sum, d) => sum + Number(d.amount), 0)
           const openDeals = stageDeals.filter(d => d.status === "OPEN")
 
           return (
@@ -199,12 +198,12 @@ function DealListView({
               {/* Stage Header */}
               <div 
                 className="flex items-center justify-between px-4 py-3 border-b border-border"
-                style={{ backgroundColor: `${stage.color}15` }}
+                style={{ backgroundColor: stage.color ? `${stage.color}15` : undefined }}
               >
                 <div className="flex items-center gap-3">
                   <div 
                     className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: stage.color }}
+                    style={{ backgroundColor: stage.color || undefined }}
                   />
                   <span className="font-semibold text-foreground">{stage.name}</span>
                   <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-gray-600">
@@ -270,7 +269,7 @@ function DealListView({
 
                       {/* Value */}
                       <div className="w-24 shrink-0 text-sm font-semibold text-foreground text-right">
-                        {formatCurrency(deal.value)}
+                        {formatCurrency(Number(deal.amount))}
                       </div>
 
                       {/* Priority */}
@@ -609,7 +608,7 @@ export function PipelineViewReal() {
     // Filtros de prioridade
     if (filtros.prioridade.length > 0) {
       result = result.filter(d => {
-        const priorityMap: Record<Priority, Prioridade> = {
+        const priorityMap: Record<DealPriority, Prioridade> = {
           HIGH: "alta",
           MEDIUM: "media",
           LOW: "baixa",
@@ -625,10 +624,10 @@ export function PipelineViewReal() {
     
     // Filtro de valor
     if (filtros.valorMin !== null) {
-      result = result.filter(d => d.value >= filtros.valorMin!)
+      result = result.filter(d => Number(d.amount) >= filtros.valorMin!)
     }
     if (filtros.valorMax !== null) {
-      result = result.filter(d => d.value <= filtros.valorMax!)
+      result = result.filter(d => Number(d.amount) <= filtros.valorMax!)
     }
     
     return result
@@ -640,7 +639,7 @@ export function PipelineViewReal() {
   )
 
   // Totals
-  const totalValue = deals.filter(d => d.status === "OPEN").reduce((sum, d) => sum + d.value, 0)
+  const totalValue = deals.filter(d => d.status === "OPEN").reduce((sum, d) => sum + Number(d.amount), 0)
   const openDealsCount = deals.filter(d => d.status === "OPEN").length
 
   const handleDragStart = (e: React.DragEvent, dealId: string) => {
@@ -868,7 +867,11 @@ export function PipelineViewReal() {
         <DealDetailModal
           deal={{
             ...selectedDeal,
-            contact: selectedDeal.contact || undefined,
+            value: Number(selectedDeal.amount),
+            contact: selectedDeal.contact ? {
+              ...selectedDeal.contact,
+              avatar: selectedDeal.contact.avatarUrl,
+            } : undefined,
             stage: selectedDeal.stage || undefined,
             expectedCloseDate: selectedDeal.expectedCloseDate?.toISOString() || null,
             actualCloseDate: selectedDeal.actualCloseDate?.toISOString() || null,
@@ -877,7 +880,11 @@ export function PipelineViewReal() {
           }}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          activities={activities}
+          activities={activities.map(a => ({
+            ...a,
+            description: a.content || a.title,
+            createdAt: a.createdAt.toISOString(),
+          }))}
           onAddNote={handleAddNote}
           onUpdateDeal={async () => {}}
         />

@@ -44,11 +44,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { type, description, metadata, createdBy } = body;
+    const { type, title, content, metadata, performedBy } = body;
 
-    if (!type || !description) {
+    if (!type || !title) {
       return NextResponse.json(
-        { success: false, error: "Type and description are required" },
+        { success: false, error: "Type and title are required" },
         { status: 400 }
       );
     }
@@ -57,9 +57,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       data: {
         dealId: id,
         type: type as ActivityType,
-        description,
+        title,
+        content: content ?? "",
         metadata: metadata ?? {},
-        createdBy,
+        performedBy,
       },
     });
 

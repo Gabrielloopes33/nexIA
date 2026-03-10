@@ -117,7 +117,7 @@ export function DealDetailModal({
         return <Mail className="h-4 w-4" />;
       case "MEETING":
         return <Calendar className="h-4 w-4" />;
-      case "TASK":
+      case "TASK_COMPLETED":
         return <CheckCircle2 className="h-4 w-4" />;
       default:
         return <MessageSquare className="h-4 w-4" />;
@@ -136,7 +136,7 @@ export function DealDetailModal({
         return "bg-purple-100 text-purple-700";
       case "MEETING":
         return "bg-pink-100 text-pink-700";
-      case "TASK":
+      case "TASK_COMPLETED":
         return "bg-gray-100 text-gray-700";
       default:
         return "bg-gray-100 text-gray-700";

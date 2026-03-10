@@ -1,0 +1,4 @@
+-- This migration was applied manually via Supabase SQL Editor
+-- Tables: pipeline_templates, pipeline_template_stages
+-- Date: 2026-03-10
+-- See: supabase-migration-pipeline.sql for full SQL
