@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 const PUBLIC_PATHS = [
+  '/',
   '/login',
   '/api/auth/logout',
   '/api/whatsapp/webhooks',
@@ -54,5 +55,8 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
 }

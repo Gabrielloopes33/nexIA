@@ -52,7 +52,7 @@ export const topNavItems: SidebarNavItem[] = [
   {
     key: "overview",
     label: "Início",
-    href: "/",
+    href: "/dashboard",
     icon: LayoutDashboard,
   },
   {

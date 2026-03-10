@@ -11,7 +11,12 @@
     "db:seed:templates": "tsx scripts/seed-pipeline-templates.ts",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "db:deploy": "tsx scripts/migrate-db.ts",
+    "docker:build": "docker build -t nexia-app:latest .",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up -d"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
