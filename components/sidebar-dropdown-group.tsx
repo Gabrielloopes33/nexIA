@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronDown, Plus } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SidebarNavItem, SidebarNavChild } from "@/components/sidebar-nav-config"
 
@@ -12,18 +12,22 @@ interface SidebarDropdownGroupProps {
   pathname: string
 }
 
-// Section separator with label
+// Section separator with horizontal connector
 function SectionSeparator({ label }: { label: string }) {
   return (
-    <div className="px-3 py-2 mt-1">
+    <div className="relative flex items-center gap-2 px-0 py-2 mt-1">
+      {/* Horizontal connector line from vertical line to label */}
+      <div className="w-3 h-px bg-white/20 flex-shrink-0" />
       <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
         {label}
       </span>
+      {/* Horizontal line extending to the right */}
+      <div className="flex-1 h-px bg-white/10 min-w-[20px]" />
     </div>
   )
 }
 
-// Sub-nav item with proper hierarchy
+// Sub-nav item with tree-like connector
 function SubNavItem({
   child,
   isActive,
@@ -34,7 +38,7 @@ function SubNavItem({
   const content = (
     <span
       className={cn(
-        "flex items-center justify-between px-3 py-1.5 text-[11px] rounded-md transition-colors",
+        "flex items-center justify-between py-1.5 pr-3 text-[11px] rounded-md transition-colors",
         isActive
           ? "bg-white/20 text-white font-medium"
           : "text-white/70 hover:bg-white/10 hover:text-white",
@@ -51,12 +55,24 @@ function SubNavItem({
   )
 
   if (child.disabled) {
-    return <div className="cursor-not-allowed">{content}</div>
+    return (
+      <div className="relative flex items-center cursor-not-allowed">
+        {/* Tree connector: horizontal line */}
+        <div className="w-4 h-px bg-white/20 flex-shrink-0" />
+        {/* Tree connector: vertical line segment */}
+        <div className="absolute left-0 top-0 w-px h-full bg-white/10 -translate-x-1/2" />
+        <div className="flex-1">{content}</div>
+      </div>
+    )
   }
 
   return (
-    <Link href={child.href} className="block">
-      {content}
+    <Link href={child.href} className="relative flex items-center group">
+      {/* Tree connector: horizontal line */}
+      <div className="w-4 h-px bg-white/20 flex-shrink-0 group-hover:bg-white/30 transition-colors" />
+      {/* Tree connector: small vertical segment for visual continuity */}
+      <div className="absolute left-0 top-1/2 w-px h-3 bg-white/10 -translate-y-1/2 -translate-x-1/2 group-hover:bg-white/20 transition-colors" />
+      <div className="flex-1">{content}</div>
     </Link>
   )
 }
@@ -130,10 +146,13 @@ export function SidebarDropdownGroup({
           isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
         )}
       >
-        {/* Indentation container for visual hierarchy */}
-        <div className="relative ml-3 pl-3 border-l border-white/10 mt-1 space-y-0.5">
+        {/* Tree container with vertical line */}
+        <div className="relative ml-[21px] pl-0">
+          {/* Main vertical line */}
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-white/10" />
+          
           {groupedChildren.map(({ section, items }, sectionIndex) => (
-            <div key={section || `section-${sectionIndex}`}>
+            <div key={section || `section-${sectionIndex}`} className="relative">
               {section && <SectionSeparator label={section} />}
               <div className="space-y-0.5">
                 {items.map((child) => {
