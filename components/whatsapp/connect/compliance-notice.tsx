@@ -16,7 +16,7 @@ export function ComplianceNotice() {
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-[#9795e4]" />
+          <Shield className="h-5 w-5 text-[#46347F]" />
           <CardTitle className="text-lg">Compliance & Diretrizes</CardTitle>
         </div>
       </CardHeader>

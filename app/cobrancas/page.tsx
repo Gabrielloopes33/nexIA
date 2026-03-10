@@ -65,9 +65,9 @@ const upcomingInvoices = [
 
 const plans = [
   { name: "Starter", customers: 145, revenue: "R$ 14.355,00", color: "bg-gray-400" },
-  { name: "Pro", customers: 128, revenue: "R$ 25.472,00", color: "bg-[#9795e4]" },
-  { name: "Business", customers: 45, revenue: "R$ 13.455,00", color: "bg-[#7c7ab8]" },
-  { name: "Enterprise", customers: 24, revenue: "R$ 11.976,00", color: "bg-[#7573b8]" },
+  { name: "Pro", customers: 128, revenue: "R$ 25.472,00", color: "bg-[#46347F]" },
+  { name: "Business", customers: 45, revenue: "R$ 13.455,00", color: "bg-[#46347F]" },
+  { name: "Enterprise", customers: 24, revenue: "R$ 11.976,00", color: "bg-[#46347F]" },
 ]
 
 export default function CobrancasPage() {
@@ -94,7 +94,7 @@ export default function CobrancasPage() {
           </Button>
 
           <Link href="/cobrancas/nova">
-            <Button size="sm" className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+            <Button size="sm" className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
               <Plus className="h-4 w-4" />
               Nova Assinatura
             </Button>
@@ -130,13 +130,13 @@ export default function CobrancasPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-base font-semibold">Assinaturas Recentes</CardTitle>
-                  <div className="flex items-center gap-1.5 rounded-sm bg-[#9795e4]/10 px-2 py-0.5">
-                    <Users className="h-3 w-3 text-[#9795e4]" />
-                    <span className="text-xs font-semibold text-[#9795e4]">342 ativas</span>
+                  <div className="flex items-center gap-1.5 rounded-sm bg-[#46347F]/10 px-2 py-0.5">
+                    <Users className="h-3 w-3 text-[#46347F]" />
+                    <span className="text-xs font-semibold text-[#46347F]">342 ativas</span>
                   </div>
                 </div>
                 <Link href="/cobrancas/assinaturas">
-                  <Button variant="ghost" size="sm" className="h-8 text-[#9795e4]">
+                  <Button variant="ghost" size="sm" className="h-8 text-[#46347F]">
                     Ver Todas
                   </Button>
                 </Link>
@@ -267,7 +267,7 @@ export default function CobrancasPage() {
                 </code>
               </div>
               <Link href="/cobrancas/configuracoes">
-                <Button className="w-full bg-[#9795e4] hover:bg-[#7c7ab8]">
+                <Button className="w-full bg-[#46347F] hover:bg-[#46347F]">
                   Configurar Stripe
                 </Button>
               </Link>

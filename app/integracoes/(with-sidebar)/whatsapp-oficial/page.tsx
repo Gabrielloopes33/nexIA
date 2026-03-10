@@ -23,7 +23,7 @@ export default function WhatsAppOficialPage() {
       {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Link href="/integracoes" className="hover:text-[#9795e4] transition-colors">
+            <Link href="/integracoes" className="hover:text-[#46347F] transition-colors">
               Integrações
             </Link>
             <span>/</span>
@@ -42,7 +42,7 @@ export default function WhatsAppOficialPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-[#9795e4]/10 text-[#9795e4] hover:bg-[#9795e4]/20">
+              <Badge className="bg-[#46347F]/10 text-[#46347F] hover:bg-[#46347F]/20">
                 <Verified className="h-3 w-3 mr-1" />
                 Verificado
               </Badge>
@@ -54,11 +54,11 @@ export default function WhatsAppOficialPage() {
         </div>
 
         {/* Info Banner */}
-        <Card className="mb-6 border-[#9795e4]/20 bg-[#9795e4]/5">
+        <Card className="mb-6 border-[#46347F]/20 bg-[#46347F]/5">
           <CardContent className="flex items-start gap-3 p-4">
-            <Verified className="h-5 w-5 flex-shrink-0 text-[#9795e4] mt-0.5" />
+            <Verified className="h-5 w-5 flex-shrink-0 text-[#46347F] mt-0.5" />
             <div>
-              <h3 className="font-semibold text-[#9795e4]">API Oficial da Meta</h3>
+              <h3 className="font-semibold text-[#46347F]">API Oficial da Meta</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Esta é a integração oficial aprovada pela Meta. Oferece máxima confiabilidade, 
                 suporte a templates pré-aprovados e possibilidade de obter o selo Green Tick.
@@ -72,7 +72,7 @@ export default function WhatsAppOficialPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5 text-[#9795e4]" />
+                <Info className="h-5 w-5 text-[#46347F]" />
                 Como funciona
               </CardTitle>
               <CardDescription>
@@ -81,8 +81,8 @@ export default function WhatsAppOficialPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9795e4]/10">
-                  <Globe className="h-4 w-4 text-[#9795e4]" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#46347F]/10">
+                  <Globe className="h-4 w-4 text-[#46347F]" />
                 </div>
                 <div>
                   <h4 className="font-medium text-sm">Conta Meta Business</h4>
@@ -93,8 +93,8 @@ export default function WhatsAppOficialPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9795e4]/10">
-                  <Shield className="h-4 w-4 text-[#9795e4]" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#46347F]/10">
+                  <Shield className="h-4 w-4 text-[#46347F]" />
                 </div>
                 <div>
                   <h4 className="font-medium text-sm">Verificação de Negócio</h4>
@@ -105,8 +105,8 @@ export default function WhatsAppOficialPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9795e4]/10">
-                  <Webhook className="h-4 w-4 text-[#9795e4]" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#46347F]/10">
+                  <Webhook className="h-4 w-4 text-[#46347F]" />
                 </div>
                 <div>
                   <h4 className="font-medium text-sm">Webhooks Oficiais</h4>
@@ -123,7 +123,7 @@ export default function WhatsAppOficialPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-[#9795e4]" />
+                <Shield className="h-5 w-5 text-[#46347F]" />
                 Oficial vs Não Oficial
               </CardTitle>
               <CardDescription>
@@ -190,7 +190,7 @@ export default function WhatsAppOficialPage() {
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-[#9795e4]" />
+                <MessageSquare className="h-5 w-5 text-[#46347F]" />
                 Recursos Exclusivos
               </CardTitle>
               <CardDescription>
@@ -243,10 +243,10 @@ export default function WhatsAppOficialPage() {
                 ].map((feature, idx) => (
                   <div 
                     key={idx} 
-                    className="rounded-lg border border-[#9795e4]/20 bg-[#9795e4]/5 p-4"
+                    className="rounded-lg border border-[#46347F]/20 bg-[#46347F]/5 p-4"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <feature.icon className="h-4 w-4 text-[#9795e4]" />
+                      <feature.icon className="h-4 w-4 text-[#46347F]" />
                       <h4 className="font-medium text-sm">{feature.title}</h4>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -259,7 +259,7 @@ export default function WhatsAppOficialPage() {
           </Card>
 
           {/* CTA */}
-          <Card className="md:col-span-2 bg-gradient-to-r from-[#9795e4]/10 to-transparent border-[#9795e4]/30">
+          <Card className="md:col-span-2 bg-gradient-to-r from-[#46347F]/10 to-transparent border-[#46347F]/30">
             <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
               <div>
                 <h3 className="font-semibold text-lg">Pronto para usar o WhatsApp Oficial?</h3>
@@ -273,7 +273,7 @@ export default function WhatsAppOficialPage() {
                     Ver Não Oficial
                   </Link>
                 </Button>
-                <Button className="bg-[#9795e4] hover:bg-[#7c7ab8]">
+                <Button className="bg-[#46347F] hover:bg-[#46347F]">
                   <Zap className="h-4 w-4 mr-2" />
                   Conectar Oficial
                 </Button>

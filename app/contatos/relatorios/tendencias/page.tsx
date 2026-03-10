@@ -44,7 +44,7 @@ const STATUS_COLORS: Record<string, string> = {
   ativo: "#81C784",
   inativo: "#E57373",
   pendente: "#FFB74D",
-  convertido: "#9795e4",
+  convertido: "#46347F",
 }
 
 const CustomTooltip = ({ active, payload, label }: {
@@ -135,7 +135,7 @@ export default function TendenciasPage() {
         const tag = MOCK_TAGS.find((t) => t.id === tagId)
         return {
           tag: tag?.nome || tagId,
-          cor: tag?.cor || "#9795e4",
+          cor: tag?.cor || "#46347F",
           total,
         }
       })
@@ -186,8 +186,8 @@ export default function TendenciasPage() {
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9795e4]/10">
-                <Users className="h-6 w-6 text-[#9795e4]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#46347F]/10">
+                <Users className="h-6 w-6 text-[#46347F]" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total de Contatos</p>
@@ -226,8 +226,8 @@ export default function TendenciasPage() {
 
           <Card>
             <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9795e4]/10">
-                <BarChart3 className="h-6 w-6 text-[#9795e4]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#46347F]/10">
+                <BarChart3 className="h-6 w-6 text-[#46347F]" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Taxa de Atividade</p>
@@ -259,9 +259,9 @@ export default function TendenciasPage() {
                     <Line
                       type="monotone"
                       dataKey="contatos"
-                      stroke="#9795e4"
+                      stroke="#46347F"
                       strokeWidth={2}
-                      dot={{ fill: "#9795e4", strokeWidth: 2, r: 4 }}
+                      dot={{ fill: "#46347F", strokeWidth: 2, r: 4 }}
                       activeDot={{ r: 6 }}
                     />
                   </LineChart>
@@ -293,7 +293,7 @@ export default function TendenciasPage() {
                       width={100}
                     />
                     <RechartsTooltip content={<CustomTooltip />} />
-                    <Bar dataKey="total" fill="#9795e4" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="total" fill="#46347F" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -372,7 +372,7 @@ export default function TendenciasPage() {
                     <div className="flex-1">
                       <div className="h-2 w-full rounded-full bg-gray-100">
                         <div
-                          className="h-2 rounded-full bg-[#9795e4]"
+                          className="h-2 rounded-full bg-[#46347F]"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>

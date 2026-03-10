@@ -62,7 +62,7 @@ export default function WhatsAppConnectPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-[#9795e4]" />
+                      <Shield className="h-5 w-5 text-[#46347F]" />
                       Passos para Conexão
                     </CardTitle>
                     <CardDescription>
@@ -72,7 +72,7 @@ export default function WhatsAppConnectPage() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#46347F]/10 text-sm font-bold text-[#46347F]">
                           1
                         </div>
                         <div>
@@ -83,7 +83,7 @@ export default function WhatsAppConnectPage() {
                               href="https://business.facebook.com/" 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-[#9795e4] hover:underline"
+                              className="text-[#46347F] hover:underline"
                             >
                               Criar Business Manager
                               <ExternalLink className="ml-1 inline-block h-3 w-3" />
@@ -93,7 +93,7 @@ export default function WhatsAppConnectPage() {
                       </div>
 
                       <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#46347F]/10 text-sm font-bold text-[#46347F]">
                           2
                         </div>
                         <div>
@@ -106,7 +106,7 @@ export default function WhatsAppConnectPage() {
                       </div>
 
                       <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#46347F]/10 text-sm font-bold text-[#46347F]">
                           3
                         </div>
                         <div>
@@ -119,7 +119,7 @@ export default function WhatsAppConnectPage() {
                       </div>
 
                       <div className="flex items-start gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#9795e4]/10 text-sm font-bold text-[#9795e4]">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#46347F]/10 text-sm font-bold text-[#46347F]">
                           4
                         </div>
                         <div>
@@ -210,7 +210,7 @@ export default function WhatsAppConnectPage() {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-lg border p-3 transition-colors hover:bg-muted/50"
               >
-                <Shield className="h-5 w-5 text-[#9795e4]" />
+                <Shield className="h-5 w-5 text-[#46347F]" />
                 <span className="text-sm font-medium">WhatsApp Business Platform</span>
                 <ExternalLink className="ml-auto h-4 w-4 text-muted-foreground" />
               </Link>

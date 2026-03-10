@@ -36,7 +36,7 @@ export default function SettingsPage() {
             Configure as preferências do módulo de integrações
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Save className="h-4 w-4" />
           Salvar
         </Button>
@@ -46,7 +46,7 @@ export default function SettingsPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Settings className="h-4 w-4 text-[#9795e4]" />
+            <Settings className="h-4 w-4 text-[#46347F]" />
             Geral
           </CardTitle>
         </CardHeader>
@@ -62,7 +62,7 @@ export default function SettingsPage() {
           </div>
 
           {autoSync && (
-            <div className="pl-4 border-l-2 border-[#9795e4]/30 space-y-2">
+            <div className="pl-4 border-l-2 border-[#46347F]/30 space-y-2">
               <Label>Frequência de Sincronização</Label>
               <select 
                 className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -93,7 +93,7 @@ export default function SettingsPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Bell className="h-4 w-4 text-[#9795e4]" />
+            <Bell className="h-4 w-4 text-[#46347F]" />
             Notificações
           </CardTitle>
         </CardHeader>

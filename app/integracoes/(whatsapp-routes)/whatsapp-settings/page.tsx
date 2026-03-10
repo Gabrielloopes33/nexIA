@@ -44,7 +44,7 @@ export default function WhatsappSettingsPage() {
             Personalize o comportamento da integração WhatsApp
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Save className="h-4 w-4" />
           Salvar
         </Button>
@@ -54,7 +54,7 @@ export default function WhatsappSettingsPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-[#9795e4]" />
+            <MessageSquare className="h-4 w-4 text-[#46347F]" />
             Geral
           </CardTitle>
         </CardHeader>
@@ -95,7 +95,7 @@ export default function WhatsappSettingsPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Clock className="h-4 w-4 text-[#9795e4]" />
+            <Clock className="h-4 w-4 text-[#46347F]" />
             Horário de Atendimento
           </CardTitle>
         </CardHeader>
@@ -125,7 +125,7 @@ export default function WhatsappSettingsPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Reply className="h-4 w-4 text-[#9795e4]" />
+            <Reply className="h-4 w-4 text-[#46347F]" />
             Mensagens Automáticas
           </CardTitle>
         </CardHeader>
@@ -160,7 +160,7 @@ export default function WhatsappSettingsPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Bell className="h-4 w-4 text-[#9795e4]" />
+            <Bell className="h-4 w-4 text-[#46347F]" />
             Notificações
           </CardTitle>
         </CardHeader>

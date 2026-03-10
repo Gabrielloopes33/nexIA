@@ -36,7 +36,7 @@ export default function ExportPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Filter className="h-4 w-4 text-[#9795e4]" />
+            <Filter className="h-4 w-4 text-[#46347F]" />
             Filtros
           </CardTitle>
         </CardHeader>
@@ -105,9 +105,9 @@ export default function ExportPage() {
               <RadioGroupItem value="csv" id="csv" className="peer sr-only" />
               <Label
                 htmlFor="csv"
-                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-[#9795e4] [&:has([data-state=checked])]:border-[#9795e4] cursor-pointer"
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-[#46347F] [&:has([data-state=checked])]:border-[#46347F] cursor-pointer"
               >
-                <FileSpreadsheet className="mb-3 h-6 w-6 text-[#9795e4]" />
+                <FileSpreadsheet className="mb-3 h-6 w-6 text-[#46347F]" />
                 <span className="text-sm font-medium">CSV</span>
               </Label>
             </div>
@@ -115,9 +115,9 @@ export default function ExportPage() {
               <RadioGroupItem value="json" id="json" className="peer sr-only" />
               <Label
                 htmlFor="json"
-                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-[#9795e4] [&:has([data-state=checked])]:border-[#9795e4] cursor-pointer"
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-[#46347F] [&:has([data-state=checked])]:border-[#46347F] cursor-pointer"
               >
-                <FileJson className="mb-3 h-6 w-6 text-[#9795e4]" />
+                <FileJson className="mb-3 h-6 w-6 text-[#46347F]" />
                 <span className="text-sm font-medium">JSON</span>
               </Label>
             </div>
@@ -125,9 +125,9 @@ export default function ExportPage() {
               <RadioGroupItem value="xlsx" id="xlsx" className="peer sr-only" />
               <Label
                 htmlFor="xlsx"
-                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-[#9795e4] [&:has([data-state=checked])]:border-[#9795e4] cursor-pointer"
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-[#46347F] [&:has([data-state=checked])]:border-[#46347F] cursor-pointer"
               >
-                <FileCode className="mb-3 h-6 w-6 text-[#9795e4]" />
+                <FileCode className="mb-3 h-6 w-6 text-[#46347F]" />
                 <span className="text-sm font-medium">XLSX</span>
               </Label>
             </div>
@@ -155,7 +155,7 @@ export default function ExportPage() {
 
       {/* Botão Exportar */}
       <Button 
-        className="w-full gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+        className="w-full gap-2 bg-[#46347F] hover:bg-[#46347F]"
         onClick={handleExport}
       >
         <Download className="h-4 w-4" />

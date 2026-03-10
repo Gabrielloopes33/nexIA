@@ -185,8 +185,8 @@ function PermissionList() {
             key={permission.title}
             className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-3 transition-colors hover:bg-muted/50"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#9795e4]/10">
-              <permission.icon className="h-4 w-4 text-[#9795e4]" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#46347F]/10">
+              <permission.icon className="h-4 w-4 text-[#46347F]" />
             </div>
             <div>
               <p className="text-sm font-medium">{permission.title}</p>
@@ -373,7 +373,7 @@ function ProcessingView({ status }: { status: EmbeddedSignupStatus }) {
 
       <div className="rounded-lg border border-border bg-muted/30 p-4">
         <div className="flex items-start gap-3">
-          <Shield className="h-5 w-5 shrink-0 text-[#9795e4]" />
+          <Shield className="h-5 w-5 shrink-0 text-[#46347F]" />
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground">Segurança</p>
             <p>

@@ -86,7 +86,7 @@ export function QualityBadge({
               href="https://www.whatsapp.com/legal/business-policy/" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-[#9795e4] hover:underline"
+              className="text-[#46347F] hover:underline"
             >
               Saiba mais
             </a>

@@ -125,8 +125,8 @@ export default function WhatsAppTemplatesPage() {
 
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#9795e4]/10 mb-4">
-              <Phone className="h-8 w-8 text-[#9795e4]" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#46347F]/10 mb-4">
+              <Phone className="h-8 w-8 text-[#46347F]" />
             </div>
             <h3 className="text-lg font-semibold">Nenhuma instância conectada</h3>
             <p className="mt-1 text-sm text-muted-foreground text-center max-w-md">
@@ -296,8 +296,8 @@ export default function WhatsAppTemplatesPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardContent className="flex items-center gap-4 p-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#9795e4]/10">
-                  <FileText className="h-6 w-6 text-[#9795e4]" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#46347F]/10">
+                  <FileText className="h-6 w-6 text-[#46347F]" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{templates.length}</p>

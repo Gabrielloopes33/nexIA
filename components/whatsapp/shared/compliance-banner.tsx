@@ -16,7 +16,7 @@ const severityConfig = {
   info: {
     icon: Info,
     variant: "default" as const,
-    classes: "bg-[#9795e4]/10 border-[#9795e4]/20 text-foreground",
+    classes: "bg-[#46347F]/10 border-[#46347F]/20 text-foreground",
   },
   warning: {
     icon: AlertTriangle,
@@ -56,7 +56,7 @@ export function ComplianceBanner({ message, onDismiss, className }: ComplianceBa
                 variant="outline"
                 className={cn(
                   "h-7 text-xs",
-                  message.severity === 'info' && "border-[#9795e4]/30 hover:bg-[#9795e4]/10",
+                  message.severity === 'info' && "border-[#46347F]/30 hover:bg-[#46347F]/10",
                   message.severity === 'warning' && "border-amber-300 hover:bg-amber-100",
                   message.severity === 'critical' && "border-red-300 hover:bg-red-100"
                 )}
@@ -74,7 +74,7 @@ export function ComplianceBanner({ message, onDismiss, className }: ComplianceBa
                 variant="outline"
                 className={cn(
                   "h-7 text-xs",
-                  message.severity === 'info' && "border-[#9795e4]/30 hover:bg-[#9795e4]/10",
+                  message.severity === 'info' && "border-[#46347F]/30 hover:bg-[#46347F]/10",
                   message.severity === 'warning' && "border-amber-300 hover:bg-amber-100",
                   message.severity === 'critical' && "border-red-300 hover:bg-red-100"
                 )}

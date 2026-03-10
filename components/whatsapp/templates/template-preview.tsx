@@ -92,7 +92,7 @@ export function TemplatePreview({ template, trigger }: TemplatePreviewProps) {
           <div className="flex items-start justify-between">
             <div>
               <DialogTitle className="flex items-center gap-2">
-                <LayoutTemplate className="h-5 w-5 text-[#9795e4]" />
+                <LayoutTemplate className="h-5 w-5 text-[#46347F]" />
                 {template.name}
               </DialogTitle>
               <DialogDescription className="mt-1.5">
@@ -110,21 +110,21 @@ export function TemplatePreview({ template, trigger }: TemplatePreviewProps) {
             <TabsList className="bg-transparent p-0 h-12 w-full justify-start gap-6 rounded-none">
               <TabsTrigger 
                 value="preview" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#9795e4] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 gap-2"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#46347F] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 gap-2"
               >
                 <Eye className="h-4 w-4" />
                 Visual
               </TabsTrigger>
               <TabsTrigger 
                 value="json"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#9795e4] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 gap-2"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#46347F] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 gap-2"
               >
                 <Code className="h-4 w-4" />
                 JSON
               </TabsTrigger>
               <TabsTrigger 
                 value="details"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#9795e4] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 gap-2"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#46347F] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 gap-2"
               >
                 <FileText className="h-4 w-4" />
                 Detalhes

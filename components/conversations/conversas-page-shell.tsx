@@ -108,8 +108,8 @@ function EmptyState({ title, message, icon }: EmptyStateProps) {
   return (
     <div className="flex-1 flex items-center justify-center bg-muted/20">
       <div className="text-center p-8">
-        <div className="mx-auto w-16 h-16 rounded-full bg-[#9795e4]/10 flex items-center justify-center mb-4">
-          {icon || <Inbox className="w-8 h-8 text-[#9795e4]" />}
+        <div className="mx-auto w-16 h-16 rounded-full bg-[#46347F]/10 flex items-center justify-center mb-4">
+          {icon || <Inbox className="w-8 h-8 text-[#46347F]" />}
         </div>
         <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
         <p className="text-sm text-muted-foreground max-w-xs mx-auto">{message}</p>
@@ -127,7 +127,7 @@ export function ConversasPageShell(props: ConversasPageShellProps) {
       fallback={
         <div className="flex h-screen items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#9795e4] border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#46347F] border-t-transparent" />
             <p className="text-sm text-muted-foreground">Carregando conversas...</p>
           </div>
         </div>

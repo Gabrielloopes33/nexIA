@@ -414,7 +414,7 @@ export default function WhatsAppLogsPage() {
       <Card className="border-border bg-muted/30">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-[#9795e4]" />
+            <MessageSquare className="h-5 w-5 text-[#46347F]" />
             <CardTitle className="text-base">Sobre os Logs</CardTitle>
           </div>
         </CardHeader>
@@ -425,7 +425,7 @@ export default function WhatsAppLogsPage() {
               <ul className="space-y-1">
                 {Object.entries(EVENT_TYPE_LABELS).slice(0, 3).map(([key, label]) => (
                   <li key={key} className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#9795e4]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#46347F]" />
                     {label}
                   </li>
                 ))}

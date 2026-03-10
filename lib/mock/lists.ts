@@ -15,7 +15,7 @@ export const MOCK_LISTS: ContactList[] = [
     id: "list-001",
     nome: "Clientes VIP",
     descricao: "Clientes com alto ticket médio e engajamento",
-    cor: "#9795e4",
+    cor: "#46347F",
     contatosCount: 45,
     contatosIds: ["cont-001", "cont-005", "cont-008"],
     criadoEm: "2024-12-15T10:30:00Z",
@@ -80,9 +80,9 @@ export const MOCK_LISTS: ContactList[] = [
 ]
 
 export const LIST_COLORS = [
-  "#9795e4",
-  "#7c7ab8",
-  "#b3b3e5",
+  "#46347F",
+  "#46347F",
+  "#46347F",
   "#E57373",
   "#81C784",
   "#64B5F6",

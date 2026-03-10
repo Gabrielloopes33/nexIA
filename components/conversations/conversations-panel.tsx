@@ -71,7 +71,7 @@ export function ConversationsPanel({ selectedId, onSelect, conversations = [] }:
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar conversas..."
-            className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#9795e4]/30"
+            className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#46347F]/30"
           />
         </div>
       </div>
@@ -98,7 +98,7 @@ export function ConversationsPanel({ selectedId, onSelect, conversations = [] }:
                     className={cn(
                       "flex w-full items-start gap-3 px-4 py-3 text-left transition-all relative",
                       selectedId === conv.id
-                        ? "bg-[#9795e4]/8 border-l-2 border-[#9795e4]"
+                        ? "bg-[#46347F]/8 border-l-2 border-[#46347F]"
                         : "hover:bg-accent border-l-2 border-transparent"
                     )}
                   >
@@ -120,7 +120,7 @@ export function ConversationsPanel({ selectedId, onSelect, conversations = [] }:
                       {/* Assigned Agent Badge */}
                       {conv.assignedTo && (
                         <div
-                          className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#9795e4] text-[8px] font-bold text-white ring-2 ring-white"
+                          className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#46347F] text-[8px] font-bold text-white ring-2 ring-white"
                         >
                           {conv.assignedTo.avatar}
                         </div>
@@ -188,7 +188,7 @@ export function ConversationsPanel({ selectedId, onSelect, conversations = [] }:
 
                         {/* Unread Count */}
                         {conv.unreadCount > 0 && (
-                          <span className="ml-auto flex h-5 items-center justify-center rounded-full bg-[#9795e4] px-1.5 text-[10px] font-bold text-white min-w-5">
+                          <span className="ml-auto flex h-5 items-center justify-center rounded-full bg-[#46347F] px-1.5 text-[10px] font-bold text-white min-w-5">
                             {conv.unreadCount}
                           </span>
                         )}

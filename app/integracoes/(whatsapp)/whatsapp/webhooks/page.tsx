@@ -95,8 +95,8 @@ export default function WhatsAppWebhooksPage() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#9795e4]/10">
-              <Webhook className="h-5 w-5 text-[#9795e4]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#46347F]/10">
+              <Webhook className="h-5 w-5 text-[#46347F]" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Webhooks</h1>
@@ -159,7 +159,7 @@ export default function WhatsAppWebhooksPage() {
         <Card className="mt-6">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-[#9795e4]" />
+              <Shield className="h-5 w-5 text-[#46347F]" />
               <CardTitle className="text-lg">Implementação do Webhook</CardTitle>
             </div>
             <CardDescription>

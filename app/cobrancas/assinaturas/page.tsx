@@ -94,7 +94,7 @@ export default function AssinaturasPage() {
           </p>
         </div>
         <Link href="/cobrancas/nova">
-          <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+          <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
             <Plus className="h-4 w-4" />
             Nova Assinatura
           </Button>
@@ -130,7 +130,7 @@ export default function AssinaturasPage() {
         <Card className="shadow-sm col-span-2 md:col-span-4 lg:col-span-1">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">MRR</p>
-            <p className="text-2xl font-bold text-[#9795e4]">{stats.mrr}</p>
+            <p className="text-2xl font-bold text-[#46347F]">{stats.mrr}</p>
           </CardContent>
         </Card>
       </div>
@@ -178,7 +178,7 @@ export default function AssinaturasPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Package className="h-4 w-4 text-[#9795e4]" />
+            <Package className="h-4 w-4 text-[#46347F]" />
             Lista de Assinaturas
           </CardTitle>
         </CardHeader>

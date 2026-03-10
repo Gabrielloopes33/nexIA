@@ -60,7 +60,7 @@ export function PipelinePanel() {
           size="sm"
           className={cn(
             'justify-start h-8 text-xs',
-            filter === 'todos' && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]'
+            filter === 'todos' && 'bg-gradient-to-br from-[#46347F] to-[#46347F]'
           )}
         >
           <Layers className="mr-2 h-3.5 w-3.5" />
@@ -75,7 +75,7 @@ export function PipelinePanel() {
           size="sm"
           className={cn(
             'justify-start h-8 text-xs',
-            filter === 'qualificacao' && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]'
+            filter === 'qualificacao' && 'bg-gradient-to-br from-[#46347F] to-[#46347F]'
           )}
         >
           <TrendingUp className="mr-2 h-3.5 w-3.5" />
@@ -90,7 +90,7 @@ export function PipelinePanel() {
           size="sm"
           className={cn(
             'justify-start h-8 text-xs',
-            filter === 'proposta' && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]'
+            filter === 'proposta' && 'bg-gradient-to-br from-[#46347F] to-[#46347F]'
           )}
         >
           <Clock className="mr-2 h-3.5 w-3.5" />
@@ -105,7 +105,7 @@ export function PipelinePanel() {
           size="sm"
           className={cn(
             'justify-start h-8 text-xs',
-            filter === 'negociacao' && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]'
+            filter === 'negociacao' && 'bg-gradient-to-br from-[#46347F] to-[#46347F]'
           )}
         >
           <Layers className="mr-2 h-3.5 w-3.5" />
@@ -120,7 +120,7 @@ export function PipelinePanel() {
           size="sm"
           className={cn(
             'justify-start h-8 text-xs',
-            filter === 'ganho' && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]'
+            filter === 'ganho' && 'bg-gradient-to-br from-[#46347F] to-[#46347F]'
           )}
         >
           <CheckCircle2 className="mr-2 h-3.5 w-3.5" />

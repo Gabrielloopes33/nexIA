@@ -38,9 +38,9 @@ const INSIGHT_TYPES = [
     type: 'descobertas' as InsightType,
     label: 'DESCOBERTAS',
     icon: Search,
-    color: 'text-[#9795e4]',
-    bgColor: 'bg-[#9795e4]/10',
-    borderColor: 'border-[#9795e4]',
+    color: 'text-[#46347F]',
+    bgColor: 'bg-[#46347F]/10',
+    borderColor: 'border-[#46347F]',
   },
 ]
 
@@ -81,7 +81,7 @@ export function OverviewPanel({
               onClick={() => setActivePanel(type)}
               className={cn(
                 'h-auto justify-start gap-2 p-2 transition-all',
-                isActive && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]',
+                isActive && 'bg-gradient-to-br from-[#46347F] to-[#46347F]',
                 !isActive && 'hover:bg-muted'
               )}
             >
@@ -168,7 +168,7 @@ export function OverviewPanel({
                     <div className="mt-2 flex items-center gap-1.5">
                       <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full bg-gradient-to-r from-[#9795e4] to-[#b3b3e5]"
+                          className="h-full bg-gradient-to-r from-[#46347F] to-[#46347F]"
                           style={{ width: `${insight.confidence}%` }}
                         />
                       </div>

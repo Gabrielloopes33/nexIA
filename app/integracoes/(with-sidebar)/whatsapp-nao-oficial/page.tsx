@@ -22,7 +22,7 @@ export default function WhatsAppNaoOficialPage() {
       {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Link href="/integracoes" className="hover:text-[#9795e4] transition-colors">
+            <Link href="/integracoes" className="hover:text-[#46347F] transition-colors">
               Integrações
             </Link>
             <span>/</span>
@@ -65,7 +65,7 @@ export default function WhatsAppNaoOficialPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5 text-[#9795e4]" />
+                <Info className="h-5 w-5 text-[#46347F]" />
                 Como funciona
               </CardTitle>
               <CardDescription>
@@ -74,8 +74,8 @@ export default function WhatsAppNaoOficialPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9795e4]/10">
-                  <QrCode className="h-4 w-4 text-[#9795e4]" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#46347F]/10">
+                  <QrCode className="h-4 w-4 text-[#46347F]" />
                 </div>
                 <div>
                   <h4 className="font-medium text-sm">Conexão via QR Code</h4>
@@ -86,8 +86,8 @@ export default function WhatsAppNaoOficialPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#9795e4]/10">
-                  <Zap className="h-4 w-4 text-[#9795e4]" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#46347F]/10">
+                  <Zap className="h-4 w-4 text-[#46347F]" />
                 </div>
                 <div>
                   <h4 className="font-medium text-sm">Evolution API</h4>
@@ -104,7 +104,7 @@ export default function WhatsAppNaoOficialPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-[#9795e4]" />
+                <Shield className="h-5 w-5 text-[#46347F]" />
                 Oficial vs Não Oficial
               </CardTitle>
               <CardDescription>
@@ -171,7 +171,7 @@ export default function WhatsAppNaoOficialPage() {
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-[#9795e4]" />
+                <MessageSquare className="h-5 w-5 text-[#46347F]" />
                 Recursos Disponíveis
               </CardTitle>
               <CardDescription>
@@ -226,7 +226,7 @@ export default function WhatsAppNaoOficialPage() {
           </Card>
 
           {/* CTA */}
-          <Card className="md:col-span-2 border-[#9795e4]/20">
+          <Card className="md:col-span-2 border-[#46347F]/20">
             <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
               <div>
                 <h3 className="font-semibold text-lg">Quer migrar para o WhatsApp Oficial?</h3>
@@ -238,7 +238,7 @@ export default function WhatsAppNaoOficialPage() {
                 <Button variant="outline" asChild>
                   <Link href="/integracoes">Ver Todas Integrações</Link>
                 </Button>
-                <Button className="bg-[#9795e4] hover:bg-[#7c7ab8]" asChild>
+                <Button className="bg-[#46347F] hover:bg-[#46347F]" asChild>
                   <Link href="/integracoes/whatsapp-oficial">
                     Conhecer Oficial
                   </Link>

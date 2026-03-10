@@ -335,20 +335,20 @@ export default function ExportarPage() {
                     className={cn(
                       "flex flex-col items-center gap-2 rounded-lg border p-4 transition-all",
                       format === "csv"
-                        ? "border-[#9795e4] bg-[#9795e4]/5"
-                        : "border-border hover:border-[#9795e4]/50"
+                        ? "border-[#46347F] bg-[#46347F]/5"
+                        : "border-border hover:border-[#46347F]/50"
                     )}
                   >
                     <FileText
                       className={cn(
                         "h-8 w-8",
-                        format === "csv" ? "text-[#9795e4]" : "text-muted-foreground"
+                        format === "csv" ? "text-[#46347F]" : "text-muted-foreground"
                       )}
                     />
                     <span
                       className={cn(
                         "text-sm font-medium",
-                        format === "csv" ? "text-[#9795e4]" : "text-foreground"
+                        format === "csv" ? "text-[#46347F]" : "text-foreground"
                       )}
                     >
                       CSV
@@ -361,20 +361,20 @@ export default function ExportarPage() {
                     className={cn(
                       "flex flex-col items-center gap-2 rounded-lg border p-4 transition-all",
                       format === "xlsx"
-                        ? "border-[#9795e4] bg-[#9795e4]/5"
-                        : "border-border hover:border-[#9795e4]/50"
+                        ? "border-[#46347F] bg-[#46347F]/5"
+                        : "border-border hover:border-[#46347F]/50"
                     )}
                   >
                     <FileSpreadsheet
                       className={cn(
                         "h-8 w-8",
-                        format === "xlsx" ? "text-[#9795e4]" : "text-muted-foreground"
+                        format === "xlsx" ? "text-[#46347F]" : "text-muted-foreground"
                       )}
                     />
                     <span
                       className={cn(
                         "text-sm font-medium",
-                        format === "xlsx" ? "text-[#9795e4]" : "text-foreground"
+                        format === "xlsx" ? "text-[#46347F]" : "text-foreground"
                       )}
                     >
                       Excel XLSX
@@ -446,7 +446,7 @@ export default function ExportarPage() {
                 <Button
                   onClick={handleExport}
                   disabled={filteredContacts.length === 0 || selectedFields.length === 0}
-                  className="w-full bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                  className="w-full bg-[#46347F] hover:bg-[#46347F] text-white"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Exportar

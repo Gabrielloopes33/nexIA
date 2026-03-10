@@ -48,7 +48,7 @@ export function ConversasPanel() {
           size="sm"
           className={cn(
             'justify-start h-8 text-xs',
-            filterStatus === 'todas' && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]'
+            filterStatus === 'todas' && 'bg-gradient-to-br from-[#46347F] to-[#46347F]'
           )}
         >
           <MessageSquare className="mr-2 h-3.5 w-3.5" />
@@ -63,7 +63,7 @@ export function ConversasPanel() {
           size="sm"
           className={cn(
             'justify-start h-8 text-xs',
-            filterStatus === 'ativa' && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]'
+            filterStatus === 'ativa' && 'bg-gradient-to-br from-[#46347F] to-[#46347F]'
           )}
         >
           <User className="mr-2 h-3.5 w-3.5" />
@@ -78,7 +78,7 @@ export function ConversasPanel() {
           size="sm"
           className={cn(
             'justify-start h-8 text-xs',
-            filterStatus === 'arquivada' && 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5]'
+            filterStatus === 'arquivada' && 'bg-gradient-to-br from-[#46347F] to-[#46347F]'
           )}
         >
           <Clock className="mr-2 h-3.5 w-3.5" />
@@ -103,7 +103,7 @@ export function ConversasPanel() {
                 </span>
                 <div className="flex items-center gap-1">
                   {conversation.unreadCount > 0 && (
-                    <Badge className="bg-[#9795e4] text-white text-[8px] h-4 px-1.5">
+                    <Badge className="bg-[#46347F] text-white text-[8px] h-4 px-1.5">
                       {conversation.unreadCount}
                     </Badge>
                   )}

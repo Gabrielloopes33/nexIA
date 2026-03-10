@@ -148,7 +148,7 @@ export function Sidebar() {
       <div className="mt-2 flex-shrink-0">
         <button
           title="Perfil"
-          className="flex h-8 w-8 items-center justify-center rounded-sm text-[#9795e4] transition-all hover:bg-[#9795e4]/10"
+          className="flex h-8 w-8 items-center justify-center rounded-sm text-[#46347F] transition-all hover:bg-[#46347F]/10"
         >
           <User className="h-4 w-4" strokeWidth={2.0} />
         </button>

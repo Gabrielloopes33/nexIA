@@ -47,7 +47,7 @@ export default function TaxasPage() {
             Configure taxas de processamento e impostos aplicáveis
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Save className="h-4 w-4" />
           Salvar Alterações
         </Button>
@@ -57,7 +57,7 @@ export default function TaxasPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-[#9795e4]" />
+            <Receipt className="h-4 w-4 text-[#46347F]" />
             Taxas do Processador (Stripe)
           </CardTitle>
         </CardHeader>
@@ -96,7 +96,7 @@ export default function TaxasPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <FileText className="h-4 w-4 text-[#9795e4]" />
+            <FileText className="h-4 w-4 text-[#46347F]" />
             Impostos
           </CardTitle>
         </CardHeader>
@@ -105,8 +105,8 @@ export default function TaxasPage() {
             {impostos.map((imposto) => (
               <div key={imposto.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-[#9795e4]/10 flex items-center justify-center">
-                    <Percent className="h-4 w-4 text-[#9795e4]" />
+                  <div className="h-8 w-8 rounded-full bg-[#46347F]/10 flex items-center justify-center">
+                    <Percent className="h-4 w-4 text-[#46347F]" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -129,10 +129,10 @@ export default function TaxasPage() {
       </Card>
 
       {/* Simulador */}
-      <Card className="shadow-sm border-[#9795e4]/20">
+      <Card className="shadow-sm border-[#46347F]/20">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Calculator className="h-4 w-4 text-[#9795e4]" />
+            <Calculator className="h-4 w-4 text-[#46347F]" />
             Simulador de Receita
           </CardTitle>
         </CardHeader>
@@ -162,7 +162,7 @@ export default function TaxasPage() {
 
           <div className="bg-muted/30 rounded-lg p-4">
             <h4 className="font-medium mb-3 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-[#9795e4]" />
+              <TrendingUp className="h-4 w-4 text-[#46347F]" />
               Estimativa
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

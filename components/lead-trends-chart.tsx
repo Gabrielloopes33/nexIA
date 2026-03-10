@@ -48,7 +48,7 @@ export function LeadTrendsChart() {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#9795e4]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#46347F]" />
             <span className="text-xs text-gray-600">Total</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -65,8 +65,8 @@ export function LeadTrendsChart() {
         <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#9795e4" stopOpacity={0.15} />
-              <stop offset="95%" stopColor="#9795e4" stopOpacity={0} />
+              <stop offset="5%" stopColor="#46347F" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#46347F" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="colorVerified" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#027E46" stopOpacity={0.15} />
@@ -93,7 +93,7 @@ export function LeadTrendsChart() {
           <Area
             type="monotone"
             dataKey="total"
-            stroke="#9795e4"
+            stroke="#46347F"
             strokeWidth={2}
             fill="url(#colorTotal)"
             name="Total Leads"

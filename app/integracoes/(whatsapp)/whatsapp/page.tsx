@@ -45,8 +45,8 @@ function StatCard({ title, value, description, icon: Icon, trend }: StatCardProp
               {description}
             </p>
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#9795e4]/10">
-            <Icon className="h-6 w-6 text-[#9795e4]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#46347F]/10">
+            <Icon className="h-6 w-6 text-[#46347F]" />
           </div>
         </div>
       </CardContent>
@@ -74,11 +74,11 @@ function QuickAction({ title, description, icon: Icon, href, disabled }: QuickAc
           <div className="flex items-center gap-3">
             <div className={cn(
               "flex h-10 w-10 items-center justify-center rounded-lg",
-              disabled ? "bg-muted" : "bg-[#9795e4]/10"
+              disabled ? "bg-muted" : "bg-[#46347F]/10"
             )}>
               <Icon className={cn(
                 "h-5 w-5",
-                disabled ? "text-muted-foreground" : "text-[#9795e4]"
+                disabled ? "text-muted-foreground" : "text-[#46347F]"
               )} />
             </div>
             <div>
@@ -93,7 +93,7 @@ function QuickAction({ title, description, icon: Icon, href, disabled }: QuickAc
           </div>
           <ArrowRight className={cn(
             "h-4 w-4",
-            disabled ? "text-muted-foreground" : "text-[#9795e4]"
+            disabled ? "text-muted-foreground" : "text-[#46347F]"
           )} />
         </CardContent>
       </Card>
@@ -199,7 +199,7 @@ export default function WhatsAppOverviewPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-[#9795e4]" />
+                <AlertCircle className="h-5 w-5 text-[#46347F]" />
                 <CardTitle className="text-lg">Dicas de Compliance</CardTitle>
               </div>
               <CardDescription>
@@ -231,7 +231,7 @@ export default function WhatsAppOverviewPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-[#9795e4]" />
+                <TrendingUp className="h-5 w-5 text-[#46347F]" />
                 <CardTitle className="text-lg">Próximos Passos</CardTitle>
               </div>
               <CardDescription>
@@ -244,7 +244,7 @@ export default function WhatsAppOverviewPage() {
                   <li className="flex items-center gap-2 text-sm">
                     <div className="h-2 w-2 rounded-full bg-amber-500" />
                     <span>Conecte sua conta WhatsApp Business</span>
-                    <Button size="sm" variant="link" className="h-auto p-0 text-[#9795e4]" asChild>
+                    <Button size="sm" variant="link" className="h-auto p-0 text-[#46347F]" asChild>
                       <Link href="/integracoes/whatsapp/connect">Ir</Link>
                     </Button>
                   </li>
@@ -255,16 +255,16 @@ export default function WhatsAppOverviewPage() {
                       <span>Conta conectada</span>
                     </li>
                     <li className="flex items-center gap-2 text-sm">
-                      <div className="h-2 w-2 rounded-full bg-[#9795e4]" />
+                      <div className="h-2 w-2 rounded-full bg-[#46347F]" />
                       <span>Configure webhooks para receber eventos</span>
-                      <Button size="sm" variant="link" className="h-auto p-0 text-[#9795e4]" asChild>
+                      <Button size="sm" variant="link" className="h-auto p-0 text-[#46347F]" asChild>
                         <Link href="/integracoes/whatsapp/webhooks">Configurar</Link>
                       </Button>
                     </li>
                     <li className="flex items-center gap-2 text-sm">
-                      <div className="h-2 w-2 rounded-full bg-[#9795e4]" />
+                      <div className="h-2 w-2 rounded-full bg-[#46347F]" />
                       <span>Crie templates para mensagens fora da janela</span>
-                      <Button size="sm" variant="link" className="h-auto p-0 text-[#9795e4]" asChild>
+                      <Button size="sm" variant="link" className="h-auto p-0 text-[#46347F]" asChild>
                         <Link href="/integracoes/whatsapp/templates">Criar</Link>
                       </Button>
                     </li>

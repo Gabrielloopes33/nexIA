@@ -27,7 +27,7 @@ export const CONVERSION_STAGES: ConversionStageData[] = [
     stage: 'Lead',
     value: 125,
     percentage: 100,
-    color: '#9795e4', // Purple
+    color: '#46347F', // Purple
   },
   {
     stage: 'Qualificado',
@@ -93,7 +93,7 @@ export const UTM_SOURCES: UTMSourceData[] = [
     leads: 8,
     conversions: 3,
     roi: 5.2,
-    color: '#9795e4',
+    color: '#46347F',
   },
 ]
 

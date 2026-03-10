@@ -84,7 +84,7 @@ export function ActivityHeatmap({ compact }: ActivityHeatmapProps) {
     
     const intensity = count / maxCount
     
-    if (intensity >= 0.8) return 'bg-[#9795e4]' // Primary purple
+    if (intensity >= 0.8) return 'bg-[#46347F]' // Primary purple
     if (intensity >= 0.6) return 'bg-purple-400'
     if (intensity >= 0.4) return 'bg-purple-300'
     if (intensity >= 0.2) return 'bg-purple-200'
@@ -169,7 +169,7 @@ export function ActivityHeatmap({ compact }: ActivityHeatmapProps) {
               <div className="w-3 h-3 rounded-sm bg-purple-200" />
               <div className="w-3 h-3 rounded-sm bg-purple-300" />
               <div className="w-3 h-3 rounded-sm bg-purple-400" />
-              <div className="w-3 h-3 rounded-sm bg-[#9795e4]" />
+              <div className="w-3 h-3 rounded-sm bg-[#46347F]" />
             </div>
             <span className="text-gray-500 text-xs">Mais</span>
           </div>

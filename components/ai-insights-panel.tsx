@@ -150,7 +150,7 @@ export function AiInsightsPanel() {
     <Card className="p-6 rounded-sm shadow-sm bg-gradient-to-br from-purple-50/50 to-blue-50/50">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
-          <div className="bg-gradient-to-br from-[#9795e4] to-[#b3b3e5] p-2 rounded-sm">
+          <div className="bg-gradient-to-br from-[#46347F] to-[#46347F] p-2 rounded-sm">
             <Lightbulb className="h-4 w-4 text-white" />
           </div>
           <h3 className="text-lg font-semibold">Insights de IA</h3>

@@ -37,7 +37,7 @@ interface ContactsTableProps {
 
 function getStatusColor(status: Contact["status"]): string {
   const option = CONTACT_STATUS_OPTIONS.find((o) => o.value === status)
-  return option?.color || "#9795e4"
+  return option?.color || "#46347F"
 }
 
 function getStatusLabel(status: Contact["status"]): string {

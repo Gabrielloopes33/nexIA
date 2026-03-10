@@ -108,7 +108,7 @@ export function ConnectionStatusCard() {
                   size="sm" 
                   onClick={refresh}
                   disabled={isLoading}
-                  className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                  className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

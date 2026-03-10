@@ -99,8 +99,8 @@ export default function WhatsAppNumerosPage() {
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <Card>
             <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#9795e4]/10">
-                <Phone className="h-6 w-6 text-[#9795e4]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#46347F]/10">
+                <Phone className="h-6 w-6 text-[#46347F]" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{phoneNumbers.length}</p>

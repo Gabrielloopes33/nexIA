@@ -35,7 +35,7 @@ const STATUS_CONFIG = {
   },
   connected: {
     label: 'Conectado',
-    className: 'bg-[#9795e4]/10 text-[#7573b8] shadow-sm',
+    className: 'bg-[#46347F]/10 text-[#46347F] shadow-sm',
     icon: CheckCircle,
   },
   syncing: {
@@ -71,7 +71,7 @@ export function IntegrationCard({ integration, onConnect, onConfigure }: Props) 
       {/* Popular Badge */}
       {integration.popular && (
         <div className="absolute left-3 top-3 z-10">
-          <Badge className="bg-[#9795e4]/10 text-[#7573b8] shadow-sm text-[10px]">
+          <Badge className="bg-[#46347F]/10 text-[#46347F] shadow-sm text-[10px]">
             <Star className="mr-1 h-3 w-3 fill-current" />
             Popular
           </Badge>
@@ -158,7 +158,7 @@ export function IntegrationCard({ integration, onConnect, onConfigure }: Props) 
           {integration.features.slice(0, 3).map((feature) => (
             <span
               key={feature}
-              className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border border-[#9795e4]/30 bg-[#9795e4]/10 text-[#7573b8]"
+              className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border border-[#46347F]/30 bg-[#46347F]/10 text-[#46347F]"
             >
               {feature}
             </span>
@@ -192,7 +192,7 @@ export function IntegrationCard({ integration, onConnect, onConfigure }: Props) 
         ) : (
           <button 
             onClick={() => onConnect(integration.id)}
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-sm bg-gradient-to-r from-[#9795e4] to-[#b3b3e5] px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-sm bg-gradient-to-r from-[#46347F] to-[#46347F] px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             Conectar
           </button>

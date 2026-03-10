@@ -45,7 +45,7 @@ export const MOCK_SEGMENTS: Segment[] = [
     id: "seg-002",
     nome: "Clientes SP",
     descricao: "Contatos localizados em São Paulo",
-    cor: "#9795e4",
+    cor: "#46347F",
     regras: [
       { id: "rule-002", field: "estado", operator: "equals", value: "SP" },
     ],
@@ -58,7 +58,7 @@ export const MOCK_SEGMENTS: Segment[] = [
     id: "seg-003",
     nome: "Inativos",
     descricao: "Contatos que não demonstraram engajamento recente",
-    cor: "#b3b3e5",
+    cor: "#46347F",
     regras: [
       { id: "rule-003", field: "status", operator: "equals", value: "inativo" },
     ],
@@ -96,8 +96,8 @@ export const MOCK_SEGMENTS: Segment[] = [
 ]
 
 export const SEGMENT_COLORS = [
-  "#9795e4",
-  "#7c7ab8",
+  "#46347F",
+  "#46347F",
   "#E57373",
   "#81C784",
   "#64B5F6",

@@ -115,7 +115,7 @@ export function UTMPerformanceChart() {
         </div>
 
         {/* Best Performer Highlight */}
-        <div className="mt-3 rounded-sm bg-gradient-to-r from-[#9795e4]/10 to-transparent p-3">
+        <div className="mt-3 rounded-sm bg-gradient-to-r from-[#46347F]/10 to-transparent p-3">
           <p className="text-xs text-muted-foreground">
             🏆 <span className="font-semibold text-foreground">{bestPerformer.source}</span>{' '}
             é o melhor canal com ROI de{' '}

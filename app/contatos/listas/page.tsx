@@ -170,7 +170,7 @@ export default function ListasPage() {
           </div>
           <Button
             onClick={handleCreateClick}
-            className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+            className="bg-[#46347F] hover:bg-[#46347F] text-white"
           >
             <Plus className="mr-2 h-4 w-4" />
             Criar Lista
@@ -183,8 +183,8 @@ export default function ListasPage() {
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card className="rounded-sm border border-border bg-white p-4">
             <CardContent className="flex items-center gap-4 p-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#9795e4]/10">
-                <List className="h-5 w-5 text-[#9795e4]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#46347F]/10">
+                <List className="h-5 w-5 text-[#46347F]" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total de Listas</p>
@@ -194,8 +194,8 @@ export default function ListasPage() {
           </Card>
           <Card className="rounded-sm border border-border bg-white p-4">
             <CardContent className="flex items-center gap-4 p-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#9795e4]/10">
-                <Users className="h-5 w-5 text-[#9795e4]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#46347F]/10">
+                <Users className="h-5 w-5 text-[#46347F]" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
@@ -207,8 +207,8 @@ export default function ListasPage() {
           </Card>
           <Card className="rounded-sm border border-border bg-white p-4">
             <CardContent className="flex items-center gap-4 p-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#9795e4]/10">
-                <TrendingUp className="h-5 w-5 text-[#9795e4]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#46347F]/10">
+                <TrendingUp className="h-5 w-5 text-[#46347F]" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Maior Lista</p>
@@ -244,7 +244,7 @@ export default function ListasPage() {
               </p>
               <Button
                 onClick={handleCreateClick}
-                className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                className="bg-[#46347F] hover:bg-[#46347F] text-white"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Criar Lista
@@ -365,7 +365,7 @@ export default function ListasPage() {
                       onClick={() => setFormData({ ...formData, cor: color })}
                       className={`h-8 w-8 rounded-full transition-all ${
                         formData.cor === color
-                          ? "ring-2 ring-offset-2 ring-[#9795e4]"
+                          ? "ring-2 ring-offset-2 ring-[#46347F]"
                           : "hover:scale-110"
                       }`}
                       style={{ backgroundColor: color }}
@@ -380,7 +380,7 @@ export default function ListasPage() {
               </Button>
               <Button
                 onClick={handleSave}
-                className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                className="bg-[#46347F] hover:bg-[#46347F] text-white"
                 disabled={!formData.nome.trim()}
               >
                 {editingList ? "Salvar" : "Criar Lista"}

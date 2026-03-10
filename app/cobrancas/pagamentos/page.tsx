@@ -48,7 +48,7 @@ export default function PagamentosPage() {
             Configure os métodos de pagamento aceitos na sua plataforma
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Plus className="h-4 w-4" />
           Adicionar Método
         </Button>
@@ -65,7 +65,7 @@ export default function PagamentosPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Processador Principal</p>
-            <p className="text-2xl font-bold text-[#9795e4]">Stripe</p>
+            <p className="text-2xl font-bold text-[#46347F]">Stripe</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -100,7 +100,7 @@ export default function PagamentosPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-[#9795e4]" />
+            <CreditCard className="h-4 w-4 text-[#46347F]" />
             Métodos Configurados
           </CardTitle>
         </CardHeader>
@@ -111,8 +111,8 @@ export default function PagamentosPage() {
               return (
                 <div key={metodo.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-[#9795e4]/10 flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-[#9795e4]" />
+                    <div className="h-10 w-10 rounded-lg bg-[#46347F]/10 flex items-center justify-center">
+                      <Icon className="h-5 w-5 text-[#46347F]" />
                     </div>
                     <div>
                       <p className="font-medium text-sm">{metodo.nome}</p>

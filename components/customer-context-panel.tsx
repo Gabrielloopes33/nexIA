@@ -55,8 +55,8 @@ export function CustomerContextPanel({ conversation }: Props) {
   if (!conversation) {
     return (
       <div className="flex w-[320px] shrink-0 flex-col items-center justify-center bg-background border-l border-border px-6 py-12">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#9795e4]/10">
-          <Building2 className="h-8 w-8 text-[#9795e4]" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#46347F]/10">
+          <Building2 className="h-8 w-8 text-[#46347F]" />
         </div>
         <p className="mt-4 text-sm font-semibold text-foreground text-center">
           Nenhuma conversa selecionada
@@ -191,7 +191,7 @@ export function CustomerContextPanel({ conversation }: Props) {
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-[#9795e4]">
+                    <p className="text-sm font-bold text-[#46347F]">
                       {formatCurrency(deal.value)}
                     </p>
                     <span className="text-[10px] text-muted-foreground">

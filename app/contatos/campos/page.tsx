@@ -224,7 +224,7 @@ export default function CamposPage() {
           </div>
           <Button
             onClick={handleCreateClick}
-            className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+            className="bg-[#46347F] hover:bg-[#46347F] text-white"
           >
             <Plus className="mr-2 h-4 w-4" />
             Criar Campo
@@ -308,7 +308,7 @@ export default function CamposPage() {
                 </p>
                 <Button
                   onClick={handleCreateClick}
-                  className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                  className="bg-[#46347F] hover:bg-[#46347F] text-white"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Criar Campo
@@ -554,7 +554,7 @@ export default function CamposPage() {
               </Button>
               <Button
                 onClick={handleSave}
-                className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                className="bg-[#46347F] hover:bg-[#46347F] text-white"
                 disabled={!formData.label.trim() || (formData.tipo === "selecao" && formData.opcoes.length === 0)}
               >
                 {editingField ? "Salvar" : "Criar Campo"}
