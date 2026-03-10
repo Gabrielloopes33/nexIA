@@ -14,7 +14,6 @@ import {
   topNavItems,
   bottomNavItems,
   navItems,
-  isGroupActive,
 } from "@/components/sidebar-nav-config"
 
 // Simple Nav Link Component (for items without children)
@@ -37,7 +36,7 @@ function SimpleNavLink({
           : "text-white hover:bg-white/15"
       )}
     >
-      <Icon className="h-4 w-4 text-white shrink-0" strokeWidth={2.0} />
+      <Icon className="h-4 w-4 text-white shrink-0" />
       <span className="flex-1 text-left text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
         {item.label}
       </span>
@@ -131,10 +130,7 @@ export function Sidebar() {
                     : "text-white hover:bg-white/15"
                 )}
               >
-                <Icon
-                  className="h-4 w-4 text-white shrink-0"
-                  strokeWidth={2.0}
-                />
+                <Icon className="h-4 w-4 text-white shrink-0" />
                 <span className="text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
                   {item.label}
                 </span>
@@ -150,7 +146,7 @@ export function Sidebar() {
           title="Perfil"
           className="flex h-8 w-8 items-center justify-center rounded-sm text-[#46347F] transition-all hover:bg-[#46347F]/10"
         >
-          <User className="h-4 w-4" strokeWidth={2.0} />
+          <User className="h-4 w-4" />
         </button>
       </div>
     </div>
