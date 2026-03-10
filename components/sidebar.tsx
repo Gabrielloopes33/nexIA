@@ -38,7 +38,7 @@ function SimpleNavLink({
       )}
     >
       <Icon className="h-4 w-4 text-white shrink-0" strokeWidth={2.0} />
-      <span className="flex-1 text-left text-xs font-medium text-white whitespace-nowrap overflow-hidden">
+      <span className="flex-1 text-left text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
         {item.label}
       </span>
     </Link>
@@ -79,7 +79,7 @@ export function Sidebar() {
       {/* Main sidebar container */}
       <div
         className={cn(
-          "flex flex-1 flex-col rounded-sm bg-gradient-to-br from-[#9795e4] to-[#b3b3e5] py-4 border-r-2 border-white/20 relative px-2 items-stretch",
+          "flex flex-1 flex-col rounded-sm bg-[#300f27] py-4 border-r-2 border-white/20 relative px-2 items-stretch",
           isReady && "transition-all duration-300 ease-in-out"
         )}
       >
@@ -135,7 +135,7 @@ export function Sidebar() {
                   className="h-4 w-4 text-white shrink-0"
                   strokeWidth={2.0}
                 />
-                <span className="text-xs font-medium text-white whitespace-nowrap overflow-hidden">
+                <span className="text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
                   {item.label}
                 </span>
               </Link>
