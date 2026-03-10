@@ -22,9 +22,9 @@ const data = [
 ]
 
 const channelColors = {
-  whatsapp: "#46347F",
-  instagram: "#46347F",
-  telegram: "#46347F",
+  whatsapp: "#5A4A8C",  // Tom médio-claro
+  instagram: "#8B7DB8", // Tom claro  
+  telegram: "#B8B0D4",  // Tom mais claro
 }
 
 export function ConversationVolumeChart() {
