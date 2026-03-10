@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { IntegrationsHeader } from "@/components/integrations-header"
 import { IntegrationsToolbar } from "@/components/integrations-toolbar"
 import { IntegrationsGrid } from "@/components/integrations-grid"
@@ -8,6 +9,7 @@ import { MOCK_INTEGRATIONS_DATA } from "@/lib/mock-integrations"
 import type { Integration, IntegrationCategory } from "@/lib/types/integration"
 
 export default function IntegracoesPage() {
+  const router = useRouter()
   const [integrations] = useState<Integration[]>(MOCK_INTEGRATIONS_DATA)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState<IntegrationCategory | 'all'>('all')
@@ -64,6 +66,11 @@ export default function IntegracoesPage() {
   }, [integrations, searchTerm, filterCategory, filterStatus, sortBy])
 
   const handleConnect = (id: string) => {
+    // Redirecionar para a página de conexão do WhatsApp Oficial
+    if (id === 'whatsapp-oficial') {
+      router.push('/meta-api/whatsapp/connect')
+      return
+    }
     console.log('Connect integration:', id)
   }
 

@@ -115,6 +115,7 @@ export const topNavItems: SidebarNavItem[] = [
     children: [
       { label: "Visão Geral", href: "/meta-api", section: "Principal" },
       { label: "WhatsApp Business", href: "/meta-api/whatsapp", section: "APIs" },
+      { label: "Instagram", href: "/meta-api/instagram", section: "APIs" },
       { label: "Conectar", href: "/meta-api/whatsapp/connect", section: "WhatsApp" },
       { label: "Templates", href: "/meta-api/whatsapp/templates", section: "WhatsApp" },
       { label: "Números", href: "/meta-api/whatsapp/numeros", section: "WhatsApp" },
@@ -132,7 +133,6 @@ export const topNavItems: SidebarNavItem[] = [
     icon: Puzzle,
     children: [
       { label: "WhatsApp Não Oficial", href: "/integracoes/whatsapp-nao-oficial", section: "Canais" },
-      { label: "Instagram", href: "/integracoes/instagram", section: "Canais" },
       { label: "Webhooks", href: "/integracoes/webhooks", section: "Ações" },
       { label: "Logs", href: "/integracoes/logs", section: "Ações" },
       { label: "Sync", href: "/integracoes/sync", section: "Ações" },

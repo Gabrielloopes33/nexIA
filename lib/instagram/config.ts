@@ -3,9 +3,9 @@
  */
 
 export const config = {
-  // Meta App credentials
-  appId: process.env.FACEBOOK_APP_ID || "",
-  appSecret: process.env.FACEBOOK_APP_SECRET || "",
+  // Meta App credentials (suporta ambos os formatos de variável)
+  appId: process.env.META_APP_ID || process.env.FACEBOOK_APP_ID || process.env.VITE_META_APP_ID || "",
+  appSecret: process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET || "",
   
   // OAuth redirect URI
   redirectUri: process.env.INSTAGRAM_REDIRECT_URI || 

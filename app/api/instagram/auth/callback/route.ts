@@ -30,14 +30,14 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error("[Instagram Callback] OAuth error:", error, errorDescription);
     return NextResponse.redirect(
-      new URL(`/integracoes/instagram/connect?error=${encodeURIComponent(error)}`, request.url)
+      new URL(`/meta-api/instagram/connect?error=${encodeURIComponent(error)}`, request.url)
     );
   }
 
   if (!code) {
     console.error("[Instagram Callback] No code provided");
     return NextResponse.redirect(
-      new URL("/integracoes/instagram/connect?error=no_code", request.url)
+      new URL("/meta-api/instagram/connect?error=no_code", request.url)
     );
   }
 
@@ -79,14 +79,14 @@ export async function GET(request: NextRequest) {
 
     // Redirect to success page
     return NextResponse.redirect(
-      new URL("/integracoes/instagram?success=connected", request.url)
+      new URL("/meta-api/instagram?success=connected", request.url)
     );
 
   } catch (error) {
     console.error("[Instagram Callback] Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.redirect(
-      new URL(`/integracoes/instagram/connect?error=${encodeURIComponent(errorMessage)}`, request.url)
+      new URL(`/meta-api/instagram/connect?error=${encodeURIComponent(errorMessage)}`, request.url)
     );
   }
 }

@@ -1,6 +1,5 @@
 "use client"
 
-import { ComplianceBannerList } from "@/components/whatsapp/shared/compliance-banner"
 import { EmbeddedSignupButton } from "@/components/whatsapp/connect/embedded-signup-button"
 import { ConnectionStatusCard } from "@/components/whatsapp/connect/connection-status"
 import { ComplianceNotice } from "@/components/whatsapp/connect/compliance-notice"
@@ -10,18 +9,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { WhatsAppIcon } from "@/components/whatsapp/shared/whatsapp-icon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useWhatsApp } from "@/hooks/use-whatsapp"
-import { GENERAL_COMPLIANCE_MESSAGES } from "@/lib/whatsapp/compliance-messages"
+
 import { CheckCircle2, Shield, ExternalLink, Facebook, KeyRound } from "lucide-react"
 import Link from "next/link"
 
 export default function WhatsAppConnectPage() {
   const { status } = useWhatsApp()
   const isConnected = status === 'connected'
-
-  // Get all compliance messages for the connect page
-  const complianceMessages = GENERAL_COMPLIANCE_MESSAGES.filter(
-    msg => msg.id === 'opt-in-required' || msg.id === 'business-verification'
-  )
 
   return (<>
         {/* Header */}
@@ -30,11 +24,6 @@ export default function WhatsAppConnectPage() {
           <p className="text-sm text-muted-foreground">
             Conecte sua conta usando o Embedded Signup da Meta ou insira os dados manualmente
           </p>
-        </div>
-
-        {/* Critical Compliance Messages */}
-        <div className="mb-6">
-          <ComplianceBannerList messages={complianceMessages} />
         </div>
 
         {/* Connection Status */}
