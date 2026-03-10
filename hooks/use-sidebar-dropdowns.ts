@@ -12,9 +12,39 @@ interface UseSidebarDropdownsReturn {
   isGroupOpen: (key: string) => boolean
 }
 
+const STORAGE_KEY = 'sidebar-open-groups'
+
 export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropdownsReturn {
   const pathname = usePathname()
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  
+  // Initialize from localStorage or auto-open active groups
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    // Try to get from localStorage first
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        try {
+          return new Set(JSON.parse(saved))
+        } catch {
+          // Fallback to auto-open if parse fails
+        }
+      }
+    }
+    
+    // Auto-open groups that contain the active route
+    const activeKeys = navItems
+      .filter((item) => isGroupActive(item, pathname))
+      .map((item) => item.key)
+    
+    return new Set(activeKeys)
+  })
+
+  // Persist to localStorage when openGroups changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...openGroups]))
+    }
+  }, [openGroups])
 
   const toggleGroup = useCallback((key: string) => {
     setOpenGroups((prev) => {
@@ -44,17 +74,6 @@ export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropd
     (key: string) => openGroups.has(key),
     [openGroups]
   )
-
-  // Auto-open groups that contain the active route
-  useEffect(() => {
-    const activeKeys = navItems
-      .filter((item) => isGroupActive(item, pathname))
-      .map((item) => item.key)
-
-    if (activeKeys.length > 0) {
-      setOpenGroups((prev) => new Set([...prev, ...activeKeys]))
-    }
-  }, [pathname, navItems])
 
   return {
     openGroups,
