@@ -64,7 +64,7 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="mb-3 flex-shrink-0 px-1">
-        <Link href="/" className="block">
+        <Link href="/dashboard" className="block">
           <Image
             src="/images/nexia-logo.png"
             alt="NexIA Chat"
