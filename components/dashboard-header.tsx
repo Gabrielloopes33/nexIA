@@ -223,7 +223,7 @@ export function DashboardHeader() {
         
         {/* New Lead Button */}
         <QuickLeadModal>
-          <button className="flex h-8 items-center gap-2 rounded-sm bg-gradient-to-r from-[#46347F] to-[#46347F] px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90">
+          <button className="flex h-8 items-center gap-2 rounded-sm bg-gradient-to-r from-[#8B7DB8] to-[#8B7DB8] px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90">
             <span>Novo Lead</span>
           </button>
         </QuickLeadModal>

@@ -33,7 +33,7 @@ const leads = recentLeads.map(lead => {
     avatar: initials,
     // Cores padronizadas em tons de roxo/cinza
     avatarBg: "#E8E7F7",  // Roxo muito claro
-    avatarColor: "#46347F", // Roxo escuro
+    avatarColor: "#8B7DB8", // Roxo claro
     tags: lead.tags || [],
     favorito: lead.favorito || false
   }
@@ -81,12 +81,12 @@ export function RecentLeads({ compact }: RecentLeadsProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-semibold text-gray-900">Novos Leads</CardTitle>
-            <div className="flex items-center gap-1 rounded-sm bg-[#46347F]/10 px-2 py-0.5">
-              <Users className="h-4 w-4 text-[#46347F]" />
-              <span className="text-sm font-medium text-[#46347F]">{leads.length}</span>
+            <div className="flex items-center gap-1 rounded-sm bg-[#8B7DB8]/10 px-2 py-0.5">
+              <Users className="h-4 w-4 text-[#8B7DB8]" />
+              <span className="text-sm font-medium text-[#8B7DB8]">{leads.length}</span>
             </div>
           </div>
-          <Link href="/contatos" className="flex items-center gap-1 text-sm font-medium text-[#46347F] transition-colors hover:opacity-80">
+          <Link href="/contatos" className="flex items-center gap-1 text-sm font-medium text-[#8B7DB8] transition-colors hover:opacity-80">
             Ver Todos
             <ExternalLink className="h-4 w-4" />
           </Link>
@@ -116,7 +116,7 @@ export function RecentLeads({ compact }: RecentLeadsProps) {
                 <div className="flex items-center gap-1.5">
                   <p className="truncate text-sm font-semibold text-gray-900">{lead.name}</p>
                   {lead.favorito && (
-                    <Star className="h-3.5 w-3.5 fill-[#46347F] text-[#46347F] shrink-0" />
+                    <Star className="h-3.5 w-3.5 fill-[#8B7DB8] text-[#8B7DB8] shrink-0" />
                   )}
                 </div>
                 <p className="truncate text-xs text-gray-500">{lead.role}</p>
@@ -126,7 +126,7 @@ export function RecentLeads({ compact }: RecentLeadsProps) {
                       return (
                         <span
                           key={tag.id}
-                          className="inline-flex items-center px-1.5 py-0 rounded-sm text-[10px] font-medium border border-[#46347F]/30 bg-[#46347F]/10 text-[#46347F]"
+                          className="inline-flex items-center px-1.5 py-0 rounded-sm text-[10px] font-medium border border-[#8B7DB8]/30 bg-[#8B7DB8]/10 text-[#8B7DB8]"
                         >
                           {tag.name}
                         </span>

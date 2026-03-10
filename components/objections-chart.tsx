@@ -42,11 +42,11 @@ const OBJECTION_ICONS: Record<string, React.ComponentType<{ className?: string }
 
 // Cores para as barras (apenas tons de roxo)
 const BAR_COLORS = [
-  'bg-[#46347F]',      // Roxo principal
-  'bg-[#46347F]',      // Roxo claro
-  'bg-[#46347F]',      // Roxo médio
-  'bg-[#46347F]',      // Roxo escuro
-  'bg-[#46347F]',      // Roxo pastel
+  'bg-[#8B7DB8]',      // Roxo principal
+  'bg-[#8B7DB8]',      // Roxo claro
+  'bg-[#8B7DB8]',      // Roxo médio
+  'bg-[#8B7DB8]',      // Roxo escuro
+  'bg-[#8B7DB8]',      // Roxo pastel
 ]
 
 export function ObjectionsChart() {
@@ -66,9 +66,9 @@ export function ObjectionsChart() {
         <CardHeader className="p-3 pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold text-gray-900">Objeções Detectadas</CardTitle>
-            <div className="flex items-center gap-1 rounded-sm bg-[#46347F]/10 px-2 py-0.5">
-              <AlertTriangle className="h-4 w-4 text-[#46347F]" />
-              <span className="text-xs font-medium text-[#46347F]">Top 5</span>
+            <div className="flex items-center gap-1 rounded-sm bg-[#8B7DB8]/10 px-2 py-0.5">
+              <AlertTriangle className="h-4 w-4 text-[#8B7DB8]" />
+              <span className="text-xs font-medium text-[#8B7DB8]">Top 5</span>
             </div>
           </div>
         </CardHeader>
@@ -113,7 +113,7 @@ export function ObjectionsChart() {
                       <div className="text-xs space-y-0.5">
                         <p><span className="text-gray-500">Menções:</span> <span className="font-semibold">{stat.count}</span></p>
                         <p><span className="text-gray-500">Convertidos:</span> <span className="font-semibold">{stat.converted}</span></p>
-                        <p><span className="text-gray-500">Taxa:</span> <span className="font-semibold text-[#46347F]">{percentage}</span></p>
+                        <p><span className="text-gray-500">Taxa:</span> <span className="font-semibold text-[#8B7DB8]">{percentage}</span></p>
                       </div>
                     </div>
                   </TooltipContent>

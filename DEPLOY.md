@@ -1,5 +1,7 @@
 # 🚀 Guia de Deploy - NexIA
 
+> **🎯 MÉTODO RECOMENDADO**: [EasyPanel + GitHub](./EASYPANEL.md) - Deploy automático a cada push!
+
 ## Arquitetura
 
 ```
@@ -21,6 +23,14 @@
     │              ou Supabase Cloud                   │
     └──────────────────────────────────────────────────┘
 ```
+
+## 🚀 Opções de Deploy
+
+| Método | Dificuldade | Automação | Recomendado |
+|--------|-------------|-----------|-------------|
+| **[EasyPanel + GitHub](./EASYPANEL.md)** | ⭐ Fácil | 🔄 Auto-deploy | ✅ **SIM** |
+| [Docker Manual](#-deploy-manual-sem-easypanel) | ⭐⭐ Médio | 🔧 Manual | Opcional |
+| [EasyPanel Template](#-deploy-com-easypanel-template) | ⭐ Fácil | 🔄 Auto | Alternativa |
 
 ---
 
