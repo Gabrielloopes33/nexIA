@@ -77,9 +77,9 @@ export default function DesempenhoPage() {
   // Dados do funil
   const activeContacts = MOCK_CONTACTS.filter((c) => c.status === "ativo").length
   const funnelData = [
-    { etapa: "Total", valor: totalContacts, fill: "#9795e4" },
-    { etapa: "Ativos", valor: activeContacts, fill: "#b3b3e5" },
-    { etapa: "Convertidos", valor: convertedContacts, fill: "#7c7ab8" },
+    { etapa: "Total", valor: totalContacts, fill: "#46347F" },
+    { etapa: "Ativos", valor: activeContacts, fill: "#46347F" },
+    { etapa: "Convertidos", valor: convertedContacts, fill: "#46347F" },
   ]
 
   // Desempenho por Tag
@@ -190,12 +190,12 @@ export default function DesempenhoPage() {
 
           <Card>
             <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9795e4]/10">
-                <Target className="h-6 w-6 text-[#9795e4]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#46347F]/10">
+                <Target className="h-6 w-6 text-[#46347F]" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Contatos Ativos</p>
-                <p className="text-2xl font-bold text-[#9795e4]">{activeContacts}</p>
+                <p className="text-2xl font-bold text-[#46347F]">{activeContacts}</p>
               </div>
             </CardContent>
           </Card>
@@ -263,7 +263,7 @@ export default function DesempenhoPage() {
                     />
                     <YAxis tick={{ fontSize: 12 }} stroke="#888" />
                     <RechartsTooltip content={<CustomTooltip />} />
-                    <Bar dataKey="total" fill="#9795e4" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="total" fill="#46347F" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

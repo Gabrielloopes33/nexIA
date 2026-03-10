@@ -220,7 +220,7 @@ export default function LixeiraPage() {
 
             {/* Ações em massa */}
             {hasSelection && (
-              <div className="mb-4 flex items-center justify-between rounded-md bg-[#9795e4]/10 p-3">
+              <div className="mb-4 flex items-center justify-between rounded-md bg-[#46347F]/10 p-3">
                 <span className="text-sm font-medium">
                   {selectedIds.length} contato{selectedIds.length !== 1 ? "s" : ""} selecionado{selectedIds.length !== 1 ? "s" : ""}
                 </span>
@@ -229,7 +229,7 @@ export default function LixeiraPage() {
                     variant="ghost"
                     size="sm"
                     onClick={handleRestoreSelected}
-                    className="text-[#9795e4] hover:text-[#7c7ab8] hover:bg-[#9795e4]/20"
+                    className="text-[#46347F] hover:text-[#46347F] hover:bg-[#46347F]/20"
                   >
                     <IconRestore className="mr-2 h-4 w-4" />
                     Restaurar selecionados
@@ -276,7 +276,7 @@ export default function LixeiraPage() {
                       const isSelected = selectedIds.includes(contact.id)
 
                       return (
-                        <TableRow key={contact.id} className={cn(isSelected && "bg-[#9795e4]/5")}>
+                        <TableRow key={contact.id} className={cn(isSelected && "bg-[#46347F]/5")}>
                           <TableCell>
                             <Checkbox
                               checked={isSelected}
@@ -324,7 +324,7 @@ export default function LixeiraPage() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem
                                   onClick={() => handleRestore(contact)}
-                                  className="text-[#9795e4]"
+                                  className="text-[#46347F]"
                                 >
                                   <IconRestore className="mr-2 h-4 w-4" />
                                   Restaurar

@@ -94,7 +94,7 @@ export default function PlanosPage() {
             Configure os planos disponíveis para seus clientes
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Plus className="h-4 w-4" />
           Novo Plano
         </Button>
@@ -111,7 +111,7 @@ export default function PlanosPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Clientes Totais</p>
-            <p className="text-3xl font-bold text-[#9795e4]">{totalClientes}</p>
+            <p className="text-3xl font-bold text-[#46347F]">{totalClientes}</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -127,10 +127,10 @@ export default function PlanosPage() {
         {planosState.map((plano) => (
           <Card 
             key={plano.id} 
-            className={`shadow-sm hover:shadow-md transition-shadow ${plano.popular ? 'ring-2 ring-[#9795e4]' : ''}`}
+            className={`shadow-sm hover:shadow-md transition-shadow ${plano.popular ? 'ring-2 ring-[#46347F]' : ''}`}
           >
             {plano.popular && (
-              <div className="bg-[#9795e4] text-white text-xs font-medium text-center py-1">
+              <div className="bg-[#46347F] text-white text-xs font-medium text-center py-1">
                 Mais Popular
               </div>
             )}
@@ -183,14 +183,14 @@ export default function PlanosPage() {
       {/* Add Custom Plan Card */}
       <Card className="shadow-sm border-dashed border-2 border-muted">
         <CardContent className="p-8 text-center">
-          <div className="h-12 w-12 rounded-full bg-[#9795e4]/10 flex items-center justify-center mx-auto mb-4">
-            <Plus className="h-6 w-6 text-[#9795e4]" />
+          <div className="h-12 w-12 rounded-full bg-[#46347F]/10 flex items-center justify-center mx-auto mb-4">
+            <Plus className="h-6 w-6 text-[#46347F]" />
           </div>
           <h3 className="font-medium mb-2">Criar Novo Plano</h3>
           <p className="text-sm text-muted-foreground mb-4">
             Adicione um novo plano com recursos e preços personalizados
           </p>
-          <Button className="bg-[#9795e4] hover:bg-[#7c7ab8]">
+          <Button className="bg-[#46347F] hover:bg-[#46347F]">
             Configurar Plano
           </Button>
         </CardContent>

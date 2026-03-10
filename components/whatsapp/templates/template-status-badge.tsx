@@ -78,7 +78,7 @@ export function TemplateStatusBadge({
               href="https://developers.facebook.com/docs/whatsapp/message-templates/guidelines" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-[#9795e4] hover:underline"
+              className="text-[#46347F] hover:underline"
             >
               Ver diretrizes
             </a>

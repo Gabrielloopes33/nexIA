@@ -71,7 +71,7 @@ export default function ReembolsosPage() {
             Gerencie solicitações de reembolso dos clientes
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <RotateCcw className="h-4 w-4" />
           Novo Reembolso
         </Button>
@@ -100,7 +100,7 @@ export default function ReembolsosPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Total Reembolsado</p>
-            <p className="text-2xl font-bold text-[#9795e4]">{stats.totalReembolsado}</p>
+            <p className="text-2xl font-bold text-[#46347F]">{stats.totalReembolsado}</p>
           </CardContent>
         </Card>
       </div>
@@ -134,7 +134,7 @@ export default function ReembolsosPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <RotateCcw className="h-4 w-4 text-[#9795e4]" />
+            <RotateCcw className="h-4 w-4 text-[#46347F]" />
             Lista de Reembolsos
           </CardTitle>
         </CardHeader>

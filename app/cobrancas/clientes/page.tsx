@@ -96,7 +96,7 @@ export default function ClientesPage() {
             Gerencie seus clientes e suas assinaturas
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Plus className="h-4 w-4" />
           Novo Cliente
         </Button>
@@ -125,7 +125,7 @@ export default function ClientesPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">MRR Total</p>
-            <p className="text-2xl font-bold text-[#9795e4]">{stats.mrr}</p>
+            <p className="text-2xl font-bold text-[#46347F]">{stats.mrr}</p>
           </CardContent>
         </Card>
       </div>
@@ -168,7 +168,7 @@ export default function ClientesPage() {
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 bg-[#9795e4] text-white">
+                  <Avatar className="h-10 w-10 bg-[#46347F] text-white">
                     <AvatarFallback>{getIniciais(cli.nome)}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -199,21 +199,21 @@ export default function ClientesPage() {
               <div className="grid grid-cols-3 gap-2 pt-4 border-t border-border">
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Package className="h-3.5 w-3.5 text-[#9795e4]" />
+                    <Package className="h-3.5 w-3.5 text-[#46347F]" />
                   </div>
                   <p className="text-lg font-semibold">{cli.assinaturas}</p>
                   <p className="text-xs text-muted-foreground">Assinaturas</p>
                 </div>
                 <div className="text-center border-x border-border">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <CreditCard className="h-3.5 w-3.5 text-[#9795e4]" />
+                    <CreditCard className="h-3.5 w-3.5 text-[#46347F]" />
                   </div>
                   <p className="text-lg font-semibold">{cli.valorMensal}</p>
                   <p className="text-xs text-muted-foreground">Mensal</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Building2 className="h-3.5 w-3.5 text-[#9795e4]" />
+                    <Building2 className="h-3.5 w-3.5 text-[#46347F]" />
                   </div>
                   <p className="text-lg font-semibold">{cli.faturasPendentes}</p>
                   <p className="text-xs text-muted-foreground">Pendentes</p>
@@ -235,7 +235,7 @@ export default function ClientesPage() {
                   <SheetContent className="w-[400px] sm:w-[540px]">
                     <SheetHeader>
                       <SheetTitle className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 bg-[#9795e4] text-white">
+                        <Avatar className="h-10 w-10 bg-[#46347F] text-white">
                           <AvatarFallback>{getIniciais(cli.nome)}</AvatarFallback>
                         </Avatar>
                         <div>
@@ -266,7 +266,7 @@ export default function ClientesPage() {
                       <Card>
                         <CardHeader className="p-4 pb-2">
                           <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-[#9795e4]" />
+                            <Mail className="h-4 w-4 text-[#46347F]" />
                             Informações de Contato
                           </CardTitle>
                         </CardHeader>
@@ -290,7 +290,7 @@ export default function ClientesPage() {
                       <Card>
                         <CardHeader className="p-4 pb-2">
                           <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <Package className="h-4 w-4 text-[#9795e4]" />
+                            <Package className="h-4 w-4 text-[#46347F]" />
                             Assinatura
                           </CardTitle>
                         </CardHeader>
@@ -320,7 +320,7 @@ export default function ClientesPage() {
                       <Card>
                         <CardHeader className="p-4 pb-2">
                           <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-[#9795e4]" />
+                            <Calendar className="h-4 w-4 text-[#46347F]" />
                             Histórico
                           </CardTitle>
                         </CardHeader>
@@ -338,7 +338,7 @@ export default function ClientesPage() {
 
                       {/* Ações */}
                       <div className="flex gap-2">
-                        <Button className="flex-1 bg-[#9795e4] hover:bg-[#7c7ab8]">
+                        <Button className="flex-1 bg-[#46347F] hover:bg-[#46347F]">
                           <Receipt className="h-4 w-4 mr-2" />
                           Ver Faturas
                         </Button>

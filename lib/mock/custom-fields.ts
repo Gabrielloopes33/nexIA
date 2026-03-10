@@ -90,7 +90,7 @@ export const FIELD_TYPE_ICONS: Record<FieldType, string> = {
 }
 
 export const FIELD_TYPE_COLORS: Record<FieldType, string> = {
-  texto: "#9795e4",
+  texto: "#46347F",
   numero: "#64B5F6",
   data: "#81C784",
   selecao: "#FFB74D",

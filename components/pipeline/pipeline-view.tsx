@@ -63,7 +63,7 @@ interface Filtros {
 // ─── Theme Config ────────────────────────────────────────────────────────────
 
 const STAGES: PipelineStageConfig[] = [
-  { key: "novo", label: "Novo Lead", color: "#9795e4", bgColor: "bg-[#f8f7fc]" },
+  { key: "novo", label: "Novo Lead", color: "#46347F", bgColor: "bg-[#f8f7fc]" },
   { key: "qualificado", label: "Qualificado", color: "#7b79c4", bgColor: "bg-[#f5f4fa]" },
   { key: "proposta", label: "Proposta", color: "#6b69c9", bgColor: "bg-[#f2f1f8]" },
   { key: "fechamento", label: "Fechamento", color: "#5b59be", bgColor: "bg-[#efeef6]" },
@@ -137,7 +137,7 @@ function findContactByDeal(deal: Deal): Contact | undefined {
     atualizadoEm: new Date().toISOString(),
     atualizadoPor: "Sistema",
     avatar: deal.avatar,
-    avatarBg: "#9795e4",
+    avatarBg: "#46347F",
   } as Contact
 }
 
@@ -165,8 +165,8 @@ function DealCard({ deal, isDragging, onDragStart, onClick, isSelected }: DealCa
         isDragging && "opacity-50 rotate-1",
         isWon && "bg-emerald-50/50 border-emerald-200",
         isLost && "bg-red-50/50 border-red-200",
-        isSelected ? "border-[#9795e4] ring-2 ring-[#9795e4]/20" : 
-          !isWon && !isLost && "border-border bg-white hover:border-[#9795e4]/40"
+        isSelected ? "border-[#46347F] ring-2 ring-[#46347F]/20" : 
+          !isWon && !isLost && "border-border bg-white hover:border-[#46347F]/40"
       )}
     >
       {/* Header: Title + Arrow */}
@@ -183,7 +183,7 @@ function DealCard({ deal, isDragging, onDragStart, onClick, isSelected }: DealCa
             "flex-shrink-0 rounded-full p-1 transition-colors",
             isWon && "text-emerald-500 hover:bg-emerald-100",
             isLost && "text-red-500 hover:bg-red-100",
-            !isWon && !isLost && "text-gray-400 hover:bg-gray-100 hover:text-[#9795e4]"
+            !isWon && !isLost && "text-gray-400 hover:bg-gray-100 hover:text-[#46347F]"
           )}
         >
           <ChevronDown className="h-3.5 w-3.5 rotate-[-90deg]" />
@@ -296,7 +296,7 @@ function PipelineColumn({
       </div>
 
       {/* Add Button */}
-      <button className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-[#9795e4]/40 hover:bg-[#9795e4]/5 hover:text-[#9795e4]">
+      <button className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-[#46347F]/40 hover:bg-[#46347F]/5 hover:text-[#46347F]">
         <Plus className="h-3.5 w-3.5" />
         Adicionar negócio
       </button>
@@ -378,7 +378,7 @@ function DealListView({
                       onClick={() => onDealClick(deal)}
                       className={cn(
                         "flex items-center gap-4 px-4 py-3 text-sm cursor-grab transition-colors hover:bg-muted/20",
-                        selectedDealId === deal.id && "bg-[#9795e4]/5",
+                        selectedDealId === deal.id && "bg-[#46347F]/5",
                         deal.status === "won" && "bg-emerald-50/30",
                         deal.status === "lost" && "bg-red-50/30",
                         draggedDealId === deal.id && "opacity-50"
@@ -460,7 +460,7 @@ function DealListView({
               )}
 
               {/* Add Button */}
-              <button className="flex w-full items-center justify-center gap-1.5 border-t border-border py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-[#9795e4]">
+              <button className="flex w-full items-center justify-center gap-1.5 border-t border-border py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-[#46347F]">
                 <Plus className="h-3.5 w-3.5" />
                 Adicionar negócio
               </button>
@@ -509,14 +509,14 @@ function FilterDropdown({ filtros, onChange }: FilterDropdownProps) {
         size="sm" 
         className={cn(
           "h-8 gap-2",
-          temFiltros && "border-[#9795e4] text-[#9795e4]"
+          temFiltros && "border-[#46347F] text-[#46347F]"
         )}
         onClick={() => setIsOpen(!isOpen)}
       >
         <Filter className="h-3.5 w-3.5" />
         Filtros
         {temFiltros && (
-          <span className="ml-1 rounded-full bg-[#9795e4] px-1.5 py-0.5 text-[10px] text-white">
+          <span className="ml-1 rounded-full bg-[#46347F] px-1.5 py-0.5 text-[10px] text-white">
             {filtros.prioridade.length + filtros.status.length + (filtros.valorMin || filtros.valorMax ? 1 : 0)}
           </span>
         )}
@@ -540,7 +540,7 @@ function FilterDropdown({ filtros, onChange }: FilterDropdownProps) {
                     <span className={cn(
                       "flex h-4 w-4 items-center justify-center rounded border",
                       filtros.prioridade.includes(p) 
-                        ? "border-[#9795e4] bg-[#9795e4] text-white" 
+                        ? "border-[#46347F] bg-[#46347F] text-white" 
                         : "border-border"
                     )}>
                       {filtros.prioridade.includes(p) && <Check className="h-3 w-3" />}
@@ -575,7 +575,7 @@ function FilterDropdown({ filtros, onChange }: FilterDropdownProps) {
                     <span className={cn(
                       "flex h-4 w-4 items-center justify-center rounded border",
                       filtros.status.includes(s.key) 
-                        ? "border-[#9795e4] bg-[#9795e4] text-white" 
+                        ? "border-[#46347F] bg-[#46347F] text-white" 
                         : "border-border"
                     )}>
                       {filtros.status.includes(s.key) && <Check className="h-3 w-3" />}
@@ -624,7 +624,7 @@ function FilterDropdown({ filtros, onChange }: FilterDropdownProps) {
               </Button>
               <Button 
                 size="sm" 
-                className="h-7 bg-[#9795e4] hover:bg-[#7b79c4] text-white text-xs"
+                className="h-7 bg-[#46347F] hover:bg-[#7b79c4] text-white text-xs"
                 onClick={() => setIsOpen(false)}
               >
                 Aplicar
@@ -830,7 +830,7 @@ export function PipelineView() {
           {/* Add Deal Button */}
           <Button 
             size="sm" 
-            className="h-8 gap-1.5 bg-[#9795e4] hover:bg-[#7b79c4] text-white"
+            className="h-8 gap-1.5 bg-[#46347F] hover:bg-[#7b79c4] text-white"
             onClick={() => setShowAddModal(true)}
           >
             <Plus className="h-4 w-4" />
@@ -894,7 +894,7 @@ export function PipelineView() {
                 Cancelar
               </Button>
               <Button 
-                className="bg-[#9795e4] hover:bg-[#7b79c4] text-white"
+                className="bg-[#46347F] hover:bg-[#7b79c4] text-white"
                 onClick={handleAddDeal}
               >
                 <Plus className="h-4 w-4 mr-1" />

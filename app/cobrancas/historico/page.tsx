@@ -104,7 +104,7 @@ export default function HistoricoPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Saldo</p>
-            <p className="text-2xl font-bold text-[#9795e4]">{stats.saldo}</p>
+            <p className="text-2xl font-bold text-[#46347F]">{stats.saldo}</p>
           </CardContent>
         </Card>
       </div>
@@ -138,7 +138,7 @@ export default function HistoricoPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-[#9795e4]" />
+            <Wallet className="h-4 w-4 text-[#46347F]" />
             Transações Recentes
           </CardTitle>
         </CardHeader>

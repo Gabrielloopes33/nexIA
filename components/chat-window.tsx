@@ -63,8 +63,8 @@ export function ChatWindow({ conversation }: Props) {
   if (!conversation) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center bg-background border-l border-border">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#9795e4]/10">
-          <Bot className="h-8 w-8 text-[#9795e4]" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#46347F]/10">
+          <Bot className="h-8 w-8 text-[#46347F]" />
         </div>
         <p className="mt-4 text-base font-semibold text-foreground">Selecione uma conversa</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -103,7 +103,7 @@ export function ChatWindow({ conversation }: Props) {
                   Atribuído a {conversation.assignedTo.name}
                 </p>
               ) : (
-                <p className="text-xs text-[#9795e4] flex items-center gap-1">
+                <p className="text-xs text-[#46347F] flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   Não atribuído
                 </p>
@@ -170,8 +170,8 @@ export function ChatWindow({ conversation }: Props) {
                   className={cn(
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                     msg.from === "bot"
-                      ? "bg-[#9795e4]/10 text-[#9795e4]"
-                      : "bg-[#b3b3e5]/20 text-[#7c7ab8]"
+                      ? "bg-[#46347F]/10 text-[#46347F]"
+                      : "bg-[#46347F]/20 text-[#46347F]"
                   )}
                 >
                   {msg.from === "bot" ? (
@@ -185,7 +185,7 @@ export function ChatWindow({ conversation }: Props) {
                 className={cn(
                   "max-w-[72%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                   isUser
-                    ? "rounded-br-sm bg-[#9795e4] text-white"
+                    ? "rounded-br-sm bg-[#46347F] text-white"
                     : "rounded-bl-sm bg-[#F3F2F2] text-foreground"
                 )}
               >
@@ -224,7 +224,7 @@ export function ChatWindow({ conversation }: Props) {
             className={cn(
               "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
               input.trim()
-                ? "bg-[#9795e4] text-white hover:bg-[#7c7ab8]"
+                ? "bg-[#46347F] text-white hover:bg-[#46347F]"
                 : "cursor-default text-muted-foreground"
             )}
           >

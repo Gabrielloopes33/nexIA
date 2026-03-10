@@ -55,7 +55,7 @@ export function ContactFilters({
             <Filter className="h-4 w-4" />
             Tags
             {selectedTags.length > 0 && (
-              <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#9795e4] px-1.5 text-xs font-medium text-white">
+              <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#46347F] px-1.5 text-xs font-medium text-white">
                 {selectedTags.length}
               </span>
             )}
@@ -95,7 +95,7 @@ export function ContactFilters({
             <Filter className="h-4 w-4" />
             Status
             {selectedStatuses.length > 0 && (
-              <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#9795e4] px-1.5 text-xs font-medium text-white">
+              <span className="ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#46347F] px-1.5 text-xs font-medium text-white">
                 {selectedStatuses.length}
               </span>
             )}

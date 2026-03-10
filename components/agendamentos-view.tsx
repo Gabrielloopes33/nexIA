@@ -65,9 +65,9 @@ const TIPOS_CONFIG: Record<TipoAtividade, {
   reuniao: {
     label: "Reunião",
     icon: Users,
-    corFundo: "bg-[#9795e4]/10",
+    corFundo: "bg-[#46347F]/10",
     corTexto: "text-[#6b69c9]",
-    corBorda: "border-[#9795e4]/30"
+    corBorda: "border-[#46347F]/30"
   },
   tarefa: {
     label: "Tarefa",
@@ -283,7 +283,7 @@ const ATIVIDADES_MOCK: Atividade[] = [
 
 function avatarColor(initials: string) {
   const colors = [
-    "bg-[#9795e4] text-white",
+    "bg-[#46347F] text-white",
     "bg-[#b8b6ec] text-white",
     "bg-[#7b79c4] text-white",
     "bg-[#6b69c9] text-white",
@@ -483,7 +483,7 @@ function ModalNovaAtividade({
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
                 placeholder="Ex: Reunião de alinhamento..."
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
               />
             </div>
 
@@ -493,7 +493,7 @@ function ModalNovaAtividade({
                 <select
                   value={tipo}
                   onChange={(e) => setTipo(e.target.value as TipoAtividade)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
                 >
                   <option value="reuniao">Reunião</option>
                   <option value="ligacao">Ligação</option>
@@ -507,7 +507,7 @@ function ModalNovaAtividade({
                   type="date"
                   value={data}
                   onChange={(e) => setData(e.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
                 />
               </div>
             </div>
@@ -519,7 +519,7 @@ function ModalNovaAtividade({
                   type="time"
                   value={horaInicio}
                   onChange={(e) => setHoraInicio(e.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
                 />
               </div>
               <div className="grid gap-2">
@@ -528,7 +528,7 @@ function ModalNovaAtividade({
                   type="time"
                   value={horaFim}
                   onChange={(e) => setHoraFim(e.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
                 />
               </div>
             </div>
@@ -540,7 +540,7 @@ function ModalNovaAtividade({
                   value={contato}
                   onChange={(e) => setContato(e.target.value)}
                   placeholder="Nome do contato..."
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
                 />
               </div>
               <div className="grid gap-2">
@@ -549,7 +549,7 @@ function ModalNovaAtividade({
                   value={empresa}
                   onChange={(e) => setEmpresa(e.target.value)}
                   placeholder="Nome da empresa..."
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
                 />
               </div>
             </div>
@@ -560,7 +560,7 @@ function ModalNovaAtividade({
                 value={local}
                 onChange={(e) => setLocal(e.target.value)}
                 placeholder="Sala de reunião, Google Meet, etc..."
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
               />
             </div>
 
@@ -571,14 +571,14 @@ function ModalNovaAtividade({
                 onChange={(e) => setDescricao(e.target.value)}
                 placeholder="Detalhes adicionais..."
                 rows={2}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#9795e4] focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20 resize-none"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-[#46347F] focus:outline-none focus:ring-2 focus:ring-[#46347F]/20 resize-none"
               />
             </div>
           </div>
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onFechar}>Cancelar</Button>
-            <Button type="submit" className="bg-[#9795e4] hover:bg-[#7b79c4] text-white">Salvar</Button>
+            <Button type="submit" className="bg-[#46347F] hover:bg-[#7b79c4] text-white">Salvar</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -657,7 +657,7 @@ function ModalDetalhes({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onFechar}>Fechar</Button>
-          <Button className="bg-[#9795e4] hover:bg-[#7b79c4] text-white">
+          <Button className="bg-[#46347F] hover:bg-[#7b79c4] text-white">
             Editar
           </Button>
         </DialogFooter>
@@ -820,7 +820,7 @@ export function AgendamentosView({
       atualizadoEm: new Date().toISOString(),
       atualizadoPor: "Sistema",
       avatar: atividade.avatar,
-      avatarBg: "#9795e4",
+      avatarBg: "#46347F",
     }
     setSelectedContact(contato)
     setIsSidebarOpen(true)
@@ -969,7 +969,7 @@ export function AgendamentosView({
           {/* Mini resumo por tipo */}
           <Card className="shadow-sm rounded-sm">
             <CardHeader className="p-3 pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-[#9795e4]">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-[#46347F]">
                 Por Tipo
               </CardTitle>
             </CardHeader>
@@ -995,7 +995,7 @@ export function AgendamentosView({
                           style={{
                             width: `${pct}%`,
                             backgroundColor: tipo === "ligacao" ? "#3b82f6" :
-                                           tipo === "reuniao" ? "#9795e4" :
+                                           tipo === "reuniao" ? "#46347F" :
                                            tipo === "tarefa" ? "#f59e0b" : "#f43f5e"
                           }}
                         />
@@ -1018,7 +1018,7 @@ export function AgendamentosView({
                 className={cn(
                   "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
                   tipoFiltro === "todos"
-                    ? "bg-[#9795e4] text-white"
+                    ? "bg-[#46347F] text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 )}
               >
@@ -1038,7 +1038,7 @@ export function AgendamentosView({
                     className={cn(
                       "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
                       tipoFiltro === tipo
-                        ? "bg-[#9795e4] text-white"
+                        ? "bg-[#46347F] text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     )}
                   >
@@ -1077,18 +1077,18 @@ export function AgendamentosView({
                       key={index}
                       className={cn(
                         "text-center py-2 rounded-lg",
-                        eDiaHoje ? "bg-[#9795e4]/10 border border-[#9795e4]/30" : "bg-gray-50"
+                        eDiaHoje ? "bg-[#46347F]/10 border border-[#46347F]/30" : "bg-gray-50"
                       )}
                     >
                       <p className={cn(
                         "text-xs font-medium",
-                        eDiaHoje ? "text-[#9795e4]" : "text-gray-500"
+                        eDiaHoje ? "text-[#46347F]" : "text-gray-500"
                       )}>
                         {DIAS_SEMANA[index]}
                       </p>
                       <p className={cn(
                         "text-lg font-bold",
-                        eDiaHoje ? "text-[#9795e4]" : "text-gray-900"
+                        eDiaHoje ? "text-[#46347F]" : "text-gray-900"
                       )}>
                         {dia.getDate()}
                       </p>
@@ -1110,7 +1110,7 @@ export function AgendamentosView({
                       key={diaIndex}
                       className={cn(
                         "relative min-h-[500px] rounded-lg border",
-                        eDiaHoje ? "border-[#9795e4]/30 bg-[#9795e4]/5" : "border-gray-200 bg-gray-50/50"
+                        eDiaHoje ? "border-[#46347F]/30 bg-[#46347F]/5" : "border-gray-200 bg-gray-50/50"
                       )}
                       onDragOver={(e) => handleDragOver(e, diaIndex)}
                       onDragLeave={handleDragLeave}
@@ -1129,12 +1129,12 @@ export function AgendamentosView({
                           className="absolute inset-x-0 z-20 pointer-events-none"
                           style={{ top: `${dragIndicator.y}px` }}
                         >
-                          <div className="absolute inset-x-0 h-0.5 bg-[#9795e4]" />
-                          <div className="absolute left-1 -top-3 bg-[#9795e4] text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
+                          <div className="absolute inset-x-0 h-0.5 bg-[#46347F]" />
+                          <div className="absolute left-1 -top-3 bg-[#46347F] text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
                             {formatarHora(dragIndicator.hora)}
                           </div>
                           <div
-                            className="absolute inset-x-1 mt-0.5 rounded bg-[#9795e4]/20 border border-[#9795e4]/40"
+                            className="absolute inset-x-1 mt-0.5 rounded bg-[#46347F]/20 border border-[#46347F]/40"
                             style={{
                               height: `${Math.max(30, getDuracaoSlots(draggedAtividade.horaInicio, draggedAtividade.horaFim) * 50 - 4)}px`
                             }}
@@ -1181,12 +1181,12 @@ export function AgendamentosView({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-base font-semibold">Próximas</CardTitle>
-                  <div className="flex items-center gap-1.5 rounded-sm bg-[#9795e4]/10 px-2 py-0.5">
-                    <Clock className="h-3 w-3 text-[#9795e4]" />
-                    <span className="text-xs font-semibold text-[#9795e4]">{proximasAtividades.length}</span>
+                  <div className="flex items-center gap-1.5 rounded-sm bg-[#46347F]/10 px-2 py-0.5">
+                    <Clock className="h-3 w-3 text-[#46347F]" />
+                    <span className="text-xs font-semibold text-[#46347F]">{proximasAtividades.length}</span>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-8 text-[#9795e4]">
+                <Button variant="ghost" size="sm" className="h-8 text-[#46347F]">
                   Ver Todas
                 </Button>
               </div>
@@ -1245,11 +1245,11 @@ export function AgendamentosView({
                       <div className="flex items-center justify-between">
                         <span className={cn(
                           "text-xs font-medium",
-                          eDiaHoje ? "text-[#9795e4] font-bold" : "text-foreground"
+                          eDiaHoje ? "text-[#46347F] font-bold" : "text-foreground"
                         )}>
                           {dia} {diaReal?.getDate()}
                           {eDiaHoje && (
-                            <span className="ml-1 text-[10px] bg-[#9795e4]/10 text-[#9795e4] px-1.5 py-0.5 rounded-full">
+                            <span className="ml-1 text-[10px] bg-[#46347F]/10 text-[#46347F] px-1.5 py-0.5 rounded-full">
                               hoje
                             </span>
                           )}
@@ -1258,7 +1258,7 @@ export function AgendamentosView({
                       </div>
                       <div className="h-2 bg-secondary rounded-sm overflow-hidden">
                         <div
-                          className="h-full rounded-sm bg-gradient-to-r from-[#9795e4] to-[#b3b3e5] transition-all"
+                          className="h-full rounded-sm bg-gradient-to-r from-[#46347F] to-[#46347F] transition-all"
                           style={{ width: `${Math.min((count / maxCount) * 100, 100)}%` }}
                         />
                       </div>

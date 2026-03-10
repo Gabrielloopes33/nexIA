@@ -232,7 +232,7 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
           <div className="flex items-center justify-between pt-4 border-t">
             <Link
               href="/contatos/novo"
-              className="text-sm text-[#9795e4] hover:underline"
+              className="text-sm text-[#46347F] hover:underline"
               onClick={() => setOpen(false)}
             >
               Criar completo →
@@ -248,7 +248,7 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
               </Button>
               <Button
                 type="submit"
-                className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                className="bg-[#46347F] hover:bg-[#46347F] text-white"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

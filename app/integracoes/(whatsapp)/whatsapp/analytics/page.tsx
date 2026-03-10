@@ -35,7 +35,7 @@ function SimpleBarChart({ data, max }: { data: number[]; max: number }) {
       {data.map((value, index) => (
         <div
           key={index}
-          className="flex-1 rounded-t bg-[#9795e4]/80 transition-all hover:bg-[#9795e4]"
+          className="flex-1 rounded-t bg-[#46347F]/80 transition-all hover:bg-[#46347F]"
           style={{ height: `${(value / max) * 100}%` }}
           title={`${value}`}
         />
@@ -79,8 +79,8 @@ function MetricCard({
               <p className="text-xs text-muted-foreground">{description}</p>
             </div>
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#9795e4]/10">
-            <Icon className="h-6 w-6 text-[#9795e4]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#46347F]/10">
+            <Icon className="h-6 w-6 text-[#46347F]" />
           </div>
         </div>
       </CardContent>
@@ -142,8 +142,8 @@ export default function WhatsAppAnalyticsPage() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#9795e4]/10">
-              <BarChart3 className="h-5 w-5 text-[#9795e4]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#46347F]/10">
+              <BarChart3 className="h-5 w-5 text-[#46347F]" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Analytics & Compliance</h1>

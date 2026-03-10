@@ -96,7 +96,7 @@ export default function FaturasPage() {
             <Download className="h-4 w-4" />
             Exportar
           </Button>
-          <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+          <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
             <Send className="h-4 w-4" />
             Enviar Fatura
           </Button>
@@ -126,7 +126,7 @@ export default function FaturasPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">A Receber</p>
-            <p className="text-2xl font-bold text-[#9795e4]">{stats.totalReceber}</p>
+            <p className="text-2xl font-bold text-[#46347F]">{stats.totalReceber}</p>
           </CardContent>
         </Card>
       </div>
@@ -163,7 +163,7 @@ export default function FaturasPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-[#9795e4]" />
+            <Receipt className="h-4 w-4 text-[#46347F]" />
             Lista de Faturas
           </CardTitle>
         </CardHeader>

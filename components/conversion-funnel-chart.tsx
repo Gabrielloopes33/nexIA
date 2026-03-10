@@ -60,7 +60,7 @@ export function ConversionFunnelChart() {
       name: 'Cliente', 
       count: 34, 
       percentage: 0.6, 
-      color: 'bg-gradient-to-br from-[#9795e4] to-[#b3b3e5] border-[#9795e4] text-white'
+      color: 'bg-gradient-to-br from-[#46347F] to-[#46347F] border-[#46347F] text-white'
     }
   ]
 

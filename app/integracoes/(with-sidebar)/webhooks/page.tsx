@@ -108,7 +108,7 @@ export default function WebhooksPage() {
             Gerencie endpoints para receber eventos em tempo real
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Plus className="h-4 w-4" />
           Novo Webhook
         </Button>
@@ -140,7 +140,7 @@ export default function WebhooksPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Link2 className="h-4 w-4 text-[#9795e4]" />
+            <Link2 className="h-4 w-4 text-[#46347F]" />
             Webhooks Configurados
           </CardTitle>
         </CardHeader>
@@ -153,8 +153,8 @@ export default function WebhooksPage() {
                 <div key={webhook.id} className="p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-[#9795e4]/10 flex items-center justify-center flex-shrink-0">
-                        <Globe className="h-5 w-5 text-[#9795e4]" />
+                      <div className="h-10 w-10 rounded-lg bg-[#46347F]/10 flex items-center justify-center flex-shrink-0">
+                        <Globe className="h-5 w-5 text-[#46347F]" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">

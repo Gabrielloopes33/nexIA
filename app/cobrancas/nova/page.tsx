@@ -83,22 +83,22 @@ export default function NovaAssinaturaPage() {
 
       {/* Steps */}
       <div className="flex items-center gap-4">
-        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-[#9795e4]' : 'text-muted-foreground'}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-[#9795e4] text-white' : 'bg-muted'}`}>
+        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-[#46347F]' : 'text-muted-foreground'}`}>
+          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-[#46347F] text-white' : 'bg-muted'}`}>
             1
           </div>
           <span className="text-sm font-medium hidden sm:inline">Cliente</span>
         </div>
         <div className="h-px flex-1 bg-border max-w-[60px]" />
-        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-[#9795e4]' : 'text-muted-foreground'}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-[#9795e4] text-white' : 'bg-muted'}`}>
+        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-[#46347F]' : 'text-muted-foreground'}`}>
+          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-[#46347F] text-white' : 'bg-muted'}`}>
             2
           </div>
           <span className="text-sm font-medium hidden sm:inline">Plano</span>
         </div>
         <div className="h-px flex-1 bg-border max-w-[60px]" />
-        <div className={`flex items-center gap-2 ${step >= 3 ? 'text-[#9795e4]' : 'text-muted-foreground'}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-[#9795e4] text-white' : 'bg-muted'}`}>
+        <div className={`flex items-center gap-2 ${step >= 3 ? 'text-[#46347F]' : 'text-muted-foreground'}`}>
+          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-[#46347F] text-white' : 'bg-muted'}`}>
             3
           </div>
           <span className="text-sm font-medium hidden sm:inline">Pagamento</span>
@@ -110,7 +110,7 @@ export default function NovaAssinaturaPage() {
         <Card className="shadow-sm">
           <CardHeader className="p-4 pb-0">
             <CardTitle className="text-lg flex items-center gap-2">
-              <User className="h-5 w-5 text-[#9795e4]" />
+              <User className="h-5 w-5 text-[#46347F]" />
               Dados do Cliente
             </CardTitle>
             <CardDescription>
@@ -168,7 +168,7 @@ export default function NovaAssinaturaPage() {
 
             <div className="flex justify-end pt-4">
               <Button 
-                className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
                 onClick={() => setStep(2)}
                 disabled={!formData.nome || !formData.email}
               >
@@ -185,7 +185,7 @@ export default function NovaAssinaturaPage() {
         <Card className="shadow-sm">
           <CardHeader className="p-4 pb-0">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Package className="h-5 w-5 text-[#9795e4]" />
+              <Package className="h-5 w-5 text-[#46347F]" />
               Selecione o Plano
             </CardTitle>
             <CardDescription>
@@ -200,19 +200,19 @@ export default function NovaAssinaturaPage() {
                   onClick={() => setPlanoSelecionado(p.id)}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     planoSelecionado === p.id 
-                      ? 'border-[#9795e4] bg-[#9795e4]/5' 
-                      : 'border-border hover:border-[#9795e4]/50'
+                      ? 'border-[#46347F] bg-[#46347F]/5' 
+                      : 'border-border hover:border-[#46347F]/50'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-bold">{p.nome}</h3>
                     {planoSelecionado === p.id && (
-                      <div className="h-5 w-5 rounded-full bg-[#9795e4] flex items-center justify-center">
+                      <div className="h-5 w-5 rounded-full bg-[#46347F] flex items-center justify-center">
                         <Check className="h-3 w-3 text-white" />
                       </div>
                     )}
                   </div>
-                  <p className="text-2xl font-bold text-[#9795e4] mb-2">{p.preco}<span className="text-sm text-muted-foreground">/mês</span></p>
+                  <p className="text-2xl font-bold text-[#46347F] mb-2">{p.preco}<span className="text-sm text-muted-foreground">/mês</span></p>
                   <ul className="space-y-1">
                     {p.recursos.map((recurso, idx) => (
                       <li key={idx} className="text-sm text-muted-foreground flex items-center gap-1">
@@ -230,7 +230,7 @@ export default function NovaAssinaturaPage() {
                 Voltar
               </Button>
               <Button 
-                className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
                 onClick={() => setStep(3)}
                 disabled={!planoSelecionado}
               >
@@ -247,7 +247,7 @@ export default function NovaAssinaturaPage() {
         <Card className="shadow-sm">
           <CardHeader className="p-4 pb-0">
             <CardTitle className="text-lg flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-[#9795e4]" />
+              <CreditCard className="h-5 w-5 text-[#46347F]" />
               Método de Pagamento
             </CardTitle>
             <CardDescription>
@@ -277,11 +277,11 @@ export default function NovaAssinaturaPage() {
                       onClick={() => setMetodoPagamento(metodo.id)}
                       className={`p-4 rounded-lg border-2 cursor-pointer transition-all flex items-center gap-3 ${
                         metodoPagamento === metodo.id 
-                          ? 'border-[#9795e4] bg-[#9795e4]/5' 
-                          : 'border-border hover:border-[#9795e4]/50'
+                          ? 'border-[#46347F] bg-[#46347F]/5' 
+                          : 'border-border hover:border-[#46347F]/50'
                       }`}
                     >
-                      <Icon className="h-5 w-5 text-[#9795e4]" />
+                      <Icon className="h-5 w-5 text-[#46347F]" />
                       <span className="font-medium">{metodo.nome}</span>
                     </div>
                   )
@@ -306,7 +306,7 @@ export default function NovaAssinaturaPage() {
                 Voltar
               </Button>
               <Button 
-                className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
                 onClick={handleSubmit}
                 disabled={!metodoPagamento}
               >

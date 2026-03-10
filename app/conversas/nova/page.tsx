@@ -100,7 +100,7 @@ export default function NovaConversaPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MessageSquarePlus className="h-5 w-5 text-[#9795e4]" />
+                <MessageSquarePlus className="h-5 w-5 text-[#46347F]" />
                 Dados da Conversa
               </CardTitle>
               <CardDescription>
@@ -264,7 +264,7 @@ export default function NovaConversaPage() {
                   <Button
                     type="submit"
                     disabled={isSubmitting || !formData.name || !formData.channel}
-                    className="bg-[#9795e4] hover:bg-[#8886d4] text-white"
+                    className="bg-[#46347F] hover:bg-[#8886d4] text-white"
                   >
                     {isSubmitting ? (
                       <>

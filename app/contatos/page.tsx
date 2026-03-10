@@ -100,7 +100,7 @@ export default function ContactsPage() {
               Exportar
             </Button>
             <Link href="/contatos/novo">
-              <Button size="sm" className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+              <Button size="sm" className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
                 <UserPlus className="h-4 w-4" />
                 Adicionar Contato
               </Button>
@@ -121,11 +121,11 @@ export default function ContactsPage() {
 
             {/* Selected Actions */}
             {selectedContacts.length > 0 && (
-              <div className="flex items-center gap-2 rounded-md bg-[#9795e4]/10 p-2">
-                <span className="text-sm font-medium text-[#9795e4]">
+              <div className="flex items-center gap-2 rounded-md bg-[#46347F]/10 p-2">
+                <span className="text-sm font-medium text-[#46347F]">
                   {selectedContacts.length} contatos selecionados
                 </span>
-                <Button variant="ghost" size="sm" className="h-7 text-[#9795e4]">
+                <Button variant="ghost" size="sm" className="h-7 text-[#46347F]">
                   Exportar
                 </Button>
                 <Button variant="ghost" size="sm" className="h-7 text-red-600">

@@ -164,7 +164,7 @@ export default function NovoContatoPage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <nav className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-              <Link href="/contatos" className="hover:text-[#9795e4]">
+              <Link href="/contatos" className="hover:text-[#46347F]">
                 Contatos
               </Link>
               <span>/</span>
@@ -478,7 +478,7 @@ export default function NovoContatoPage() {
           <div className="flex justify-end pt-4">
             <Button
               type="submit"
-              className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+              className="bg-[#46347F] hover:bg-[#46347F] text-white"
             >
               Salvar Contato
             </Button>

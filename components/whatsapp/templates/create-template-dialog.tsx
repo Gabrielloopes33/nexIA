@@ -136,7 +136,7 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+          className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
           disabled={disabled}
         >
           <Plus className="h-4 w-4" />
@@ -146,7 +146,7 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-[#9795e4]" />
+            <FileText className="h-5 w-5 text-[#46347F]" />
             Criar Template de Mensagem
           </DialogTitle>
           <DialogDescription>
@@ -378,7 +378,7 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
               <Button 
                 type="submit"
                 disabled={isLoading}
-                className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
               >
                 {isLoading ? (
                   <>

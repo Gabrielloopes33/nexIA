@@ -206,8 +206,8 @@ export default function ImportarContatosPage() {
                   <div
                     className={cn(
                       "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
-                      step === s.id && "border-[#9795e4] bg-[#9795e4] text-white",
-                      step > s.id && "border-[#9795e4] bg-[#9795e4]/20 text-[#9795e4]",
+                      step === s.id && "border-[#46347F] bg-[#46347F] text-white",
+                      step > s.id && "border-[#46347F] bg-[#46347F]/20 text-[#46347F]",
                       step < s.id && "border-muted bg-muted text-muted-foreground"
                     )}
                   >
@@ -220,7 +220,7 @@ export default function ImportarContatosPage() {
                   <span
                     className={cn(
                       "mt-2 text-xs font-medium",
-                      step === s.id ? "text-[#9795e4]" : "text-muted-foreground"
+                      step === s.id ? "text-[#46347F]" : "text-muted-foreground"
                     )}
                   >
                     {s.label}
@@ -230,7 +230,7 @@ export default function ImportarContatosPage() {
                   <div
                     className={cn(
                       "mx-4 h-0.5 w-16 sm:w-24",
-                      step > s.id ? "bg-[#9795e4]" : "bg-muted"
+                      step > s.id ? "bg-[#46347F]" : "bg-muted"
                     )}
                   />
                 )}
@@ -265,8 +265,8 @@ export default function ImportarContatosPage() {
                   className={cn(
                     "border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors",
                     dragActive
-                      ? "border-[#9795e4] bg-[#9795e4]/10"
-                      : "border-[#9795e4]/40 hover:border-[#9795e4] hover:bg-[#9795e4]/5"
+                      ? "border-[#46347F] bg-[#46347F]/10"
+                      : "border-[#46347F]/40 hover:border-[#46347F] hover:bg-[#46347F]/5"
                   )}
                 >
                   <input
@@ -276,7 +276,7 @@ export default function ImportarContatosPage() {
                     className="hidden"
                     onChange={handleInputChange}
                   />
-                  <Upload className="mx-auto h-10 w-10 text-[#9795e4]/60" />
+                  <Upload className="mx-auto h-10 w-10 text-[#46347F]/60" />
                   <p className="mt-4 text-sm font-medium">
                     Arraste e solte seu arquivo CSV aqui
                   </p>
@@ -288,7 +288,7 @@ export default function ImportarContatosPage() {
 
                 {arquivo && (
                   <div className="flex items-center gap-3 rounded-lg border border-border bg-gray-50 p-4">
-                    <FileText className="h-8 w-8 text-[#9795e4]" />
+                    <FileText className="h-8 w-8 text-[#46347F]" />
                     <div>
                       <p className="font-medium">{arquivo.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -302,7 +302,7 @@ export default function ImportarContatosPage() {
                   <Button
                     onClick={() => setStep(2)}
                     disabled={!arquivo}
-                    className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                    className="bg-[#46347F] hover:bg-[#46347F] text-white"
                   >
                     Próximo
                     <ChevronRight className="ml-2 h-4 w-4" />
@@ -384,7 +384,7 @@ export default function ImportarContatosPage() {
                   <Button
                     onClick={() => setStep(3)}
                     disabled={!camposObrigatoriosMapeados}
-                    className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                    className="bg-[#46347F] hover:bg-[#46347F] text-white"
                   >
                     Próximo
                     <ChevronRight className="ml-2 h-4 w-4" />
@@ -483,7 +483,7 @@ export default function ImportarContatosPage() {
                   <Button
                     onClick={() => setStep(4)}
                     disabled={validos.length === 0}
-                    className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                    className="bg-[#46347F] hover:bg-[#46347F] text-white"
                   >
                     Importar {validos.length} contato(s)
                   </Button>
@@ -497,7 +497,7 @@ export default function ImportarContatosPage() {
               <CardContent className="py-12">
                 {progresso < 100 ? (
                   <div className="flex flex-col items-center">
-                    <Loader2 className="h-12 w-12 animate-spin text-[#9795e4] mb-4" />
+                    <Loader2 className="h-12 w-12 animate-spin text-[#46347F] mb-4" />
                     <h3 className="text-lg font-semibold">Importando contatos...</h3>
                     <p className="text-muted-foreground text-sm mt-1">
                       Por favor, aguarde enquanto processamos seu arquivo
@@ -527,7 +527,7 @@ export default function ImportarContatosPage() {
                       </Button>
                       <Button
                         onClick={resetWizard}
-                        className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                        className="bg-[#46347F] hover:bg-[#46347F] text-white"
                       >
                         <Upload className="mr-2 h-4 w-4" />
                         Importar Outro Arquivo

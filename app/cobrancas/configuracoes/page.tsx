@@ -37,7 +37,7 @@ export default function ConfiguracoesPage() {
             Configure as preferências do módulo de cobranças
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Save className="h-4 w-4" />
           Salvar Alterações
         </Button>
@@ -56,7 +56,7 @@ export default function ConfiguracoesPage() {
           <Card className="shadow-sm">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Settings className="h-4 w-4 text-[#9795e4]" />
+                <Settings className="h-4 w-4 text-[#46347F]" />
                 Configurações Gerais
               </CardTitle>
             </CardHeader>
@@ -98,7 +98,7 @@ export default function ConfiguracoesPage() {
           <Card className="shadow-sm">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Globe className="h-4 w-4 text-[#9795e4]" />
+                <Globe className="h-4 w-4 text-[#46347F]" />
                 URLs de Redirecionamento
               </CardTitle>
             </CardHeader>
@@ -124,7 +124,7 @@ export default function ConfiguracoesPage() {
           <Card className="shadow-sm">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Mail className="h-4 w-4 text-[#9795e4]" />
+                <Mail className="h-4 w-4 text-[#46347F]" />
                 Email aos Clientes
               </CardTitle>
             </CardHeader>
@@ -176,7 +176,7 @@ export default function ConfiguracoesPage() {
           <Card className="shadow-sm">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-[#9795e4]" />
+                <CreditCard className="h-4 w-4 text-[#46347F]" />
                 Configurações de Cobrança
               </CardTitle>
             </CardHeader>
@@ -222,7 +222,7 @@ export default function ConfiguracoesPage() {
           <Card className="shadow-sm">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <LinkIcon className="h-4 w-4 text-[#9795e4]" />
+                <LinkIcon className="h-4 w-4 text-[#46347F]" />
                 Integração Stripe
               </CardTitle>
             </CardHeader>
@@ -256,7 +256,7 @@ export default function ConfiguracoesPage() {
           <Card className="shadow-sm">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Shield className="h-4 w-4 text-[#9795e4]" />
+                <Shield className="h-4 w-4 text-[#46347F]" />
                 Chaves de API
               </CardTitle>
             </CardHeader>

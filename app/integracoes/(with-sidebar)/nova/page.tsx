@@ -120,22 +120,22 @@ export default function NovaIntegracaoPage() {
 
       {/* Steps */}
       <div className="flex items-center justify-center gap-4">
-        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-[#9795e4]' : 'text-muted-foreground'}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-[#9795e4] text-white' : 'bg-muted'}`}>
+        <div className={`flex items-center gap-2 ${step >= 1 ? 'text-[#46347F]' : 'text-muted-foreground'}`}>
+          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-[#46347F] text-white' : 'bg-muted'}`}>
             1
           </div>
           <span className="text-sm font-medium hidden sm:inline">Escolher</span>
         </div>
         <div className="h-px w-12 bg-border" />
-        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-[#9795e4]' : 'text-muted-foreground'}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-[#9795e4] text-white' : 'bg-muted'}`}>
+        <div className={`flex items-center gap-2 ${step >= 2 ? 'text-[#46347F]' : 'text-muted-foreground'}`}>
+          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-[#46347F] text-white' : 'bg-muted'}`}>
             2
           </div>
           <span className="text-sm font-medium hidden sm:inline">Configurar</span>
         </div>
         <div className="h-px w-12 bg-border" />
-        <div className={`flex items-center gap-2 ${step >= 3 ? 'text-[#9795e4]' : 'text-muted-foreground'}`}>
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-[#9795e4] text-white' : 'bg-muted'}`}>
+        <div className={`flex items-center gap-2 ${step >= 3 ? 'text-[#46347F]' : 'text-muted-foreground'}`}>
+          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-[#46347F] text-white' : 'bg-muted'}`}>
             3
           </div>
           <span className="text-sm font-medium hidden sm:inline">Testar</span>
@@ -159,12 +159,12 @@ export default function NovaIntegracaoPage() {
                     className={cn(
                       "p-4 rounded-lg border-2 cursor-pointer transition-all relative",
                       integracaoSelecionada === item.id 
-                        ? 'border-[#9795e4] bg-[#9795e4]/5' 
-                        : 'border-border hover:border-[#9795e4]/50'
+                        ? 'border-[#46347F] bg-[#46347F]/5' 
+                        : 'border-border hover:border-[#46347F]/50'
                     )}
                   >
                     {item.popular && (
-                      <Badge className="absolute -top-2 -right-2 bg-[#9795e4]">Popular</Badge>
+                      <Badge className="absolute -top-2 -right-2 bg-[#46347F]">Popular</Badge>
                     )}
                     <div className="flex items-start gap-3">
                       <div 
@@ -177,7 +177,7 @@ export default function NovaIntegracaoPage() {
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{item.nome}</p>
                           {integracaoSelecionada === item.id && (
-                            <Check className="h-4 w-4 text-[#9795e4]" />
+                            <Check className="h-4 w-4 text-[#46347F]" />
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">{item.descricao}</p>
@@ -193,7 +193,7 @@ export default function NovaIntegracaoPage() {
 
             <div className="flex justify-end mt-6">
               <Button 
-                className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
                 onClick={() => setStep(2)}
                 disabled={!integracaoSelecionada}
               >
@@ -286,7 +286,7 @@ export default function NovaIntegracaoPage() {
                 Voltar
               </Button>
               <Button 
-                className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
                 onClick={() => setStep(3)}
               >
                 Próximo
@@ -324,13 +324,13 @@ export default function NovaIntegracaoPage() {
             <div className="text-center py-8">
               {!isTesting && !testResult && (
                 <>
-                  <div className="h-16 w-16 rounded-full bg-[#9795e4]/10 flex items-center justify-center mx-auto mb-4">
-                    <Globe className="h-8 w-8 text-[#9795e4]" />
+                  <div className="h-16 w-16 rounded-full bg-[#46347F]/10 flex items-center justify-center mx-auto mb-4">
+                    <Globe className="h-8 w-8 text-[#46347F]" />
                   </div>
                   <p className="text-muted-foreground mb-4">
                     Clique em testar para verificar a conexão
                   </p>
-                  <Button onClick={handleTest} className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+                  <Button onClick={handleTest} className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
                     Testar Conexão
                   </Button>
                 </>
@@ -338,7 +338,7 @@ export default function NovaIntegracaoPage() {
 
               {isTesting && (
                 <>
-                  <Loader2 className="h-8 w-8 animate-spin text-[#9795e4] mx-auto mb-4" />
+                  <Loader2 className="h-8 w-8 animate-spin text-[#46347F] mx-auto mb-4" />
                   <p className="text-muted-foreground">Testando conexão...</p>
                 </>
               )}
@@ -376,7 +376,7 @@ export default function NovaIntegracaoPage() {
                 Voltar
               </Button>
               <Button 
-                className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
                 onClick={handleSubmit}
                 disabled={testResult !== 'success'}
               >

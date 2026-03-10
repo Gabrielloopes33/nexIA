@@ -16,7 +16,7 @@ export const MOCK_TAGS: Tag[] = [
   {
     id: "tag-1",
     nome: "VIP",
-    cor: "#9795e4",
+    cor: "#46347F",
 
     contatosCount: 45,
     automatizacao: true,
@@ -29,7 +29,7 @@ export const MOCK_TAGS: Tag[] = [
   {
     id: "tag-2",
     nome: "Lead Quente",
-    cor: "#7c7ab8",
+    cor: "#46347F",
 
     contatosCount: 128,
     automatizacao: true,
@@ -42,7 +42,7 @@ export const MOCK_TAGS: Tag[] = [
   {
     id: "tag-3",
     nome: "Lead Frio",
-    cor: "#b3b3e5",
+    cor: "#46347F",
 
     contatosCount: 342,
     automatizacao: false,
@@ -54,7 +54,7 @@ export const MOCK_TAGS: Tag[] = [
   {
     id: "tag-4",
     nome: "Conteúdo",
-    cor: "#a5a3d9",
+    cor: "#46347F",
 
     contatosCount: 892,
     automatizacao: true,
@@ -66,7 +66,7 @@ export const MOCK_TAGS: Tag[] = [
   {
     id: "tag-5",
     nome: "Webinar",
-    cor: "#7573b8",
+    cor: "#46347F",
 
     contatosCount: 67,
     automatizacao: true,
@@ -79,7 +79,7 @@ export const MOCK_TAGS: Tag[] = [
   {
     id: "tag-6",
     nome: "Indicação",
-    cor: "#9b99d1",
+    cor: "#46347F",
 
     contatosCount: 23,
     automatizacao: false,
@@ -91,7 +91,7 @@ export const MOCK_TAGS: Tag[] = [
   {
     id: "tag-7",
     nome: "Parceiro",
-    cor: "#8a88c7",
+    cor: "#46347F",
 
     contatosCount: 12,
     automatizacao: false,
@@ -103,7 +103,7 @@ export const MOCK_TAGS: Tag[] = [
   {
     id: "tag-8",
     nome: "Trial",
-    cor: "#c4c3ea",
+    cor: "#46347F",
 
     contatosCount: 156,
     automatizacao: true,

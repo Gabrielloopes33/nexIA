@@ -45,8 +45,8 @@ export function TemplateCard({ template, onDelete, onSync, isSyncing }: Template
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#9795e4]/10">
-              <FileText className="h-5 w-5 text-[#9795e4]" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#46347F]/10">
+              <FileText className="h-5 w-5 text-[#46347F]" />
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-semibold truncate" title={template.name}>

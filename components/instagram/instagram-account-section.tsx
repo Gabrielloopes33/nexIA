@@ -208,7 +208,7 @@ export function InstagramAccountSection({
       <Card className="border-border bg-muted/30">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-[#9795e4]" />
+            <AlertCircle className="h-4 w-4 text-[#46347F]" />
             Informações da Conexão
           </CardTitle>
         </CardHeader>

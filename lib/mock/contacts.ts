@@ -252,10 +252,10 @@ export function getContactsByUTM(source?: string, medium?: string, campaign?: st
 }
 
 export const CONTACT_STATUS_OPTIONS = [
-  { value: "ativo", label: "Ativo", color: "#9795e4" },
-  { value: "inativo", label: "Inativo", color: "#b3b3e5" },
-  { value: "pendente", label: "Pendente", color: "#a5a3d9" },
-  { value: "convertido", label: "Convertido", color: "#7c7ab8" },
+  { value: "ativo", label: "Ativo", color: "#46347F" },
+  { value: "inativo", label: "Inativo", color: "#46347F" },
+  { value: "pendente", label: "Pendente", color: "#46347F" },
+  { value: "convertido", label: "Convertido", color: "#46347F" },
 ]
 
 export const CONTACT_ORIGEM_OPTIONS = [

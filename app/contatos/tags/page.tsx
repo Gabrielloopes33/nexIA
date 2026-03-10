@@ -48,7 +48,7 @@ export default function TagsPage() {
   // Form state
   const [formData, setFormData] = useState<Partial<Tag>>({
     nome: "",
-    cor: "#9795e4",
+    cor: "#46347F",
     automatizacao: false,
     utmSource: "",
     utmMedium: "",
@@ -63,7 +63,7 @@ export default function TagsPage() {
     setEditingTag(null)
     setFormData({
       nome: "",
-      cor: "#9795e4",
+      cor: "#46347F",
       automatizacao: false,
       utmSource: "",
       utmMedium: "",
@@ -95,7 +95,7 @@ export default function TagsPage() {
       const newTag: Tag = {
         id: `tag-${Date.now()}`,
         nome: formData.nome,
-        cor: formData.cor || "#9795e4",
+        cor: formData.cor || "#46347F",
         contatosCount: 0,
         automatizacao: formData.automatizacao || false,
         utmSource: formData.utmSource,
@@ -114,14 +114,14 @@ export default function TagsPage() {
   }
 
   const colorOptions = [
-    "#9795e4",
-    "#7c7ab8",
-    "#b3b3e5",
-    "#a5a3d9",
-    "#7573b8",
-    "#9b99d1",
-    "#8a88c7",
-    "#c4c3ea",
+    "#46347F",
+    "#46347F",
+    "#46347F",
+    "#46347F",
+    "#46347F",
+    "#46347F",
+    "#46347F",
+    "#46347F",
     "#E57373",
     "#81C784",
     "#64B5F6",
@@ -148,7 +148,7 @@ export default function TagsPage() {
           </div>
           <Button
             onClick={handleCreateTag}
-            className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+            className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
           >
             <Plus className="h-4 w-4" />
             Adicionar Tag
@@ -268,7 +268,7 @@ export default function TagsPage() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <TagIcon className="h-5 w-5 text-[#9795e4]" />
+                <TagIcon className="h-5 w-5 text-[#46347F]" />
                 {editingTag ? "Editar Tag" : "Nova Tag"}
               </DialogTitle>
               <DialogDescription>
@@ -300,7 +300,7 @@ export default function TagsPage() {
                       onClick={() => setFormData({ ...formData, cor: color })}
                       className={`h-8 w-8 rounded-full transition-all ${
                         formData.cor === color
-                          ? "ring-2 ring-offset-2 ring-[#9795e4]"
+                          ? "ring-2 ring-offset-2 ring-[#46347F]"
                           : "hover:scale-110"
                       }`}
                       style={{ backgroundColor: color }}
@@ -312,7 +312,7 @@ export default function TagsPage() {
               {/* Automation */}
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div className="flex items-center gap-2">
-                  <Bot className="h-4 w-4 text-[#9795e4]" />
+                  <Bot className="h-4 w-4 text-[#46347F]" />
                   <div>
                     <p className="text-sm font-medium">Automação</p>
                     <p className="text-xs text-muted-foreground">
@@ -331,7 +331,7 @@ export default function TagsPage() {
               {/* UTM Section */}
               <div className="space-y-3 rounded-lg border p-3">
                 <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-[#9795e4]" />
+                  <Filter className="h-4 w-4 text-[#46347F]" />
                   <p className="text-sm font-medium">Configuração UTM</p>
                 </div>
 
@@ -399,7 +399,7 @@ export default function TagsPage() {
               </Button>
               <Button
                 onClick={handleSaveTag}
-                className="bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="bg-[#46347F] hover:bg-[#46347F]"
                 disabled={!formData.nome}
               >
                 {editingTag ? "Salvar" : "Criar Tag"}

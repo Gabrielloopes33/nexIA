@@ -38,18 +38,18 @@ export function PhoneNumberCard({
   return (
     <Card className={cn(
       "transition-all",
-      phoneNumber.isDefault && "ring-2 ring-[#9795e4]/30"
+      phoneNumber.isDefault && "ring-2 ring-[#46347F]/30"
     )}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className={cn(
               "flex h-10 w-10 items-center justify-center rounded-lg",
-              phoneNumber.isDefault ? "bg-[#9795e4]/10" : "bg-muted"
+              phoneNumber.isDefault ? "bg-[#46347F]/10" : "bg-muted"
             )}>
               <Phone className={cn(
                 "h-5 w-5",
-                phoneNumber.isDefault ? "text-[#9795e4]" : "text-muted-foreground"
+                phoneNumber.isDefault ? "text-[#46347F]" : "text-muted-foreground"
               )} />
             </div>
             <div>
@@ -58,7 +58,7 @@ export function PhoneNumberCard({
                 {phoneNumber.isDefault && (
                   <Badge 
                     variant="secondary" 
-                    className="h-5 gap-1 bg-[#9795e4]/10 text-[#9795e4] text-[10px]"
+                    className="h-5 gap-1 bg-[#46347F]/10 text-[#46347F] text-[10px]"
                   >
                     <Star className="h-3 w-3 fill-current" />
                     Padrão

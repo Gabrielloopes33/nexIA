@@ -83,7 +83,7 @@ export default function CuponsPage() {
             Crie e gerencie cupons promocionais
           </p>
         </div>
-        <Button className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]">
+        <Button className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
           <Plus className="h-4 w-4" />
           Novo Cupom
         </Button>
@@ -106,7 +106,7 @@ export default function CuponsPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Total de Usos</p>
-            <p className="text-3xl font-bold text-[#9795e4]">{stats.usosTotal}</p>
+            <p className="text-3xl font-bold text-[#46347F]">{stats.usosTotal}</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -141,8 +141,8 @@ export default function CuponsPage() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="h-10 w-10 rounded-lg bg-[#9795e4]/10 flex items-center justify-center">
-                      <Tag className="h-5 w-5 text-[#9795e4]" />
+                    <div className="h-10 w-10 rounded-lg bg-[#46347F]/10 flex items-center justify-center">
+                      <Tag className="h-5 w-5 text-[#46347F]" />
                     </div>
                     <div>
                       <p className="font-mono font-bold text-lg">{cupom.codigo}</p>
@@ -155,7 +155,7 @@ export default function CuponsPage() {
                 </div>
 
                 <div className="flex items-center justify-center py-4 bg-muted/30 rounded-lg mb-4">
-                  <span className="text-3xl font-bold text-[#9795e4]">{cupom.valor}</span>
+                  <span className="text-3xl font-bold text-[#46347F]">{cupom.valor}</span>
                   <span className="text-sm text-muted-foreground ml-2">
                     {cupom.tipo === "percentual" ? "OFF" : "de desconto"}
                   </span>

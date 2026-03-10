@@ -165,7 +165,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
   const [availableTags, setAvailableTags] = useState<ContactTag[]>(MOCK_TAGS)
   const [isAddingTag, setIsAddingTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
-  const [newTagColor, setNewTagColor] = useState('#9795e4')
+  const [newTagColor, setNewTagColor] = useState('#46347F')
   const [searchTagQuery, setSearchTagQuery] = useState('')
   const tagInputRef = useRef<HTMLInputElement>(null)
 
@@ -214,14 +214,14 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
 
   // Tag color options
   const tagColorOptions = [
-    '#9795e4', // Purple (primary)
-    '#7c7ab8', // Dark purple
-    '#b3b3e5', // Light purple
-    '#7573b8', // Medium purple
-    '#9b99d1', // Lavender
-    '#8a88c7', // Violet
-    '#c4c3ea', // Pale purple
-    '#a5a3d9', // Soft purple
+    '#46347F', // Purple (primary)
+    '#46347F', // Dark purple
+    '#46347F', // Light purple
+    '#46347F', // Medium purple
+    '#46347F', // Lavender
+    '#46347F', // Violet
+    '#46347F', // Pale purple
+    '#46347F', // Soft purple
     '#ef4444', // Red
     '#f97316', // Orange
     '#f59e0b', // Amber
@@ -266,7 +266,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
     setAvailableTags([...availableTags, newTag])
     setContactTags([...contactTags, newTag.id])
     setNewTagName('')
-    setNewTagColor('#9795e4')
+    setNewTagColor('#46347F')
     setIsAddingTag(false)
   }
 
@@ -338,7 +338,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
           <div className="flex items-center gap-3">
             <div 
               className="flex h-10 w-10 items-center justify-center rounded-full text-white font-bold text-sm"
-              style={{ backgroundColor: contact.avatarBg || '#9795e4' }}
+              style={{ backgroundColor: contact.avatarBg || '#46347F' }}
             >
               {contact.avatar || getInitials(contact.nome, contact.sobrenome)}
             </div>
@@ -399,7 +399,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
             <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
             Tarefas
             {pendingTasks.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-[#9795e4] px-1.5 py-0 text-[10px] text-white">
+              <span className="ml-1.5 rounded-full bg-[#46347F] px-1.5 py-0 text-[10px] text-white">
                 {pendingTasks.length}
               </span>
             )}
@@ -413,22 +413,22 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
             <div className="p-4">
               {/* Quick Actions */}
               <div className="grid grid-cols-3 gap-3 mb-6">
-                <button className="flex flex-col items-center gap-2 p-4 rounded-lg bg-[#9795e4]/5 hover:bg-[#9795e4]/10 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#9795e4]/10 text-[#9795e4]">
+                <button className="flex flex-col items-center gap-2 p-4 rounded-lg bg-[#46347F]/5 hover:bg-[#46347F]/10 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#46347F]/10 text-[#46347F]">
                     <Phone className="h-5 w-5" />
                   </div>
                   <span className="text-xs font-medium text-muted-foreground">Ligar</span>
                 </button>
 
-                <button className="flex flex-col items-center gap-2 p-4 rounded-lg bg-[#9795e4]/5 hover:bg-[#9795e4]/10 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#9795e4]/10 text-[#9795e4]">
+                <button className="flex flex-col items-center gap-2 p-4 rounded-lg bg-[#46347F]/5 hover:bg-[#46347F]/10 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#46347F]/10 text-[#46347F]">
                     <MessageSquare className="h-5 w-5" />
                   </div>
                   <span className="text-xs font-medium text-muted-foreground">WhatsApp</span>
                 </button>
 
-                <button className="flex flex-col items-center gap-2 p-4 rounded-lg bg-[#9795e4]/5 hover:bg-[#9795e4]/10 transition-colors">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#9795e4]/10 text-[#9795e4]">
+                <button className="flex flex-col items-center gap-2 p-4 rounded-lg bg-[#46347F]/5 hover:bg-[#46347F]/10 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#46347F]/10 text-[#46347F]">
                     <Calendar className="h-5 w-5" />
                   </div>
                   <span className="text-xs font-medium text-muted-foreground">Reunião</span>
@@ -439,7 +439,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-[#9795e4]" />
+                    <Tag className="h-4 w-4 text-[#46347F]" />
                     <span className="text-sm font-medium text-foreground">Tags</span>
                   </div>
                   <Popover open={isAddingTag} onOpenChange={setIsAddingTag}>
@@ -447,7 +447,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-7 px-2 text-xs text-[#9795e4] hover:text-[#7b79c4] hover:bg-[#9795e4]/10"
+                        className="h-7 px-2 text-xs text-[#46347F] hover:text-[#7b79c4] hover:bg-[#46347F]/10"
                       >
                         <Plus className="h-3.5 w-3.5 mr-1" />
                         Adicionar
@@ -524,7 +524,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                               </div>
                               <Button
                                 size="sm"
-                                className="w-full h-8 bg-[#9795e4] hover:bg-[#7b79c4] text-white"
+                                className="w-full h-8 bg-[#46347F] hover:bg-[#7b79c4] text-white"
                                 onClick={createNewTag}
                                 disabled={!newTagName.trim() && !searchTagQuery.trim()}
                               >
@@ -589,7 +589,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Criado por</p>
                       <div className="flex items-center gap-1.5">
-                        <div className="h-4 w-4 rounded-sm bg-[#9795e4] flex items-center justify-center text-[10px] text-white font-bold">
+                        <div className="h-4 w-4 rounded-sm bg-[#46347F] flex items-center justify-center text-[10px] text-white font-bold">
                           {contact.atualizadoPor[0]}
                         </div>
                         <p className="text-sm font-medium text-foreground">{contact.atualizadoPor}</p>
@@ -619,7 +619,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                     <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Telefone</p>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium border border-[#9795e4]/30 bg-[#9795e4]/10 text-[#7573b8]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium border border-[#46347F]/30 bg-[#46347F]/10 text-[#46347F]">
                         {contact.telefone}
                       </span>
                     </div>
@@ -683,7 +683,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                     Empresa
                   </h3>
                   <div className="flex items-center gap-2 p-2 rounded-sm bg-muted/50">
-                    <div className="h-6 w-6 rounded-sm bg-[#9795e4] flex items-center justify-center text-[10px] text-white font-bold">
+                    <div className="h-6 w-6 rounded-sm bg-[#46347F] flex items-center justify-center text-[10px] text-white font-bold">
                       {contact.empresa[0]}
                     </div>
                     <span className="text-sm font-medium text-foreground">{contact.empresa}</span>
@@ -706,7 +706,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Adicionar nota ou atualização..."
-                      className="w-full min-h-[60px] px-3 py-2 text-sm border-0 bg-muted/30 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#9795e4]/20"
+                      className="w-full min-h-[60px] px-3 py-2 text-sm border-0 bg-muted/30 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#46347F]/20"
                     />
                   </div>
                 </div>
@@ -721,7 +721,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                   </div>
                   <Button 
                     size="sm" 
-                    className="h-8 bg-[#9795e4] hover:bg-[#7b79c4] text-white"
+                    className="h-8 bg-[#46347F] hover:bg-[#7b79c4] text-white"
                     onClick={addNote}
                     disabled={!newNote.trim()}
                   >
@@ -765,7 +765,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                             </div>
                             <div className="flex items-center gap-1.5 mt-2">
                               {event.authorAvatar && (
-                                <div className="h-5 w-5 rounded-full bg-[#9795e4]/10 flex items-center justify-center text-[9px] font-bold text-[#9795e4]">
+                                <div className="h-5 w-5 rounded-full bg-[#46347F]/10 flex items-center justify-center text-[9px] font-bold text-[#46347F]">
                                   {event.authorAvatar}
                                 </div>
                               )}
@@ -792,7 +792,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
                   <div
-                    className="h-full rounded-full bg-[#9795e4] transition-all"
+                    className="h-full rounded-full bg-[#46347F] transition-all"
                     style={{ width: `${tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0}%` }}
                   />
                 </div>
@@ -821,7 +821,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                     />
                     <Button 
                       size="sm" 
-                      className="h-9 bg-[#9795e4] hover:bg-[#7b79c4] text-white"
+                      className="h-9 bg-[#46347F] hover:bg-[#7b79c4] text-white"
                       onClick={addTask}
                     >
                       <Plus className="h-4 w-4" />
@@ -843,11 +843,11 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                           return (
                             <div 
                               key={task.id} 
-                              className="flex items-start gap-3 p-3 rounded-lg bg-white border border-border hover:border-[#9795e4]/30 transition-colors group"
+                              className="flex items-start gap-3 p-3 rounded-lg bg-white border border-border hover:border-[#46347F]/30 transition-colors group"
                             >
                               <button 
                                 onClick={() => toggleTask(task.id)}
-                                className="mt-0.5 text-muted-foreground hover:text-[#9795e4] transition-colors"
+                                className="mt-0.5 text-muted-foreground hover:text-[#46347F] transition-colors"
                               >
                                 <Circle className="h-5 w-5" />
                               </button>

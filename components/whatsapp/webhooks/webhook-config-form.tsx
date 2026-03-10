@@ -88,8 +88,8 @@ export function WebhookConfigForm({
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#9795e4]/10">
-            <Webhook className="h-5 w-5 text-[#9795e4]" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#46347F]/10">
+            <Webhook className="h-5 w-5 text-[#46347F]" />
           </div>
           <div>
             <CardTitle>Configuração do Webhook</CardTitle>
@@ -163,7 +163,7 @@ export function WebhookConfigForm({
               variant="ghost" 
               size="sm" 
               onClick={handleSelectAll}
-              className="h-7 text-xs text-[#9795e4]"
+              className="h-7 text-xs text-[#46347F]"
             >
               {allSelected ? 'Desselecionar todos' : 'Selecionar todos'}
             </Button>
@@ -194,9 +194,9 @@ export function WebhookConfigForm({
         </div>
 
         {/* Security Notice */}
-        <div className="rounded-lg bg-[#9795e4]/5 p-4">
+        <div className="rounded-lg bg-[#46347F]/5 p-4">
           <div className="flex items-start gap-3">
-            <Shield className="mt-0.5 h-5 w-5 text-[#9795e4]" />
+            <Shield className="mt-0.5 h-5 w-5 text-[#46347F]" />
             <div>
               <h4 className="text-sm font-medium">Segurança do Webhook</h4>
               <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
@@ -222,7 +222,7 @@ export function WebhookConfigForm({
           <Button
             onClick={handleSave}
             disabled={!url || !verifyToken || selectedEvents.length === 0 || isLoading}
-            className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+            className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

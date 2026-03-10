@@ -90,7 +90,7 @@ export function AddNumberDialog({ onAdd, disabled }: AddNumberDialogProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button 
-          className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+          className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
           disabled={disabled}
         >
           <Plus className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function AddNumberDialog({ onAdd, disabled }: AddNumberDialogProps) {
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5 text-[#9795e4]" />
+            <Phone className="h-5 w-5 text-[#46347F]" />
             Adicionar Número de Telefone
           </DialogTitle>
           <DialogDescription>
@@ -180,7 +180,7 @@ export function AddNumberDialog({ onAdd, disabled }: AddNumberDialogProps) {
               <Button 
                 type="submit"
                 disabled={isLoading}
-                className="gap-2 bg-[#9795e4] hover:bg-[#7c7ab8]"
+                className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
               >
                 {isLoading ? (
                   <>

@@ -85,7 +85,7 @@ export default function LogsPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Última 24h</p>
-            <p className="text-3xl font-bold text-[#9795e4]">24</p>
+            <p className="text-3xl font-bold text-[#46347F]">24</p>
           </CardContent>
         </Card>
       </div>
@@ -129,7 +129,7 @@ export default function LogsPage() {
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[#9795e4]" />
+            <Activity className="h-4 w-4 text-[#46347F]" />
             Registro de Atividades
           </CardTitle>
         </CardHeader>

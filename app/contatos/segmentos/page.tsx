@@ -235,7 +235,7 @@ export default function SegmentosPage() {
           </div>
           <Button
             onClick={handleCreateClick}
-            className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+            className="bg-[#46347F] hover:bg-[#46347F] text-white"
           >
             <Plus className="mr-2 h-4 w-4" />
             Criar Segmento
@@ -268,7 +268,7 @@ export default function SegmentosPage() {
               </p>
               <Button
                 onClick={handleCreateClick}
-                className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                className="bg-[#46347F] hover:bg-[#46347F] text-white"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Criar Segmento
@@ -412,7 +412,7 @@ export default function SegmentosPage() {
                         className={cn(
                           "h-8 w-8 rounded-full transition-all",
                           formData.cor === color
-                            ? "ring-2 ring-offset-2 ring-[#9795e4]"
+                            ? "ring-2 ring-offset-2 ring-[#46347F]"
                             : "hover:scale-110"
                         )}
                         style={{ backgroundColor: color }}
@@ -430,7 +430,7 @@ export default function SegmentosPage() {
                       onClick={() => setFormData({ ...formData, operador: "AND" })}
                       className={cn(
                         formData.operador === "AND" &&
-                          "bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                          "bg-[#46347F] hover:bg-[#46347F] text-white"
                       )}
                     >
                       Todas as regras (AND)
@@ -442,7 +442,7 @@ export default function SegmentosPage() {
                       onClick={() => setFormData({ ...formData, operador: "OR" })}
                       className={cn(
                         formData.operador === "OR" &&
-                          "bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                          "bg-[#46347F] hover:bg-[#46347F] text-white"
                       )}
                     >
                       Qualquer regra (OR)
@@ -595,8 +595,8 @@ export default function SegmentosPage() {
               {formData.regras.length > 0 && (
                 <>
                   <Separator />
-                  <div className="rounded-sm bg-[#9795e4]/5 p-4">
-                    <p className="text-sm font-medium text-[#9795e4]">
+                  <div className="rounded-sm bg-[#46347F]/5 p-4">
+                    <p className="text-sm font-medium text-[#46347F]">
                       {previewCount} contato{previewCount !== 1 ? "s" : ""}{" "}
                       corresponde{previewCount === 1 ? "" : "m"} a este segmento
                     </p>
@@ -610,7 +610,7 @@ export default function SegmentosPage() {
               </Button>
               <Button
                 onClick={handleSave}
-                className="bg-[#9795e4] hover:bg-[#7c7ab8] text-white"
+                className="bg-[#46347F] hover:bg-[#46347F] text-white"
                 disabled={!formData.nome.trim()}
               >
                 {editingSegment ? "Salvar" : "Criar Segmento"}
