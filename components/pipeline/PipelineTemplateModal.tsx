@@ -112,7 +112,7 @@ export function PipelineTemplateModal({ isOpen, onClose }: PipelineTemplateModal
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/pipeline/templates/apply', {
+      const response = await fetch('/api/pipeline/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
