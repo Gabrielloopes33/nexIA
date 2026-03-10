@@ -1,16 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ContactPanelProvider } from '@/lib/contexts/contact-panel-context'
 import './globals.css'
-
-const inter = Inter({ 
-  subsets: ["latin"], 
-  variable: "--font-inter",
-  weight: ['300', '400', '500', '600', '700', '800'],
-  display: 'swap',
-  preload: true,
-});
 
 export const metadata: Metadata = {
   title: 'NexIA Chat - Início',
@@ -29,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${inter.variable} antialiased`} style={{ fontFamily: 'var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif' }}>
+      <body className="antialiased" style={{ fontFamily: '"Britti Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif' }}>
         <ContactPanelProvider>
           {children}
         </ContactPanelProvider>
