@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Chrome, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Background Aurora Component
@@ -47,7 +47,7 @@ function AuthCard() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
+  // Google OAuth desabilitado - adicionar quando tiver credenciais configuradas no Supabase
 
   // Função para traduzir erros do Supabase
   function getErrorMessage(error: any): string {
@@ -155,24 +155,6 @@ function AuthCard() {
     }
   }
 
-  async function handleGoogleLogin() {
-    setGoogleLoading(true)
-    setError('')
-
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    })
-
-    if (error) {
-      setError('Erro ao conectar com Google')
-      setGoogleLoading(false)
-    }
-  }
-
   const toggleMode = () => {
     setMode(mode === 'login' ? 'signup' : 'login')
     setError('')
@@ -207,28 +189,7 @@ function AuthCard() {
             </p>
           </div>
 
-          {/* Botão Google */}
-          <button
-            onClick={handleGoogleLogin}
-            disabled={googleLoading}
-            className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {googleLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-            ) : (
-              <Chrome className="h-5 w-5 text-[#4285F4]" />
-            )}
-            {googleLoading ? 'Conectando...' : 'Continuar com Google'}
-          </button>
-
-          {/* Divider */}
-          <div className="mb-6 flex items-center gap-4">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-              ou
-            </span>
-            <div className="h-px flex-1 bg-gray-200" />
-          </div>
+          {/* TODO: Adicionar botão Google quando OAuth estiver configurado no Supabase */}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
