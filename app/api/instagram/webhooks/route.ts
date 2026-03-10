@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { config } from "@/lib/instagram/config";
 import { createHmac } from "crypto";
 import { updateLeadScore } from "@/lib/pipeline/scoring";
