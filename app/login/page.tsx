@@ -49,16 +49,58 @@ function AuthCard() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
+  // Função para traduzir erros do Supabase
+  function getErrorMessage(error: any): string {
+    const message = error?.message || error?.error_description || ''
+    
+    // Mapeamento de erros comuns do Supabase
+    if (message.includes('User already registered')) {
+      return 'Este email já está cadastrado. Tente fazer login.'
+    }
+    if (message.includes('Password should be at least 6 characters')) {
+      return 'A senha deve ter pelo menos 6 caracteres'
+    }
+    if (message.includes('Unable to validate email address')) {
+      return 'Email inválido. Verifique o formato do email.'
+    }
+    if (message.includes('Invalid login credentials')) {
+      return 'Email ou senha incorretos'
+    }
+    if (message.includes('Email not confirmed')) {
+      return 'Email não confirmado. Verifique sua caixa de entrada.'
+    }
+    if (message.includes('rate limit')) {
+      return 'Muitas tentativas. Aguarde um momento e tente novamente.'
+    }
+    
+    // Log para debug
+    console.error('Supabase auth error:', error)
+    return `Erro: ${message || 'Erro ao processar solicitação. Tente novamente.'}`
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setLoading(true)
 
+    // Validações básicas no frontend
+    if (!email || !email.includes('@')) {
+      setError('Por favor, insira um email válido')
+      setLoading(false)
+      return
+    }
+
+    if (!password || password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres')
+      setLoading(false)
+      return
+    }
+
     const supabase = createClient()
 
     if (mode === 'signup') {
       // Criar conta
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -67,14 +109,20 @@ function AuthCard() {
       })
 
       if (error) {
-        setError(error.message === 'User already registered' 
-          ? 'Este email já está cadastrado' 
-          : 'Erro ao criar conta. Tente novamente.')
+        setError(getErrorMessage(error))
         setLoading(false)
         return
       }
 
-      // Login automático após signup
+      // Se o signup retornou user mas não session, pode precisar de confirmação de email
+      if (data.user && !data.session) {
+        setError('Conta criada! Verifique seu email para confirmar o cadastro.')
+        setMode('login')
+        setLoading(false)
+        return
+      }
+
+      // Login automático após signup (se não precisar de confirmação)
       const { error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -97,7 +145,7 @@ function AuthCard() {
       })
 
       if (error) {
-        setError('Email ou senha incorretos')
+        setError(getErrorMessage(error))
         setLoading(false)
         return
       }
