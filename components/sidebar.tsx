@@ -79,7 +79,7 @@ export function Sidebar() {
       {/* Main sidebar container */}
       <div
         className={cn(
-          "flex flex-1 flex-col rounded-sm bg-[#190725] py-4 border-r-2 border-white/20 relative px-2 items-stretch",
+          "flex flex-1 flex-col rounded-sm bg-[#46347F] py-4 border-r-2 border-white/20 relative px-2 items-stretch",
           isReady && "transition-all duration-300 ease-in-out"
         )}
       >
