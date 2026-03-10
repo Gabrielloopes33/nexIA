@@ -490,7 +490,11 @@ function FilterDropdown({ filtros, onChange }: FilterDropdownProps) {
 
 // ─── Main View ───────────────────────────────────────────────────────────────
 
-export function PipelineViewReal() {
+interface PipelineViewRealProps {
+  onNewPipeline?: () => void
+}
+
+export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
   const [stages, setStages] = useState<PipelineStage[]>([])
   const [deals, setDeals] = useState<DealWithRelations[]>([])
   const [activities, setActivities] = useState<DealActivity[]>([])
@@ -715,10 +719,19 @@ export function PipelineViewReal() {
               Pipeline não configurado
             </h2>
             <p className="text-muted-foreground mb-6">
-              Você precisa criar estágios para o seu pipeline de vendas. 
-              Entre em contato com o administrador do sistema.
+              Você precisa criar um pipeline de vendas para começar a gerenciar seus negócios.
+              Escolha um modelo pronto ou crie do zero.
             </p>
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-3 justify-center">
+              {onNewPipeline && (
+                <Button 
+                  className="gap-2 bg-[#46347F] hover:bg-[#7b79c4] text-white"
+                  onClick={onNewPipeline}
+                >
+                  <Plus className="h-4 w-4" />
+                  Criar Pipeline
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 onClick={fetchStages}
