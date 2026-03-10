@@ -5,7 +5,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(findstr:*)",
       "Bash(find:*)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(wc:*)"
     ]
   }
 }
