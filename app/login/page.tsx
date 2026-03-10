@@ -69,8 +69,8 @@ function AuthCard() {
     if (message.includes('Email not confirmed')) {
       return 'Email não confirmado. Verifique sua caixa de entrada.'
     }
-    if (message.includes('rate limit')) {
-      return 'Muitas tentativas. Aguarde um momento e tente novamente.'
+    if (message.includes('rate limit') || error?.status === 429) {
+      return 'Muitas tentativas. Aguarde 1 minuto e tente novamente.'
     }
     
     // Log para debug
@@ -186,13 +186,14 @@ function AuthCard() {
           
           {/* Header com Logo */}
           <div className="mb-8 flex flex-col items-center">
-            <div className="mb-4 relative h-8 w-auto">
+            <div className="mb-4 relative">
               <Image
                 src="/images/nexia-logo.png"
                 alt="NexIA"
                 width={80}
                 height={32}
-                className="h-8 w-auto object-contain"
+                className="h-8 w-auto"
+                style={{ width: 'auto', height: '32px' }}
                 priority
               />
             </div>
