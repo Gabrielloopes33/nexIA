@@ -17,12 +17,12 @@ function SectionSeparator({ label }: { label: string }) {
   return (
     <div className="relative flex items-center gap-2 px-0 py-2 mt-2">
       {/* Horizontal connector line from vertical line to label */}
-      <div className="w-3 h-px bg-white/25 flex-shrink-0" />
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-white/45">
+      <div className="w-3 h-px bg-white/30 flex-shrink-0" />
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
         {label}
       </span>
       {/* Horizontal line extending to the right */}
-      <div className="flex-1 h-px bg-white/10 min-w-[20px]" />
+      <div className="flex-1 h-px bg-white/15 min-w-[20px]" />
     </div>
   )
 }
@@ -38,16 +38,16 @@ function SubNavItem({
   const content = (
     <span
       className={cn(
-        "flex items-center justify-between py-1.5 pr-2 text-[11px] rounded-md transition-colors",
+        "flex items-center justify-between py-1.5 pr-2 text-[13px] rounded-md transition-colors",
         isActive
           ? "bg-white/20 text-white font-medium"
-          : "text-white/70 hover:bg-white/10 hover:text-white",
+          : "text-white/80 hover:bg-white/10 hover:text-white",
         child.disabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-white/50"
       )}
     >
       <span className="truncate">{child.label}</span>
       {child.badge !== undefined && child.badge > 0 && (
-        <span className="ml-2 flex-shrink-0 bg-white/20 text-white text-[10px] font-medium px-2 py-0.5 rounded-full min-w-[20px] text-center">
+        <span className="ml-2 flex-shrink-0 bg-white/25 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full min-w-[22px] text-center">
           {child.badge > 99 ? "99+" : child.badge}
         </span>
       )}
@@ -112,20 +112,20 @@ export function SidebarDropdownGroup({
       <button
         onClick={onToggle}
         className={cn(
-          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200",
-          "text-white/90 hover:text-white hover:bg-white/10",
+          "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200",
+          "text-white/95 hover:text-white hover:bg-white/10",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
           isOpen && "bg-white/10",
           hasActiveChild && !isOpen && "bg-white/5"
         )}
       >
-        <Icon className="h-[18px] w-[18px] flex-shrink-0" />
-        <span className="text-xs font-medium flex-1 text-left truncate">
+        <Icon className="h-5 w-5 flex-shrink-0" />
+        <span className="text-[14px] font-medium flex-1 text-left truncate">
           {item.label}
         </span>
         <ChevronDown
           className={cn(
-            "h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200 text-white/60",
+            "h-4 w-4 flex-shrink-0 transition-transform duration-200 text-white/70",
             isOpen && "rotate-180"
           )}
         />
@@ -139,14 +139,14 @@ export function SidebarDropdownGroup({
         )}
       >
         {/* Tree container with vertical line */}
-        <div className="relative ml-[21px] pl-0">
+        <div className="relative ml-[22px] pl-0">
           {/* Main vertical line */}
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-white/10" />
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-white/15" />
           
           {groupedChildren.map(({ section, items }, sectionIndex) => (
             <div key={section || `section-${sectionIndex}`} className="relative">
               {section && <SectionSeparator label={section} />}
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {items.map((child) => {
                   const isActive = pathname === child.href
                   return (
