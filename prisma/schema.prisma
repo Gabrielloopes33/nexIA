@@ -110,10 +110,11 @@ model OrganizationUnit {
 
 /// User - Usuário do sistema
 model User {
-  id        String  @id @default(uuid())
-  email     String  @unique
-  name      String?
-  avatarUrl String? @map("avatar_url")
+  id           String  @id @default(uuid())
+  email        String  @unique
+  name         String?
+  avatarUrl    String? @map("avatar_url")
+  passwordHash String? @map("password_hash")
 
   // Relacionamentos
   ownedOrganizations Organization[]       @relation(name: "OwnedOrganizations")
@@ -735,6 +736,44 @@ enum InstagramInstanceStatus {
   CONNECTED
   ERROR
   SUSPENDED
+}
+
+// Pipeline Templates
+model PipelineTemplate {
+  id          String    @id @default(uuid())
+  name        String
+  category    String    @unique
+  description String?
+  isDefault   Boolean   @default(false) @map("is_default")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  stages PipelineTemplateStage[]
+
+  @@index([category])
+  @@index([isDefault])
+  @@map("pipeline_templates")
+}
+
+model PipelineTemplateStage {
+  id          String  @id @default(uuid())
+  templateId  String  @map("template_id")
+  template    PipelineTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  name        String
+  position    Int
+  color       String?
+  probability Int     @default(0)
+  isClosed    Boolean @default(false) @map("is_closed")
+  description String?
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([templateId])
+  @@index([position])
+  @@map("pipeline_template_stages")
 }
 
 // Pipeline

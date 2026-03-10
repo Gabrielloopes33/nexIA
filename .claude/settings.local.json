@@ -6,7 +6,12 @@
       "Bash(findstr:*)",
       "Bash(find:*)",
       "Bash(xargs grep:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(node:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm add:*)"
     ]
   }
 }
