@@ -67,12 +67,12 @@ function ApiCard({ title, description, icon: Icon, href, color, badge, features 
 }
 
 export default function MetaApiLandingPage() {
-  const apis = [
+  const messagingApis = [
     {
       title: "WhatsApp Business API",
       description: "API oficial do WhatsApp Business via Meta. Envie mensagens, gerencie templates e obtenha métricas em tempo real.",
       icon: Smartphone,
-      href: "/meta-api/whatsapp",
+      href: "/meta-api/whatsapp/connect",
       color: "#25D366",
       badge: "Oficial",
       features: [
@@ -86,7 +86,7 @@ export default function MetaApiLandingPage() {
       title: "Instagram Business API",
       description: "Integração com Instagram Business. Gerencie conversas, comentários e mídias diretamente pela API.",
       icon: Instagram,
-      href: "/integracoes/instagram",
+      href: "/meta-api/instagram",
       color: "#E4405F",
       badge: "Oficial",
       features: [
@@ -95,7 +95,10 @@ export default function MetaApiLandingPage() {
         "Stories e mídias",
         "Mencões e tags"
       ]
-    },
+    }
+  ]
+
+  const managementApis = [
     {
       title: "Compliance",
       description: "Ferramentas de conformidade e políticas. Gerencie bloqueios, violações e qualidade da conta.",
@@ -156,11 +159,30 @@ export default function MetaApiLandingPage() {
         </CardContent>
       </Card>
 
-      {/* API Cards Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {apis.map((api, idx) => (
-          <ApiCard key={idx} {...api} />
-        ))}
+      {/* Messaging APIs Section */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+          <MessageSquare className="h-5 w-5 text-[#46347F]" />
+          APIs de Mensageria
+        </h2>
+        <div className="grid gap-6 md:grid-cols-2">
+          {messagingApis.map((api, idx) => (
+            <ApiCard key={idx} {...api} />
+          ))}
+        </div>
+      </div>
+
+      {/* Management APIs Section */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+          <Settings className="h-5 w-5 text-[#46347F]" />
+          Gestão e Configurações
+        </h2>
+        <div className="grid gap-6 md:grid-cols-2">
+          {managementApis.map((api, idx) => (
+            <ApiCard key={idx} {...api} />
+          ))}
+        </div>
       </div>
 
       {/* Quick Stats / Footer */}

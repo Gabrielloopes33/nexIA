@@ -63,14 +63,15 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className="mb-2 flex-shrink-0">
-        <Link href="/">
+      <div className="mb-3 flex-shrink-0 px-1">
+        <Link href="/" className="block">
           <Image
             src="/images/nexia-logo.png"
             alt="NexIA Chat"
-            width={40}
-            height={40}
-            style={{ width: 40, height: "auto" }}
+            width={200}
+            height={60}
+            className="w-full h-auto max-w-[180px]"
+            priority
           />
         </Link>
       </div>
