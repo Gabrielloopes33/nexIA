@@ -12,13 +12,13 @@ interface SidebarDropdownGroupProps {
   pathname: string
 }
 
-// Section separator with horizontal connector
+// Section separator with horizontal connector (only for section titles)
 function SectionSeparator({ label }: { label: string }) {
   return (
-    <div className="relative flex items-center gap-2 px-0 py-2 mt-1">
+    <div className="relative flex items-center gap-2 px-0 py-2 mt-2">
       {/* Horizontal connector line from vertical line to label */}
-      <div className="w-3 h-px bg-white/20 flex-shrink-0" />
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
+      <div className="w-3 h-px bg-white/25 flex-shrink-0" />
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-white/45">
         {label}
       </span>
       {/* Horizontal line extending to the right */}
@@ -27,7 +27,7 @@ function SectionSeparator({ label }: { label: string }) {
   )
 }
 
-// Sub-nav item with tree-like connector
+// Sub-nav item without horizontal connector, just indented
 function SubNavItem({
   child,
   isActive,
@@ -38,7 +38,7 @@ function SubNavItem({
   const content = (
     <span
       className={cn(
-        "flex items-center justify-between py-1.5 pr-3 text-[11px] rounded-md transition-colors",
+        "flex items-center justify-between py-1.5 pr-2 text-[11px] rounded-md transition-colors",
         isActive
           ? "bg-white/20 text-white font-medium"
           : "text-white/70 hover:bg-white/10 hover:text-white",
@@ -56,23 +56,15 @@ function SubNavItem({
 
   if (child.disabled) {
     return (
-      <div className="relative flex items-center cursor-not-allowed">
-        {/* Tree connector: horizontal line */}
-        <div className="w-4 h-px bg-white/20 flex-shrink-0" />
-        {/* Tree connector: vertical line segment */}
-        <div className="absolute left-0 top-0 w-px h-full bg-white/10 -translate-x-1/2" />
-        <div className="flex-1">{content}</div>
+      <div className="cursor-not-allowed pl-4">
+        {content}
       </div>
     )
   }
 
   return (
-    <Link href={child.href} className="relative flex items-center group">
-      {/* Tree connector: horizontal line */}
-      <div className="w-4 h-px bg-white/20 flex-shrink-0 group-hover:bg-white/30 transition-colors" />
-      {/* Tree connector: small vertical segment for visual continuity */}
-      <div className="absolute left-0 top-1/2 w-px h-3 bg-white/10 -translate-y-1/2 -translate-x-1/2 group-hover:bg-white/20 transition-colors" />
-      <div className="flex-1">{content}</div>
+    <Link href={child.href} className="block pl-4">
+      {content}
     </Link>
   )
 }
