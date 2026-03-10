@@ -15,6 +15,8 @@ import {
   Stethoscope,
   Store,
   Zap,
+  ChevronRight,
+  Check,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -29,161 +31,84 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 
 type Category = 'todos' | 'infoprodutos' | 'negocios-fisicos' | 'saude' | 'do-zero'
 
-interface PipelineStage {
+interface PipelineTemplateStage {
   id: string
   name: string
+  position: number
+  color: string | null
+  probability: number
+  isClosed: boolean
+  description: string | null
 }
 
 interface PipelineTemplate {
   id: string
   name: string
-  description: string
-  category: Exclude<Category, 'todos' | 'do-zero'>
-  stages: PipelineStage[]
-  icon: React.ReactNode
-}
-
-const pipelineTemplates: PipelineTemplate[] = [
-  {
-    id: 'lancamento-infoproduto',
-    name: 'Lançamento de Infoproduto',
-    description: 'Pipeline completo para lançamento de cursos e produtos digitais',
-    category: 'infoprodutos',
-    icon: <Sparkles className="size-5" />,
-    stages: [
-      { id: '1', name: 'Pré-lançamento' },
-      { id: '2', name: 'Aquecimento' },
-      { id: '3', name: 'Evento de Abertura' },
-      { id: '4', name: 'Cart Aberto' },
-      { id: '5', name: 'Follow-up' },
-      { id: '6', name: 'Recuperação' },
-      { id: '7', name: 'Pós-venda' },
-      { id: '8', name: 'Entrega' },
-      { id: '9', name: 'Up-sell' },
-      { id: '10', name: 'Fidelização' },
-    ],
-  },
-  {
-    id: 'venda-consultoria',
-    name: 'Venda de Consultoria',
-    description: 'Processo de vendas para serviços de consultoria e mentoria',
-    category: 'infoprodutos',
-    icon: <Briefcase className="size-5" />,
-    stages: [
-      { id: '1', name: 'Lead Capturado' },
-      { id: '2', name: 'Qualificação' },
-      { id: '3', name: 'Diagnóstico' },
-      { id: '4', name: 'Proposta Enviada' },
-      { id: '5', name: 'Negociação' },
-      { id: '6', name: 'Fechamento' },
-      { id: '7', name: 'Onboarding' },
-      { id: '8', name: 'Entrega' },
-    ],
-  },
-  {
-    id: 'ecommerce-vendas',
-    name: 'E-commerce de Vendas',
-    description: 'Pipeline para lojas virtuais e vendas online',
-    category: 'negocios-fisicos',
-    icon: <ShoppingCart className="size-5" />,
-    stages: [
-      { id: '1', name: 'Carrinho Abandonado' },
-      { id: '2', name: 'Pedido Realizado' },
-      { id: '3', name: 'Pagamento Confirmado' },
-      { id: '4', name: 'Preparação' },
-      { id: '5', name: 'Envio' },
-      { id: '6', name: 'Em Trânsito' },
-      { id: '7', name: 'Entregue' },
-      { id: '8', name: 'Pós-venda' },
-    ],
-  },
-  {
-    id: 'imobiliaria',
-    name: 'Imobiliária',
-    description: 'Processo de vendas para corretores e imobiliárias',
-    category: 'negocios-fisicos',
-    icon: <Building2 className="size-5" />,
-    stages: [
-      { id: '1', name: 'Captação de Lead' },
-      { id: '2', name: 'Qualificação' },
-      { id: '3', name: 'Agendamento de Visita' },
-      { id: '4', name: 'Visita Realizada' },
-      { id: '5', name: 'Proposta' },
-      { id: '6', name: 'Negociação' },
-      { id: '7', name: 'Contrato' },
-      { id: '8', name: 'Fechamento' },
-    ],
-  },
-  {
-    id: 'clinica-estetica',
-    name: 'Clínica de Estética',
-    description: 'Pipeline para clínicas de estética e bem-estar',
-    category: 'saude',
-    icon: <Heart className="size-5" />,
-    stages: [
-      { id: '1', name: 'Agendamento' },
-      { id: '2', name: 'Confirmação' },
-      { id: '3', name: 'Check-in' },
-      { id: '4', name: 'Atendimento' },
-      { id: '5', name: 'Pós-procedimento' },
-      { id: '6', name: 'Retorno' },
-      { id: '7', name: 'Fidelização' },
-    ],
-  },
-  {
-    id: 'nutricao',
-    name: 'Consultório de Nutrição',
-    description: 'Processo para nutricionistas e consultórios',
-    category: 'saude',
-    icon: <Stethoscope className="size-5" />,
-    stages: [
-      { id: '1', name: 'Primeiro Contato' },
-      { id: '2', name: 'Triagem' },
-      { id: '3', name: 'Agendamento' },
-      { id: '4', name: 'Avaliação Inicial' },
-      { id: '5', name: 'Plano Alimentar' },
-      { id: '6', name: 'Acompanhamento' },
-      { id: '7', name: 'Retorno' },
-      { id: '8', name: 'Resultados' },
-    ],
-  },
-]
-
-const categoryLabels: Record<Category, string> = {
-  todos: 'Todos',
-  infoprodutos: 'Infoprodutos',
-  'negocios-fisicos': 'Negócios Físicos',
-  saude: 'Saúde',
-  'do-zero': 'Do Zero',
+  description: string | null
+  category: string
+  isDefault: boolean
+  stages: PipelineTemplateStage[]
 }
 
 interface PipelineTemplateModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  isOpen: boolean
+  onClose: () => void
 }
 
-export function PipelineTemplateModal({
-  open,
-  onOpenChange,
-}: PipelineTemplateModalProps) {
+const categoryIcons: Record<string, React.ReactNode> = {
+  'infoprodutos': <BookOpen className="size-5" />,
+  'negocios-fisicos': <Store className="size-5" />,
+  'saude': <Heart className="size-5" />,
+}
+
+const categoryLabels: Record<string, string> = {
+  'infoprodutos': 'Infoprodutos',
+  'negocios-fisicos': 'Negócios Físicos',
+  'saude': 'Saúde',
+}
+
+export function PipelineTemplateModal({ isOpen, onClose }: PipelineTemplateModalProps) {
   const router = useRouter()
-  const [activeCategory, setActiveCategory] = React.useState<Category>('todos')
-  const [selectedTemplate, setSelectedTemplate] =
-    React.useState<PipelineTemplate | null>(null)
-  const [pipelineName, setPipelineName] = React.useState('')
+  const [templates, setTemplates] = React.useState<PipelineTemplate[]>([])
+  const [selectedTemplate, setSelectedTemplate] = React.useState<PipelineTemplate | null>(null)
+  const [customName, setCustomName] = React.useState('')
   const [isLoading, setIsLoading] = React.useState(false)
-  const [blankPipelineName, setBlankPipelineName] = React.useState('')
+  const [isFetching, setIsFetching] = React.useState(true)
+  const [activeCategory, setActiveCategory] = React.useState<Category>('todos')
 
-  const filteredTemplates = React.useMemo(() => {
-    if (activeCategory === 'todos') return pipelineTemplates
-    return pipelineTemplates.filter((t) => t.category === activeCategory)
-  }, [activeCategory])
+  // Buscar templates da API
+  React.useEffect(() => {
+    if (isOpen) {
+      fetchTemplates()
+    }
+  }, [isOpen])
 
-  const handleUseTemplate = async () => {
-    if (!selectedTemplate || !pipelineName.trim()) return
+  const fetchTemplates = async () => {
+    setIsFetching(true)
+    try {
+      const response = await fetch('/api/pipeline/templates')
+      const data = await response.json()
+      if (data.success) {
+        setTemplates(data.data)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar templates:', error)
+    } finally {
+      setIsFetching(false)
+    }
+  }
+
+  const handleSelectTemplate = (template: PipelineTemplate) => {
+    setSelectedTemplate(template)
+    setCustomName(template.name)
+  }
+
+  const handleApplyTemplate = async () => {
+    if (!selectedTemplate) return
 
     setIsLoading(true)
     try {
@@ -192,347 +117,231 @@ export function PipelineTemplateModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           templateId: selectedTemplate.id,
-          name: pipelineName.trim(),
+          organizationId: 'default_org_id', // TODO: Pegar da context/auth
+          customName: customName || selectedTemplate.name,
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Erro ao criar pipeline')
-      }
+      const data = await response.json()
 
-      onOpenChange(false)
-      window.location.reload()
+      if (data.success) {
+        onClose()
+        window.location.reload()
+      } else {
+        alert(data.error || 'Erro ao aplicar template')
+      }
     } catch (error) {
-      console.error('Erro ao aplicar template:', error)
+      console.error('Erro:', error)
+      alert('Erro ao criar pipeline')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleCreateBlank = () => {
-    if (!blankPipelineName.trim()) return
-
-    // Redirecionar para tela de configuração de etapas com o nome
-    router.push(
-      `/pipeline/configure?name=${encodeURIComponent(blankPipelineName.trim())}`,
-    )
+  const handleCreateFromScratch = () => {
+    router.push('/pipeline/configure')
+    onClose()
   }
 
-  const handleClose = () => {
-    setSelectedTemplate(null)
-    setPipelineName('')
-    setBlankPipelineName('')
-    setActiveCategory('todos')
-    onOpenChange(false)
-  }
+  const filteredTemplates = React.useMemo(() => {
+    if (activeCategory === 'todos') return templates
+    if (activeCategory === 'do-zero') return []
+    return templates.filter(t => t.category === activeCategory)
+  }, [templates, activeCategory])
 
-  const getCategoryIcon = (category: Category) => {
-    switch (category) {
-      case 'infoprodutos':
-        return <BookOpen className="size-4" />
-      case 'negocios-fisicos':
-        return <Store className="size-4" />
-      case 'saude':
-        return <Heart className="size-4" />
-      case 'do-zero':
-        return <Plus className="size-4" />
-      default:
-        return <Layers className="size-4" />
+  // Reset state when modal closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setSelectedTemplate(null)
+      setCustomName('')
+      setActiveCategory('todos')
     }
-  }
+  }, [isOpen])
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="text-xl font-semibold">
-            Escolha um modelo de pipeline
-          </DialogTitle>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle className="text-xl">Escolha um modelo de pipeline</DialogTitle>
           <DialogDescription>
             Selecione uma categoria ou crie do zero
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs
-          value={activeCategory}
-          onValueChange={(value) => setActiveCategory(value as Category)}
-          className="w-full"
-        >
-          <div className="px-6 py-4 border-b">
-            <TabsList className="w-full justify-start gap-1 bg-transparent p-0 h-auto flex-wrap">
-              {(Object.keys(categoryLabels) as Category[]).map((category) => (
-                <TabsTrigger
-                  key={category}
-                  value={category}
-                  className="data-[state=active]:bg-[#46347F] data-[state=active]:text-white data-[state=active]:shadow-none gap-2 px-4 py-2 rounded-full border border-transparent data-[state=active]:border-[#46347F] transition-all"
-                >
-                  {getCategoryIcon(category)}
-                  {categoryLabels[category]}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
+        {selectedTemplate ? (
+          // Tela de confirmação
+          <div className="px-6 pb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedTemplate(null)}
+              className="mb-4 -ml-2"
+            >
+              ← Voltar aos modelos
+            </Button>
 
-          <TabsContent value="do-zero" className="mt-0">
-            <ScrollArea className="h-[400px]">
-              <div className="p-6">
-                <div className="border rounded-xl p-8 text-center hover:shadow-md transition-shadow">
-                  <div className="w-16 h-16 rounded-full bg-[#46347F]/10 flex items-center justify-center mx-auto mb-4">
-                    <Plus className="size-8 text-[#46347F]" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    Criar Pipeline em Branco
-                  </h3>
-                  <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-                    Comece do zero e configure cada etapa do seu pipeline
-                    conforme sua necessidade específica.
-                  </p>
-                  <div className="max-w-sm mx-auto space-y-4">
-                    <Input
-                      placeholder="Digite o nome do pipeline"
-                      value={blankPipelineName}
-                      onChange={(e) => setBlankPipelineName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleCreateBlank()
-                      }}
-                    />
-                    <Button
-                      onClick={handleCreateBlank}
-                      disabled={!blankPipelineName.trim()}
-                      className="w-full bg-[#46347F] hover:bg-[#7b79c4] text-white"
-                    >
-                      Criar pipeline em branco
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="todos" className="mt-0">
-            <ScrollArea className="h-[400px]">
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredTemplates.map((template) => (
-                  <TemplateCard
-                    key={template.id}
-                    template={template}
-                    onSelect={() => {
-                      setSelectedTemplate(template)
-                      setPipelineName(template.name)
-                    }}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="infoprodutos" className="mt-0">
-            <ScrollArea className="h-[400px]">
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredTemplates.map((template) => (
-                  <TemplateCard
-                    key={template.id}
-                    template={template}
-                    onSelect={() => {
-                      setSelectedTemplate(template)
-                      setPipelineName(template.name)
-                    }}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="negocios-fisicos" className="mt-0">
-            <ScrollArea className="h-[400px]">
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredTemplates.map((template) => (
-                  <TemplateCard
-                    key={template.id}
-                    template={template}
-                    onSelect={() => {
-                      setSelectedTemplate(template)
-                      setPipelineName(template.name)
-                    }}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="saude" className="mt-0">
-            <ScrollArea className="h-[400px]">
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredTemplates.map((template) => (
-                  <TemplateCard
-                    key={template.id}
-                    template={template}
-                    onSelect={() => {
-                      setSelectedTemplate(template)
-                      setPipelineName(template.name)
-                    }}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
-
-        {/* Confirmação de Template */}
-        {selectedTemplate && (
-          <div className="absolute inset-0 bg-background/95 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-            <div className="bg-background border rounded-xl p-6 max-w-md w-full shadow-xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-lg bg-[#46347F]/10 flex items-center justify-center text-[#46347F]">
-                  {selectedTemplate.icon}
+            <div className="bg-muted/50 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-lg bg-[#46347F]/10 flex items-center justify-center shrink-0">
+                  {categoryIcons[selectedTemplate.category] || <Layers className="size-5 text-[#46347F]" />}
                 </div>
                 <div>
-                  <h3 className="font-semibold">Usar este modelo?</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedTemplate.name}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-4 p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  {selectedTemplate.description}
-                </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <Badge variant="secondary">
+                  <h3 className="font-semibold">{selectedTemplate.name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedTemplate.description}</p>
+                  <Badge variant="secondary" className="mt-2">
                     {selectedTemplate.stages.length} etapas
                   </Badge>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Nome personalizado do pipeline
-                  </label>
-                  <Input
-                    value={pipelineName}
-                    onChange={(e) => setPipelineName(e.target.value)}
-                    placeholder="Digite o nome do pipeline"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleUseTemplate()
-                    }}
-                    autoFocus
-                  />
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Nome do pipeline
+                </label>
+                <Input
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="Ex: Meu Pipeline de Vendas"
+                />
+              </div>
 
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedTemplate(null)
-                      setPipelineName('')
-                    }}
-                    disabled={isLoading}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={handleUseTemplate}
-                    disabled={!pipelineName.trim() || isLoading}
-                    className="flex-1 bg-[#46347F] hover:bg-[#7b79c4] text-white"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                        Criando...
-                      </>
-                    ) : (
-                      'Usar este modelo'
-                    )}
-                  </Button>
-                </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Etapas incluídas
+                </label>
+                <ScrollArea className="h-48 border rounded-lg p-3">
+                  <div className="space-y-2">
+                    {selectedTemplate.stages.map((stage, idx) => (
+                      <div
+                        key={stage.id}
+                        className="flex items-center gap-3 text-sm"
+                      >
+                        <span
+                          className="w-6 h-6 rounded-full text-xs flex items-center justify-center text-white shrink-0"
+                          style={{ backgroundColor: stage.color || '#6b7280' }}
+                        >
+                          {idx + 1}
+                        </span>
+                        <span>{stage.name}</span>
+                        {stage.isClosed && (
+                          <Badge variant="outline" className="text-xs">Fechamento</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedTemplate(null)}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleApplyTemplate}
+                  disabled={isLoading || !customName.trim()}
+                  className="flex-1 bg-[#46347F] hover:bg-[#7b79c4]"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Criando...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-2 size-4" />
+                      Criar Pipeline
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
+        ) : (
+          // Lista de templates
+          <>
+            <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as Category)} className="px-6">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="todos">Todos</TabsTrigger>
+                <TabsTrigger value="infoprodutos">Infoprodutos</TabsTrigger>
+                <TabsTrigger value="negocios-fisicos">Físicos</TabsTrigger>
+                <TabsTrigger value="saude">Saúde</TabsTrigger>
+                <TabsTrigger value="do-zero">Do Zero</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <ScrollArea className="flex-1 px-6 py-4">
+              {isFetching ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="size-8 animate-spin text-[#46347F]" />
+                </div>
+              ) : activeCategory === 'do-zero' ? (
+                <div className="text-center py-8">
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <Plus className="size-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Criar do Zero</h3>
+                  <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
+                    Crie um pipeline personalizado com suas próprias etapas e regras.
+                  </p>
+                  <Button 
+                    onClick={handleCreateFromScratch}
+                    className="bg-[#46347F] hover:bg-[#7b79c4]"
+                  >
+                    Começar do Zero
+                  </Button>
+                </div>
+              ) : filteredTemplates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum template encontrado nesta categoria.
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {filteredTemplates.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => handleSelectTemplate(template)}
+                      className={cn(
+                        "flex items-start gap-4 p-4 rounded-lg border text-left transition-all",
+                        "hover:border-[#46347F]/40 hover:bg-[#46347F]/5"
+                      )}
+                    >
+                      <div className="h-12 w-12 rounded-lg bg-[#46347F]/10 flex items-center justify-center shrink-0">
+                        {categoryIcons[template.category] || <Layers className="size-6 text-[#46347F]" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold truncate">{template.name}</h3>
+                          {template.isDefault && (
+                            <Badge variant="secondary" className="text-xs">Padrão</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {template.description}
+                        </p>
+                        <div className="flex items-center gap-4 mt-3">
+                          <Badge variant="outline">
+                            {template.stages.length} etapas
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {categoryLabels[template.category] || template.category}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight className="size-5 text-muted-foreground shrink-0 self-center" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </>
         )}
       </DialogContent>
     </Dialog>
-  )
-}
-
-interface TemplateCardProps {
-  template: PipelineTemplate
-  onSelect: () => void
-}
-
-function TemplateCard({ template, onSelect }: TemplateCardProps) {
-  return (
-    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow group">
-      <div className="flex items-start gap-3 mb-3">
-        <div className="w-10 h-10 rounded-lg bg-[#46347F]/10 flex items-center justify-center text-[#46347F] shrink-0 group-hover:bg-[#46347F] group-hover:text-white transition-colors">
-          {template.icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-sm truncate">{template.name}</h4>
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {template.description}
-          </p>
-        </div>
-      </div>
-
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <Badge
-            variant="secondary"
-            className="text-xs bg-[#46347F]/10 text-[#46347F] hover:bg-[#46347F]/20"
-          >
-            {template.stages.length} etapas
-          </Badge>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Etapas:</span>{' '}
-          {template.stages.map((s) => s.name).join(', ')}
-        </div>
-      </div>
-
-      <Button
-        onClick={onSelect}
-        className="w-full bg-[#46347F] hover:bg-[#7b79c4] text-white"
-        size="sm"
-      >
-        Usar este modelo
-      </Button>
-    </div>
-  )
-}
-
-// Hook e botão para abrir o modal
-export function usePipelineTemplateModal() {
-  const [isOpen, setIsOpen] = React.useState(false)
-
-  return {
-    isOpen,
-    open: () => setIsOpen(true),
-    close: () => setIsOpen(false),
-    setIsOpen,
-  }
-}
-
-// Botão "Novo Pipeline" que abre o modal
-interface NewPipelineButtonProps {
-  className?: string
-}
-
-export function NewPipelineButton({ className }: NewPipelineButtonProps) {
-  const { isOpen, open, close } = usePipelineTemplateModal()
-
-  return (
-    <>
-      <Button
-        onClick={open}
-        className={`bg-[#46347F] hover:bg-[#7b79c4] text-white ${className || ''}`}
-      >
-        <Plus className="size-4 mr-2" />
-        Novo Pipeline
-      </Button>
-      <PipelineTemplateModal open={isOpen} onOpenChange={close} />
-    </>
   )
 }
