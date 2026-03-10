@@ -69,8 +69,8 @@ function AuthCard() {
     if (message.includes('Email not confirmed')) {
       return 'Email não confirmado. Verifique sua caixa de entrada.'
     }
-    if (message.includes('rate limit') || error?.status === 429) {
-      return 'Muitas tentativas. Aguarde 1 minuto e tente novamente.'
+    if (message.includes('rate limit') || error?.status === 429 || error?.statusCode === 429) {
+      return 'Limite de tentativas atingido. Tente usar outro email ou aguarde algumas horas. Se persistir, contate o suporte.'
     }
     
     // Log para debug
