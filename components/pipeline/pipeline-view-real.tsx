@@ -15,7 +15,8 @@ import {
   XCircle,
   AlertCircle,
   Check,
-  GripVertical
+  GripVertical,
+  Kanban
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -689,6 +690,46 @@ export function PipelineViewReal() {
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#46347F] border-t-transparent mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">Carregando pipeline...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Empty state when no stages exist
+  if (stages.length === 0) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-background">
+        {/* Top Toolbar */}
+        <div className="flex h-14 items-center justify-between border-b border-border px-4">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold text-foreground">Negócios</h1>
+          </div>
+        </div>
+
+        {/* Empty State */}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="text-center max-w-md px-4">
+            <div className="h-16 w-16 rounded-full bg-[#46347F]/10 flex items-center justify-center mx-auto mb-4">
+              <Kanban className="h-8 w-8 text-[#46347F]" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground mb-2">
+              Pipeline não configurado
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              Você precisa criar estágios para o seu pipeline de vendas. 
+              Entre em contato com o administrador do sistema.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <Button 
+                variant="outline" 
+                onClick={fetchStages}
+                className="gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Tentar novamente
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     )

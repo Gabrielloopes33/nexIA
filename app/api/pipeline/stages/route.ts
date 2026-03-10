@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const stages = await prisma.pipelineStage.findMany({
       where: { organizationId },
-      orderBy: { order: "asc" },
+      orderBy: { position: "asc" },
       include: {
         _count: {
           select: { deals: true },
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         organizationId,
         name,
         color: color || "#3b82f6",
-        order: order ?? 0,
+        position: order ?? 0,
         probability: probability ?? 0,
       },
     });

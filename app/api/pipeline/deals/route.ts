@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { Priority, DealStatus } from "@prisma/client";
+import { DealPriority, DealStatus } from "@prisma/client";
 
 /**
  * GET /api/pipeline/deals
@@ -26,9 +26,8 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            email: true,
             phone: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
         stage: {
@@ -106,9 +105,9 @@ export async function POST(request: NextRequest) {
         contactId,
         title,
         description,
-        value: value ?? 0,
+        amount: value ?? 0,
         currency,
-        priority: priority as Priority,
+        priority: priority as DealPriority,
         expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
         source,
         tags: tags ?? [],
@@ -119,9 +118,8 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            email: true,
             phone: true,
-            avatar: true,
+            avatarUrl: true,
           },
         },
         stage: {
@@ -140,7 +138,8 @@ export async function POST(request: NextRequest) {
       data: {
         dealId: deal.id,
         type: "NOTE",
-        description: "Deal criado",
+        title: "Deal criado",
+        content: "Deal criado manualmente no sistema",
         metadata: { source: "manual" },
       },
     });
@@ -168,8 +167,8 @@ export async function POST(request: NextRequest) {
 interface DealWithRelations {
   id: string;
   createdAt: Date;
-  value: number;
-  priority: Priority;
+  amount: number;
+  priority: DealPriority;
   stage: { probability: number };
   activities: { createdAt: Date }[];
 }
@@ -189,9 +188,10 @@ function calculateLeadScore(deal: DealWithRelations): number {
   else score += 5;
 
   // 2. Deal value
-  if (deal.value > 50000) score += 20;
-  else if (deal.value > 10000) score += 15;
-  else if (deal.value > 5000) score += 10;
+  const amount = Number(deal.amount);
+  if (amount > 50000) score += 20;
+  else if (amount > 10000) score += 15;
+  else if (amount > 5000) score += 10;
   else score += 5;
 
   // 3. Priority
