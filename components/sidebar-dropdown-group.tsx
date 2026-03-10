@@ -38,13 +38,17 @@ function SubNavItem({
   const content = (
     <span
       className={cn(
-        "flex items-center justify-between py-1.5 pr-2 text-[13px] rounded-md transition-colors",
+        "flex items-center justify-between py-1.5 pr-2 text-[13px] rounded-md transition-colors relative",
         isActive
           ? "bg-white/20 text-white font-medium"
           : "text-white/80 hover:bg-white/10 hover:text-white",
         child.disabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-white/50"
       )}
     >
+      {/* Active indicator bar - yellow */}
+      {isActive && (
+        <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
+      )}
       <span className="truncate">{child.label}</span>
       {child.badge !== undefined && child.badge > 0 && (
         <span className="ml-2 flex-shrink-0 bg-white/25 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full min-w-[22px] text-center">
@@ -63,7 +67,7 @@ function SubNavItem({
   }
 
   return (
-    <Link href={child.href} className="block pl-4">
+    <Link href={child.href} className={cn("block", isActive ? "pl-5" : "pl-4")}>
       {content}
     </Link>
   )

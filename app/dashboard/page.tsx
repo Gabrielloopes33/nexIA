@@ -101,8 +101,10 @@ export default function DashboardPage() {
         <Sidebar />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto px-4 py-4">
-          <DashboardHeader />
+        <main className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="pt-14">
+            <DashboardHeader />
+          </div>
           <DashboardContent />
         </main>
 

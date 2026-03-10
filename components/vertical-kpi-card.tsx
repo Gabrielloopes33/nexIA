@@ -51,12 +51,12 @@ export function VerticalKpiCard({
       </div>
 
       {/* Label */}
-      <h3 className="mb-1 text-xs font-medium text-[#8B7DB8] leading-tight">{label}</h3>
+      <h3 className="mb-1 text-xs font-medium text-gray-900 leading-tight">{label}</h3>
 
       {/* Value em destaque - fonte responsiva */}
       <div className="flex items-baseline gap-1 min-w-0">
         <p className={cn(
-          "font-bold text-gray-900 tracking-tight truncate",
+          "font-bold text-[#8B7DB8] tracking-tight truncate",
           size === 'large' ? 'text-2xl' : 'text-lg'
         )}>{value}</p>
         {suffix && (
@@ -70,7 +70,7 @@ export function VerticalKpiCard({
           className={cn(
             'h-full transition-all duration-500',
             isPositive
-              ? 'bg-gradient-to-r from-[#46347F] to-[#46347F]'
+              ? 'bg-gradient-to-r from-[#8B7DB8] to-[#8B7DB8]'
               : 'bg-gradient-to-r from-[#C23934] to-[#C23934]/70'
           )}
           style={{ width: `${Math.min(Math.abs(changeValue) * 5, 100)}%` }}

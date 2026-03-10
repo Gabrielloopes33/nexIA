@@ -30,12 +30,16 @@ function SimpleNavLink({
     <Link
       href={item.href || "#"}
       className={cn(
-        "flex w-full items-center rounded-sm h-9 px-3 gap-3 transition-all duration-200",
+        "flex w-full items-center rounded-sm h-9 gap-3 transition-all duration-200 relative",
         isActive
-          ? "bg-white/30 text-white"
-          : "text-white hover:bg-white/15"
+          ? "bg-white/30 text-white pl-4 pr-3"
+          : "text-white hover:bg-white/15 px-3"
       )}
     >
+      {/* Active indicator bar - yellow */}
+      {isActive && (
+        <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
+      )}
       <Icon className="h-4 w-4 text-white shrink-0" />
       <span className="flex-1 text-left text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
         {item.label}
@@ -79,7 +83,7 @@ export function Sidebar() {
       {/* Main sidebar container */}
       <div
         className={cn(
-          "flex flex-1 flex-col rounded-sm bg-[#46347F] py-4 border-r-2 border-white/20 relative px-2 items-stretch",
+          "flex flex-1 flex-col rounded-sm bg-[#46347F] py-4 border-r-2 border-white/20 relative px-2 items-stretch shadow-[4px_0_24px_rgba(0,0,0,0.18)]",
           isReady && "transition-all duration-300 ease-in-out"
         )}
       >
@@ -125,12 +129,16 @@ export function Sidebar() {
                 key={item.key}
                 href={item.href || "#"}
                 className={cn(
-                  "flex items-center rounded-sm h-9 px-3 gap-3 transition-all duration-200",
+                  "flex items-center rounded-sm h-9 gap-3 transition-all duration-200 relative",
                   isActive
-                    ? "bg-white/30 text-white"
-                    : "text-white hover:bg-white/15"
+                    ? "bg-white/30 text-white pl-4 pr-3"
+                    : "text-white hover:bg-white/15 px-3"
                 )}
               >
+                {/* Active indicator bar - yellow */}
+                {isActive && (
+                  <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
+                )}
                 <Icon className="h-4 w-4 text-white shrink-0" />
                 <span className="text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
                   {item.label}
