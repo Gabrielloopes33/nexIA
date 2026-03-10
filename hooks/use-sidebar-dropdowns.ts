@@ -48,13 +48,12 @@ export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropd
 
   const toggleGroup = useCallback((key: string) => {
     setOpenGroups((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) {
-        next.delete(key)
-      } else {
-        next.add(key)
+      // If clicking the already open group, close it
+      if (prev.has(key)) {
+        return new Set()
       }
-      return next
+      // Otherwise, close all and open only the clicked one (accordion behavior)
+      return new Set([key])
     })
   }, [])
 
