@@ -461,13 +461,15 @@ export default function NovoContatoPage() {
             <Button
               type="submit"
               className="bg-[#46347F] hover:bg-[#46347F] text-white"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !organizationId}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Salvando...
                 </>
+              ) : !organizationId ? (
+                "Carregando organização..."
               ) : (
                 "Salvar Contato"
               )}
