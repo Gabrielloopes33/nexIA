@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabaseServer } from '@/lib/supabase-server';
 
 /**
  * GET /api/contacts
@@ -14,7 +14,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organizationId');
+    let organizationId = searchParams.get('organizationId');
     const status = searchParams.get('status') as 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | null;
     const search = searchParams.get('search');
     const tags = searchParams.get('tags')?.split(',').filter(Boolean);
@@ -29,38 +29,55 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const where: Record<string, unknown> = { 
-      organizationId,
-      ...(includeDeleted ? {} : { deletedAt: null }),
-    };
-    
-    if (status) where.status = status;
-    if (tags?.length) where.tags = { hasSome: tags };
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search } },
-      ];
+    // Busca organização válida
+    if (organizationId === 'default_org_id') {
+      const { data: existingOrg } = await supabaseServer
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      organizationId = existingOrg?.id || organizationId;
     }
 
-    const [contacts, total] = await Promise.all([
-      prisma.contact.findMany({
-        where,
-        orderBy: { lastInteractionAt: 'desc' },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.contact.count({ where }),
-    ]);
+    // Build query
+    let query = supabaseServer
+      .from('contacts')
+      .select('*', { count: 'exact' })
+      .eq('organization_id', organizationId)
+      .order('last_interaction_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null);
+    }
+    
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+    }
+
+    const { data: contacts, error, count } = await query;
+
+    if (error) {
+      console.error('Error fetching contacts:', error);
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch contacts', details: error.message },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: contacts,
+      data: contacts || [],
       pagination: {
-        total,
+        total: count || 0,
         limit,
         offset,
-        hasMore: offset + contacts.length < total,
+        hasMore: offset + (contacts?.length || 0) < (count || 0),
       },
     });
   } catch (error) {
@@ -82,12 +99,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { 
       organizationId, 
       name, 
+      email,
       phone, 
       avatarUrl,
+      notes,
       metadata,
       tags,
       status,
+      source,
     } = body;
+
+    console.log('[Contacts POST] Body:', body);
 
     // Validate required fields
     if (!organizationId || !phone) {
@@ -97,18 +119,55 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Busca organização válida
+    let orgId = organizationId;
+    if (organizationId === 'default_org_id') {
+      const { data: existingOrg } = await supabaseServer
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      if (existingOrg) {
+        orgId = existingOrg.id;
+      } else {
+        // Cria organização default
+        const { data: newOrg, error: orgError } = await supabaseServer
+          .from('organizations')
+          .insert({
+            name: 'Default Organization',
+            slug: 'default',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        
+        if (orgError || !newOrg) {
+          return NextResponse.json(
+            { success: false, error: 'Failed to create organization', details: orgError?.message },
+            { status: 500 }
+          );
+        }
+        
+        orgId = newOrg.id;
+      }
+    }
+
     // Normalize phone number
     const normalizedPhone = phone.replace(/\D/g, '');
 
     // Check if contact already exists
-    const existingContact = await prisma.contact.findUnique({
-      where: {
-        organizationId_phone: {
-          organizationId,
-          phone: normalizedPhone,
-        },
-      },
-    });
+    const { data: existingContact, error: checkError } = await supabaseServer
+      .from('contacts')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('phone', normalizedPhone)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = not found
+      console.error('Error checking existing contact:', checkError);
+    }
 
     if (existingContact) {
       return NextResponse.json(
@@ -117,27 +176,45 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const contact = await prisma.contact.create({
-      data: {
-        organizationId,
+    const now = new Date().toISOString();
+
+    const { data: contact, error } = await supabaseServer
+      .from('contacts')
+      .insert({
+        organization_id: orgId,
         phone: normalizedPhone,
         name: name || null,
-        avatarUrl: avatarUrl || null,
+        email: email || null,
+        avatar_url: avatarUrl || null,
+        notes: notes || null,
         metadata: metadata || {},
         tags: tags || [],
         status: status || 'ACTIVE',
-        leadScore: 0,
-      },
-    });
+        source: source || null,
+        lead_score: 0,
+        created_at: now,
+        updated_at: now,
+        last_interaction_at: now,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating contact:', error);
+      return NextResponse.json(
+        { success: false, error: 'Failed to create contact', details: error.message },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       data: contact,
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating contact:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create contact' },
+      { success: false, error: 'Failed to create contact', details: error.message },
       { status: 500 }
     );
   }

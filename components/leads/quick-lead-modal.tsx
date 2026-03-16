@@ -89,15 +89,71 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
   const onSubmit = async (data: QuickLeadForm) => {
     setIsSubmitting(true)
 
-    // Simular API call
-    await new Promise((r) => setTimeout(r, 800))
+    try {
+      // 1. Cria o contato
+      const contactResponse = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId,
+          name: data.nome,
+          email: data.email,
+          phone: data.telefone,
+          source: data.origem,
+          notes: data.observacoes,
+          tags: data.tags,
+        }),
+      })
 
-    console.log("Lead criado:", data)
-    toast.success("Lead criado com sucesso!")
+      if (!contactResponse.ok) {
+        const error = await contactResponse.json()
+        throw new Error(error.message || 'Erro ao criar contato')
+      }
 
-    setIsSubmitting(false)
-    setOpen(false)
-    form.reset()
+      const { data: contact } = await contactResponse.json()
+      console.log("Contato criado:", contact)
+
+      // 2. Busca o primeiro estágio do pipeline (default)
+      const stagesResponse = await fetch(`/api/pipeline/stages?organizationId=${organizationId}`)
+      const { data: stages } = await stagesResponse.json()
+      
+      const defaultStage = stages?.find((s: any) => s.is_default) || stages?.[0]
+      
+      if (defaultStage) {
+        // 3. Cria o deal no pipeline
+        const dealResponse = await fetch('/api/pipeline/deals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            organizationId,
+            stageId: defaultStage.id,
+            contactId: contact.id,
+            title: data.nome,
+            description: data.observacoes || `Lead de ${data.origem}`,
+            source: data.origem,
+            tags: data.tags,
+          }),
+        })
+
+        if (!dealResponse.ok) {
+          console.error('Erro ao criar deal:', await dealResponse.json())
+        } else {
+          console.log("Deal criado no pipeline")
+        }
+      }
+
+      toast.success("Lead criado com sucesso!")
+      setOpen(false)
+      form.reset()
+      
+      // Recarrega a página para mostrar o novo lead
+      window.location.reload()
+    } catch (error: any) {
+      console.error("Erro ao criar lead:", error)
+      toast.error(error.message || "Erro ao criar lead")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
