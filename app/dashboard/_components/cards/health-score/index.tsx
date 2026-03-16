@@ -83,12 +83,13 @@ export function HealthScoreCard({ compact = true }: { compact?: boolean }) {
   if (compact) {
     return (
       <DashboardCard 
+        title="Health Score"
+        icon={<Activity className="h-4 w-4" />}
         className="h-full min-h-[200px] flex flex-col"
       >
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <p className="text-xs font-medium text-slate-500 text-center mb-2">Health Score</p>
-          <HealthScoreGauge score={data.score} status={data.status} size="sm" />
-          <p className="text-[10px] font-medium text-slate-400 text-center mt-2 uppercase">
+        <div className="flex-1 flex flex-col items-center justify-start -mt-14 pt-2">
+          <HealthScoreGauge score={data.score} status={data.status} size="md" />
+          <p className="text-[10px] font-medium text-slate-400 text-center mt-1 uppercase">
             {data.status}
           </p>
         </div>
