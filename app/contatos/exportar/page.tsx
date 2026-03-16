@@ -8,9 +8,9 @@ import {
   Check,
   RotateCcw,
   History,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
-
 
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
@@ -36,36 +36,26 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { MOCK_CONTACTS, type Contact } from "@/lib/mock/contacts"
-import { MOCK_TAGS } from "@/lib/mock/tags"
+import { useContacts } from "@/hooks/use-contacts"
+import { useTags } from "@/hooks/use-tags"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
+// Updated status options to match API
 const STATUS_OPTIONS = [
-  { value: "ativo", label: "Ativo" },
-  { value: "inativo", label: "Inativo" },
-  { value: "pendente", label: "Pendente" },
-  { value: "convertido", label: "Convertido" },
+  { value: "ACTIVE", label: "Ativo" },
+  { value: "INACTIVE", label: "Inativo" },
+  { value: "BLOCKED", label: "Bloqueado" },
 ]
 
 const EXPORTABLE_FIELDS = [
-  { key: "nome", label: "Nome" },
-  { key: "sobrenome", label: "Sobrenome" },
-  { key: "email", label: "Email" },
-  { key: "telefone", label: "Telefone" },
-  { key: "empresa", label: "Empresa" },
-  { key: "cargo", label: "Cargo" },
-  { key: "cidade", label: "Cidade" },
-  { key: "estado", label: "Estado" },
+  { key: "name", label: "Nome" },
+  { key: "phone", label: "Telefone" },
+  { key: "email", label: "Email (Metadata)" },
   { key: "status", label: "Status" },
-
-  { key: "origem", label: "Origem" },
-  { key: "instagram", label: "Instagram" },
-  { key: "linkedin", label: "LinkedIn" },
-  { key: "utmSource", label: "UTM Source" },
-  { key: "utmMedium", label: "UTM Medium" },
-  { key: "utmCampaign", label: "UTM Campaign" },
-  { key: "criadoEm", label: "Data de Criação" },
-  { key: "ultimoContato", label: "Último Contato" },
-  { key: "observacoes", label: "Observações" },
+  { key: "leadScore", label: "Lead Score" },
+  { key: "createdAt", label: "Data de Criação" },
+  { key: "updatedAt", label: "Última Atualização" },
+  { key: "source", label: "Origem (Metadata)" },
 ]
 
 interface ExportHistory {
@@ -77,45 +67,20 @@ interface ExportHistory {
   filtros: string
 }
 
-const INITIAL_HISTORY: ExportHistory[] = [
-  {
-    id: "exp-001",
-    data: "2025-02-28T14:30:00Z",
-    contatos: 45,
-    campos: 8,
-    formato: "csv",
-    filtros: "Status: Ativo, Tags: VIP",
-  },
-  {
-    id: "exp-002",
-    data: "2025-02-15T09:15:00Z",
-    contatos: 120,
-    campos: 12,
-    formato: "xlsx",
-    filtros: "Score: 50-100",
-  },
-  {
-    id: "exp-003",
-    data: "2025-01-20T16:45:00Z",
-    contatos: 8,
-    campos: 19,
-    formato: "csv",
-    filtros: "Status: Convertido",
-  },
-]
-
 export default function ExportarPage() {
+  const organizationId = useOrganizationId() ?? ''
+  const { contacts, total, isLoading } = useContacts(organizationId)
+  const { tags, isLoading: tagsLoading } = useTags(organizationId)
+
   // Filtros
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
 
-
   // Campos
   const [selectedFields, setSelectedFields] = useState<string[]>([
-    "nome",
-    "sobrenome",
+    "name",
+    "phone",
     "email",
-    "telefone",
   ])
 
   // Formato
@@ -124,11 +89,11 @@ export default function ExportarPage() {
   const [includeHeader, setIncludeHeader] = useState(true)
 
   // Histórico
-  const [history, setHistory] = useState<ExportHistory[]>(INITIAL_HISTORY)
+  const [history, setHistory] = useState<ExportHistory[]>([])
 
   // Calcular contatos filtrados
   const filteredContacts = useMemo(() => {
-    return MOCK_CONTACTS.filter((contact) => {
+    return contacts.filter((contact) => {
       // Filtro de status
       if (selectedStatuses.length > 0 && !selectedStatuses.includes(contact.status)) {
         return false
@@ -141,7 +106,7 @@ export default function ExportarPage() {
 
       return true
     })
-  }, [selectedStatuses, selectedTags])
+  }, [contacts, selectedStatuses, selectedTags])
 
   const toggleStatus = (status: string) => {
     setSelectedStatuses((prev) =>
@@ -190,7 +155,7 @@ export default function ExportarPage() {
       data: new Date().toISOString(),
       contatos: filteredContacts.length,
       campos: selectedFields.length,
-      formato,
+      formato: format,
       filtros: filtrosDesc,
     }
     setHistory((prev) => [newExport, ...prev])
@@ -255,32 +220,37 @@ export default function ExportarPage() {
                 {/* Tags */}
                 <div className="space-y-2">
                   <Label>Tags</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {MOCK_TAGS.map((tag) => {
-                      const isSelected = selectedTags.includes(tag.id)
-                      return (
-                        <button
-                          key={tag.id}
-                          type="button"
-                          onClick={() => toggleTag(tag.id)}
-                          className="rounded-sm px-3 py-1.5 text-xs font-medium transition-all"
-                          style={{
-                            backgroundColor: isSelected ? tag.cor : `${tag.cor}20`,
-                            color: isSelected ? "#fff" : tag.cor,
-                            border: `1px solid ${tag.cor}`,
-                          }}
-                        >
-                          {tag.nome}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  {tagsLoading ? (
+                    <div className="text-sm text-muted-foreground">Carregando tags...</div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map((tag) => {
+                        const isSelected = selectedTags.includes(tag.id)
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.id)}
+                            className="rounded-sm px-3 py-1.5 text-xs font-medium transition-all"
+                            style={{
+                              backgroundColor: isSelected ? tag.color : `${tag.color}20`,
+                              color: isSelected ? "#fff" : tag.color,
+                              border: `1px solid ${tag.color}`,
+                            }}
+                          >
+                            {tag.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Contador */}
                 <p className="text-sm text-muted-foreground">
                   <strong>{filteredContacts.length}</strong> de{" "}
-                  <strong>{MOCK_CONTACTS.length}</strong> contatos selecionados
+                  <strong>{total}</strong> contatos selecionados
+                  {isLoading && " (Carregando...)"}
                 </p>
               </CardContent>
             </Card>

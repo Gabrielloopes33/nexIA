@@ -1,11 +1,13 @@
 /**
  * Tag Utilities Library
  * Helper functions para trabalhar com sistema de tags
+ * 
+ * NOTA: Todas as funções são puras e recebem dados como parâmetros.
+ * Não há mais dependência de mocks - passe os dados do hook useTags() ou useContacts()
  */
 
 import type { Tag, TagColor, TagCategory, TagFilter } from './types/tag'
 import type { Contact } from './types/contact'
-import { MOCK_TAGS } from './mock-tags'
 
 /**
  * Mapa de cores padrão para tags
@@ -54,18 +56,26 @@ export function getTagColor(tagId: string): TagColor {
 
 /**
  * Busca uma tag pelo ID
+ * 
+ * @param tags - Array de tags disponíveis (do hook useTags)
+ * @param tagId - ID da tag a buscar
+ * @returns Tag encontrada ou undefined
  */
-export function getTagById(tagId: string): Tag | undefined {
-  return MOCK_TAGS.find(tag => tag.id === tagId)
+export function getTagById(tags: Tag[], tagId: string): Tag | undefined {
+  return tags.find(tag => tag.id === tagId)
 }
 
 /**
  * Busca múltiplas tags pelos IDs
+ * 
+ * @param tags - Array de tags disponíveis (do hook useTags)
+ * @param tagIds - Array de IDs a buscar
+ * @returns Array de tags encontradas
  */
-export function getTagsByIds(tagIds: string[]): Tag[] {
+export function getTagsByIds(tags: Tag[], tagIds: string[]): Tag[] {
   return tagIds
-    .map(id => getTagById(id))
-    .filter(Boolean) as Tag[]
+    .map(id => getTagById(tags, id))
+    .filter((tag): tag is Tag => tag !== undefined)
 }
 
 /**
@@ -121,15 +131,17 @@ export interface TagPerformance {
 /**
  * Calcula métricas de performance de uma tag
  * 
- * @param contacts - Array de todos os contatos
+ * @param tags - Array de tags disponíveis (do hook useTags)
+ * @param contacts - Array de todos os contatos (do hook useContacts)
  * @param tagId - ID da tag a ser analisada
  * @returns Objeto com métricas de performance
  */
 export function calculateTagPerformance(
+  tags: Tag[],
   contacts: Contact[],
   tagId: string
 ): TagPerformance {
-  const tag = getTagById(tagId)
+  const tag = getTagById(tags, tagId)
   const tagName = tag?.name || tagId
   
   // Filtra contatos que têm essa tag
@@ -170,7 +182,7 @@ export function calculateTagPerformance(
     : 0
   
   // ROI simplificado (receita / investimento estimado)
-  // Para este mock, assumimos investimento de R$ 100 por lead
+  // Assumimos investimento de R$ 100 por lead
   const estimatedCost = leadCount * 100
   const roi = estimatedCost > 0 ? (totalRevenue / estimatedCost) : 0
   
@@ -196,21 +208,29 @@ export function sortTagsByUsage(tags: Tag[]): Tag[] {
 
 /**
  * Retorna as N tags mais populares
+ * 
+ * @param tags - Array de tags disponíveis (do hook useTags)
+ * @param count - Quantidade de tags a retornar (padrão: 10)
+ * @returns Array com as tags mais usadas
  */
-export function getPopularTags(count: number = 10): Tag[] {
-  const sorted = sortTagsByUsage(MOCK_TAGS)
+export function getPopularTags(tags: Tag[], count: number = 10): Tag[] {
+  const sorted = sortTagsByUsage(tags)
   return sorted.slice(0, count)
 }
 
 /**
  * Busca tags por nome ou slug (case-insensitive)
+ * 
+ * @param tags - Array de tags disponíveis (do hook useTags)
+ * @param query - Termo de busca
+ * @returns Array de tags que correspondem à busca
  */
-export function searchTagsByName(query: string): Tag[] {
+export function searchTagsByName(tags: Tag[], query: string): Tag[] {
   const lowerQuery = query.toLowerCase().trim()
   
-  if (!lowerQuery) return MOCK_TAGS
+  if (!lowerQuery) return tags
   
-  return MOCK_TAGS.filter(tag => {
+  return tags.filter(tag => {
     const nameMatch = tag.name.toLowerCase().includes(lowerQuery)
     const slugMatch = tag.slug.toLowerCase().includes(lowerQuery)
     
@@ -220,8 +240,11 @@ export function searchTagsByName(query: string): Tag[] {
 
 /**
  * Agrupa tags por categoria
+ * 
+ * @param tags - Array de tags disponíveis (do hook useTags)
+ * @returns Objeto com tags agrupadas por categoria
  */
-export function groupTagsByCategory(): Record<TagCategory, Tag[]> {
+export function groupTagsByCategory(tags: Tag[]): Record<TagCategory, Tag[]> {
   const grouped: Record<TagCategory, Tag[]> = {
     lead_source: [],
     industry: [],
@@ -231,8 +254,10 @@ export function groupTagsByCategory(): Record<TagCategory, Tag[]> {
     custom: []
   }
   
-  MOCK_TAGS.forEach(tag => {
-    grouped[tag.category].push(tag)
+  tags.forEach(tag => {
+    if (grouped[tag.category]) {
+      grouped[tag.category].push(tag)
+    }
   })
   
   return grouped
@@ -261,10 +286,14 @@ const TAG_CONFLICTS: Record<string, string[]> = {
 /**
  * Valida se uma combinação de tags tem conflitos
  * 
- * @param tagIds - Array de IDs de tags
+ * @param tags - Array de tags disponíveis (para buscar nomes)
+ * @param tagIds - Array de IDs de tags a validar
  * @returns Objeto com valid (boolean) e lista de conflitos
  */
-export function validateTagCombination(tagIds: string[]): {
+export function validateTagCombination(
+  tags: Tag[],
+  tagIds: string[]
+): {
   valid: boolean
   conflicts: TagConflict[]
 } {
@@ -277,11 +306,11 @@ export function validateTagCombination(tagIds: string[]): {
     )
     
     if (foundConflicts.length > 0) {
-      const tag = getTagById(tagId)
+      const tag = getTagById(tags, tagId)
       conflicts.push({
         tagId,
         conflictsWith: foundConflicts,
-        reason: `"${tag?.name}" não pode coexistir com tags de lifecycle stage conflitantes`
+        reason: `"${tag?.name || tagId}" não pode coexistir com tags de lifecycle stage conflitantes`
       })
     }
   })
@@ -349,26 +378,39 @@ export function suggestTagsForContact(contact: Contact): string[] {
 
 /**
  * Retorna tags mais usadas para uma categoria específica
+ * 
+ * @param tags - Array de tags disponíveis (do hook useTags)
+ * @param category - Categoria a filtrar
+ * @param count - Quantidade de tags a retornar (padrão: 5)
+ * @returns Array de tags da categoria ordenadas por uso
  */
 export function getTopTagsByCategory(
+  tags: Tag[],
   category: TagCategory,
   count: number = 5
 ): Tag[] {
-  const categoryTags = MOCK_TAGS.filter(tag => tag.category === category)
+  const categoryTags = tags.filter(tag => tag.category === category)
   return sortTagsByUsage(categoryTags).slice(0, count)
 }
 
 /**
  * Calcula estatísticas gerais de uso de tags
+ * 
+ * @param tags - Array de tags disponíveis (do hook useTags)
+ * @param contacts - Array de contatos (do hook useContacts)
+ * @returns Objeto com estatísticas de uso
  */
-export function getTagStatistics(contacts: Contact[]): {
+export function getTagStatistics(
+  tags: Tag[],
+  contacts: Contact[]
+): {
   totalTags: number
   totalUsage: number
   averageTagsPerContact: number
   mostUsedTag: Tag | null
   leastUsedTag: Tag | null
 } {
-  const totalTags = MOCK_TAGS.length
+  const totalTags = tags.length
   
   // Conta uso de cada tag nos contatos
   const tagUsage = new Map<string, number>()
@@ -392,11 +434,11 @@ export function getTagStatistics(contacts: Contact[]): {
   tagUsage.forEach((count, tagId) => {
     if (count > maxUsage) {
       maxUsage = count
-      mostUsedTag = getTagById(tagId) || null
+      mostUsedTag = getTagById(tags, tagId) || null
     }
     if (count < minUsage) {
       minUsage = count
-      leastUsedTag = getTagById(tagId) || null
+      leastUsedTag = getTagById(tags, tagId) || null
     }
   })
   
@@ -408,13 +450,3 @@ export function getTagStatistics(contacts: Contact[]): {
     leastUsedTag
   }
 }
-
-
-
-
-
-
-
-
-
-

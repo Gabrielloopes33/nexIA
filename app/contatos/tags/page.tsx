@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Sidebar } from "@/components/sidebar"
-import { MOCK_TAGS, type Tag, UTM_SOURCES, UTM_MEDIUMS } from "@/lib/mock/tags"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -29,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Tag as TagIcon, Target, Bot, Filter } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Tag as TagIcon, Target, Bot, Filter, Loader2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -39,16 +38,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useTags, type Tag } from "@/hooks/use-tags"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
+
+const UTM_SOURCES = [
+  { value: "google", label: "Google" },
+  { value: "facebook", label: "Facebook" },
+  { value: "instagram", label: "Instagram" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "email", label: "Email" },
+  { value: "direct", label: "Direto" },
+  { value: "referral", label: "Referência" },
+]
+
+const UTM_MEDIUMS = [
+  { value: "organic", label: "Orgânico" },
+  { value: "paid", label: "Pago" },
+  { value: "social", label: "Social" },
+  { value: "email", label: "Email" },
+  { value: "cpc", label: "CPC" },
+  { value: "display", label: "Display" },
+]
+
 export default function TagsPage() {
-  const [tags, setTags] = useState<Tag[]>(MOCK_TAGS)
+  const organizationId = useOrganizationId() ?? ''
+  const { tags, isLoading, createTag, updateTag, deleteTag } = useTags(organizationId)
   const [searchQuery, setSearchQuery] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
 
-  // Form state
-  const [formData, setFormData] = useState<Partial<Tag>>({
-    nome: "",
-    cor: "#46347F",
+  // Form state - adapted to use new Tag type
+  const [formData, setFormData] = useState<Partial<Tag> & { automatizacao?: boolean; utmSource?: string; utmMedium?: string; utmCampaign?: string }>({
+    name: "",
+    color: "#46347F",
     automatizacao: false,
     utmSource: "",
     utmMedium: "",
@@ -56,14 +78,14 @@ export default function TagsPage() {
   })
 
   const filteredTags = tags.filter((tag) =>
-    tag.nome.toLowerCase().includes(searchQuery.toLowerCase())
+    tag.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const handleCreateTag = () => {
     setEditingTag(null)
     setFormData({
-      nome: "",
-      cor: "#46347F",
+      name: "",
+      color: "#46347F",
       automatizacao: false,
       utmSource: "",
       utmMedium: "",
@@ -78,39 +100,27 @@ export default function TagsPage() {
     setIsDialogOpen(true)
   }
 
-  const handleSaveTag = () => {
-    if (!formData.nome) return
+  const handleSaveTag = async () => {
+    if (!formData.name) return
 
     if (editingTag) {
-      // Update existing
-      setTags(
-        tags.map((t) =>
-          t.id === editingTag.id
-            ? { ...t, ...formData, updatedAt: new Date().toISOString() }
-            : t
-        )
-      )
+      await updateTag(editingTag.id, {
+        name: formData.name,
+        color: formData.color,
+      })
     } else {
-      // Create new
-      const newTag: Tag = {
-        id: `tag-${Date.now()}`,
-        nome: formData.nome,
-        cor: formData.cor || "#46347F",
-        contatosCount: 0,
-        automatizacao: formData.automatizacao || false,
-        utmSource: formData.utmSource,
-        utmMedium: formData.utmMedium,
-        utmCampaign: formData.utmCampaign,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      setTags([...tags, newTag])
+      await createTag({
+        name: formData.name,
+        color: formData.color || "#46347F",
+      })
     }
     setIsDialogOpen(false)
   }
 
-  const handleDeleteTag = (tagId: string) => {
-    setTags(tags.filter((t) => t.id !== tagId))
+  const handleDeleteTag = async (tagId: string) => {
+    if (confirm('Tem certeza que deseja excluir esta tag?')) {
+      await deleteTag(tagId)
+    }
   }
 
   const colorOptions = [
@@ -168,100 +178,109 @@ export default function TagsPage() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+          </div>
+        )}
+
         {/* Tags Table */}
-        <div className="rounded-sm border border-border bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[250px]">Nome</TableHead>
+        {!isLoading && (
+          <div className="rounded-sm border border-border bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[250px]">Nome</TableHead>
 
-                <TableHead>Contatos</TableHead>
-                <TableHead>Automação</TableHead>
-                <TableHead>UTM Source</TableHead>
-                <TableHead>UTM Medium</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTags.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                    Nenhuma tag encontrada
-                  </TableCell>
+                  <TableHead>Contatos</TableHead>
+                  <TableHead>Automação</TableHead>
+                  <TableHead>UTM Source</TableHead>
+                  <TableHead>UTM Medium</TableHead>
+                  <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
-              ) : (
-                filteredTags.map((tag) => (
-                  <TableRow key={tag.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-4 w-4 rounded-full"
-                          style={{ backgroundColor: tag.cor }}
-                        />
-                        <Badge
-                          style={{
-                            backgroundColor: `${tag.cor}20`,
-                            color: tag.cor,
-                            borderColor: tag.cor,
-                          }}
-                          variant="outline"
-                        >
-                          {tag.nome}
-                        </Badge>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <span className="text-sm">{tag.contatosCount}</span>
-                    </TableCell>
-                    <TableCell>
-                      {tag.automatizacao ? (
-                        <div className="flex items-center gap-1.5 text-emerald-600">
-                          <Bot className="h-4 w-4" />
-                          <span className="text-xs font-medium">Sim</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Não</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {tag.utmSource || "-"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {tag.utmMedium || "-"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditTag(tag)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteTag(tag.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </TableHeader>
+              <TableBody>
+                {filteredTags.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                      Nenhuma tag encontrada
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  filteredTags.map((tag) => (
+                    <TableRow key={tag.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-4 w-4 rounded-full"
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          <Badge
+                            style={{
+                              backgroundColor: `${tag.color}20`,
+                              color: tag.color,
+                              borderColor: tag.color,
+                            }}
+                            variant="outline"
+                          >
+                            {tag.name}
+                          </Badge>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <span className="text-sm">{tag._count?.contactTags || 0}</span>
+                      </TableCell>
+                      <TableCell>
+                        {tag.automatizacao ? (
+                          <div className="flex items-center gap-1.5 text-emerald-600">
+                            <Bot className="h-4 w-4" />
+                            <span className="text-xs font-medium">Sim</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Não</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {tag.utmSource || "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {tag.utmMedium || "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditTag(tag)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteTag(tag.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* Create/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -281,11 +300,11 @@ export default function TagsPage() {
             <div className="space-y-4 py-4">
               {/* Name */}
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome da Tag *</Label>
+                <Label htmlFor="name">Nome da Tag *</Label>
                 <Input
-                  id="nome"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Ex: Lead Quente"
                 />
               </div>
@@ -297,9 +316,9 @@ export default function TagsPage() {
                   {colorOptions.map((color) => (
                     <button
                       key={color}
-                      onClick={() => setFormData({ ...formData, cor: color })}
+                      onClick={() => setFormData({ ...formData, color: color })}
                       className={`h-8 w-8 rounded-full transition-all ${
-                        formData.cor === color
+                        formData.color === color
                           ? "ring-2 ring-offset-2 ring-[#46347F]"
                           : "hover:scale-110"
                       }`}
@@ -400,7 +419,7 @@ export default function TagsPage() {
               <Button
                 onClick={handleSaveTag}
                 className="bg-[#46347F] hover:bg-[#46347F]"
-                disabled={!formData.nome}
+                disabled={!formData.name}
               >
                 {editingTag ? "Salvar" : "Criar Tag"}
               </Button>

@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useEffect } from "react"
 import { useDashboard } from "./use-dashboard-context"
-import { ENRICHED_LEADS } from "@/lib/mock-leads-enriched"
+import { useContacts } from "./use-contacts"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 import type { Contact } from "@/lib/types/contact"
 
 // Tipo estendido para os dados do dashboard
@@ -31,7 +32,7 @@ const USER_NAMES: Record<string, string> = {
   pedro: "Pedro Oliveira"
 }
 
-// Simula o campo atualizadoPor baseado no ID do lead (mock)
+// Simula o campo atualizadoPor baseado no ID do lead
 function getAtualizadoPor(leadId: number): string {
   const users = ["João Silva", "Maria Santos", "Pedro Oliveira"]
   return users[leadId % users.length]
@@ -44,6 +45,8 @@ function isConverted(lead: Contact): boolean {
 
 export function useFilteredData(): UseFilteredDataResult {
   const { dateRange, selectedUsers } = useDashboard()
+  const organizationId = useOrganizationId() ?? ''
+  const { contacts, isLoading: contactsLoading } = useContacts(organizationId)
   const [isLoading, setIsLoading] = useState(false)
 
   // Simula delay de loading quando filtros mudam
@@ -53,14 +56,38 @@ export function useFilteredData(): UseFilteredDataResult {
     return () => clearTimeout(timer)
   }, [dateRange, selectedUsers])
 
-  // Enriquece os dados mock com campos derivados
+  // Enriquece os dados reais com campos derivados
   const enrichedData: EnrichedLead[] = useMemo(() => {
-    return ENRICHED_LEADS.map((lead) => ({
-      ...lead,
-      dealValue: lead.receita,
-      atualizadoPor: getAtualizadoPor(lead.id)
+    return contacts.map((contact) => ({
+      ...contact,
+      // Mapear campos do hook useContacts para o formato esperado
+      id: typeof contact.id === 'string' ? parseInt(contact.id) || 0 : contact.id,
+      nome: contact.name || 'Sem nome',
+      email: contact.phone || 'sem@email.com', // Usar phone como fallback
+      empresa: contact.metadata?.company as string || 'Sem empresa',
+      cargo: contact.metadata?.jobTitle as string,
+      telefone: contact.phone,
+      fonte: (contact.metadata?.source as Contact['fonte']) || 'Manual',
+      status: mapStatusToLegacy(contact.status),
+      avatar: contact.avatarUrl || contact.name?.charAt(0).toUpperCase() || '?',
+      criadoEm: contact.createdAt,
+      atualizadoEm: contact.updatedAt,
+      tags: contact.tags || [],
+      // Campos enriquecidos
+      dealValue: contact.metadata?.dealValue as number || 0,
+      atualizadoPor: getAtualizadoPor(typeof contact.id === 'string' ? parseInt(contact.id) || 0 : contact.id)
     }))
-  }, [])
+  }, [contacts])
+
+  // Helper para mapear status
+  function mapStatusToLegacy(status: string): Contact['status'] {
+    switch (status) {
+      case 'ACTIVE': return 'ativo'
+      case 'INACTIVE': return 'inativo'
+      case 'BLOCKED': return 'aguardando'
+      default: return 'ativo'
+    }
+  }
 
   // Filtra leads baseado nos critérios
   const filteredLeads = useMemo(() => {
@@ -108,5 +135,5 @@ export function useFilteredData(): UseFilteredDataResult {
     }
   }, [filteredLeads])
 
-  return { filteredLeads, isLoading, stats }
+  return { filteredLeads, isLoading: isLoading || contactsLoading, stats }
 }

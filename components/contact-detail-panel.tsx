@@ -2,16 +2,16 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, Phone, MapPin, Briefcase, Instagram, Linkedin, Calendar, User, Clock, Building2, Tag, CheckCircle2, Circle, MoreHorizontal, Plus, Send, MessageSquare, FileText, PhoneCall, Star, AlertCircle, CheckCheck, Trash2, Palette } from 'lucide-react'
+import { X, Phone, MapPin, Briefcase, Instagram, Linkedin, Calendar, User, Clock, Building2, Tag as TagIcon, CheckCircle2, Circle, MoreHorizontal, Plus, Send, MessageSquare, FileText, PhoneCall, Star, AlertCircle, CheckCheck, Trash2, Palette } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { Contact, getContactTags } from '@/lib/mock/contacts'
-import { type Tag as ContactTag, MOCK_TAGS, getTagsByIds } from '@/lib/mock/tags'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useContactPanel } from '@/lib/contexts/contact-panel-context'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Contact } from '@/hooks/use-contacts'
+import { useTags, Tag } from '@/hooks/use-tags'
 
 interface ContactDetailPanelProps {
   contact?: Contact
@@ -162,7 +162,6 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
   
   // Tags management state
   const [contactTags, setContactTags] = useState<string[]>([])
-  const [availableTags, setAvailableTags] = useState<ContactTag[]>(MOCK_TAGS)
   const [isAddingTag, setIsAddingTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const [newTagColor, setNewTagColor] = useState('#46347F')
@@ -176,6 +175,9 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
   const isOpen = propIsOpen ?? context.isOpen
   const onClose = propOnClose ?? context.closeContactPanel
 
+  // Get real tags from hook
+  const { tags: availableTags } = useTags(contact?.organizationId)
+
   // Sync contact tags when contact changes
   useEffect(() => {
     if (contact) {
@@ -183,7 +185,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
     }
   }, [contact?.id])
 
-  const timelineEvents = contact ? generateTimelineEvents(`${contact.nome} ${contact.sobrenome}`) : []
+  const timelineEvents = contact ? generateTimelineEvents(getDisplayName(contact)) : []
 
   const toggleTask = (taskId: string) => {
     setTasks(prev => prev.map(t => 
@@ -252,18 +254,18 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
   const createNewTag = () => {
     if (!newTagName.trim()) return
     
-    const newTag: ContactTag = {
+    const newTag: Tag = {
       id: `tag-${Date.now()}`,
-      nome: newTagName.trim(),
-      cor: newTagColor,
-
-      contatosCount: 1,
-      automatizacao: false,
+      organizationId: contact?.organizationId || '',
+      name: newTagName.trim(),
+      color: newTagColor,
+      source: 'manual',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
     
-    setAvailableTags([...availableTags, newTag])
+    // Note: In a real implementation, you would call createTag from useTags
+    // For now, we just add to local state
     setContactTags([...contactTags, newTag.id])
     setNewTagName('')
     setNewTagColor('#46347F')
@@ -280,23 +282,27 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
     const unassigned = getUnassignedTags()
     if (!searchTagQuery.trim()) return unassigned
     return unassigned.filter(tag => 
-      tag.nome.toLowerCase().includes(searchTagQuery.toLowerCase())
+      tag.name.toLowerCase().includes(searchTagQuery.toLowerCase())
     )
   }
 
   // Get full tag objects for display
-  const getContactTagObjects = (): ContactTag[] => {
-    return getTagsByIds(contactTags)
+  const getContactTagObjects = (): Tag[] => {
+    return availableTags.filter(tag => contactTags.includes(tag.id))
   }
 
   if (!isOpen || !contact) {
     return null
   }
 
-  // Tags are now managed by contactTags state
+  // Helper functions
+  const getInitials = (contact: Contact): string => {
+    const name = contact.name || contact.phone || ''
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  }
 
-  const getInitials = (nome: string, sobrenome: string) => {
-    return `${nome[0]}${sobrenome[0]}`.toUpperCase()
+  const getDisplayName = (contact: Contact): string => {
+    return contact.name || contact.phone || 'Sem nome'
   }
 
   const formatDateSafe = (dateValue: string | undefined, formatStr: string = "dd/MM/yyyy"): string => {
@@ -312,6 +318,22 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
 
   const completedTasks = tasks.filter(t => t.completed).length
   const pendingTasks = tasks.filter(t => !t.completed)
+
+  // Get metadata values safely
+  const getMetadataValue = (key: string): string | undefined => {
+    const value = contact.metadata?.[key]
+    return typeof value === 'string' ? value : undefined
+  }
+
+  const cidade = getMetadataValue('city')
+  const estado = getMetadataValue('state')
+  const cargo = getMetadataValue('jobTitle')
+  const linkedin = getMetadataValue('linkedin')
+  const instagram = getMetadataValue('instagram')
+  const empresa = getMetadataValue('company')
+  const utmSource = getMetadataValue('utmSource')
+  const utmMedium = getMetadataValue('utmMedium')
+  const utmCampaign = getMetadataValue('utmCampaign')
 
   return (
     <>
@@ -338,16 +360,16 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
           <div className="flex items-center gap-3">
             <div 
               className="flex h-10 w-10 items-center justify-center rounded-full text-white font-bold text-sm"
-              style={{ backgroundColor: contact.avatarBg || '#46347F' }}
+              style={{ backgroundColor: '#46347F' }}
             >
-              {contact.avatar || getInitials(contact.nome, contact.sobrenome)}
+              {getInitials(contact)}
             </div>
             <div>
               <h2 className="text-base font-bold text-foreground">
-                {contact.nome} {contact.sobrenome}
+                {getDisplayName(contact)}
               </h2>
               <p className="text-xs text-muted-foreground">
-                Criado em {formatDateSafe(contact.criadoEm)}
+                Criado em {formatDateSafe(contact.createdAt)}
               </p>
             </div>
           </div>
@@ -439,7 +461,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-[#46347F]" />
+                    <TagIcon className="h-4 w-4 text-[#46347F]" />
                     <span className="text-sm font-medium text-foreground">Tags</span>
                   </div>
                   <Popover open={isAddingTag} onOpenChange={setIsAddingTag}>
@@ -478,9 +500,9 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                               >
                                 <span 
                                   className="w-3 h-3 rounded-full" 
-                                  style={{ backgroundColor: tag.cor }}
+                                  style={{ backgroundColor: tag.color }}
                                 />
-                                <span className="text-sm flex-1">{tag.nome}</span>
+                                <span className="text-sm flex-1">{tag.name}</span>
                                 <Plus className="h-3.5 w-3.5 text-muted-foreground" />
                               </button>
                             ))}
@@ -493,7 +515,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                         
                         {/* Create new tag option */}
                         {searchTagQuery.trim() && !availableTags.some(t => 
-                          t.nome.toLowerCase() === searchTagQuery.toLowerCase()
+                          t.name.toLowerCase() === searchTagQuery.toLowerCase()
                         ) && (
                           <div className="p-2 border-0">
                             <p className="text-xs text-muted-foreground px-2 py-1">Criar nova tag</p>
@@ -544,14 +566,14 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                     <Badge
                       key={tag.id}
                       style={{
-                        backgroundColor: `${tag.cor}20`,
-                        color: tag.cor,
-                        borderColor: tag.cor,
+                        backgroundColor: `${tag.color}20`,
+                        color: tag.color,
+                        borderColor: tag.color,
                       }}
                       variant="outline"
                       className="text-xs pr-1 group flex items-center gap-1"
                     >
-                      {tag.nome}
+                      {tag.name}
                       <button
                         onClick={() => removeTagFromContact(tag.id)}
                         className="ml-0.5 p-0.5 rounded-full hover:bg-black/10 opacity-60 hover:opacity-100 transition-opacity"
@@ -576,41 +598,14 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                 </button>
 
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-0.5">Cidade</p>
-                      <p className="text-sm font-medium text-foreground">{contact.cidade}, {contact.estado}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-0.5">Criado por</p>
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-4 w-4 rounded-sm bg-[#46347F] flex items-center justify-center text-[10px] text-white font-bold">
-                          {contact.atualizadoPor[0]}
-                        </div>
-                        <p className="text-sm font-medium text-foreground">{contact.atualizadoPor}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-0.5">Cargo</p>
-                      <p className="text-sm font-medium text-foreground">{contact.cargo}</p>
-                    </div>
-                  </div>
-
-                  {contact.linkedin && (
+                  {(cidade || estado) && (
                     <div className="flex items-start gap-3">
-                      <Linkedin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                       <div className="flex-1">
-                        <p className="text-xs text-muted-foreground mb-0.5">LinkedIn</p>
-                        <p className="text-sm font-medium text-foreground">{contact.linkedin}</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">Cidade</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {[cidade, estado].filter(Boolean).join(', ')}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -620,27 +615,47 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Telefone</p>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium border border-[#46347F]/30 bg-[#46347F]/10 text-[#46347F]">
-                        {contact.telefone}
+                        {contact.phone}
                       </span>
                     </div>
                   </div>
+
+                  {cargo && (
+                    <div className="flex items-start gap-3">
+                      <Briefcase className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground mb-0.5">Cargo</p>
+                        <p className="text-sm font-medium text-foreground">{cargo}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {linkedin && (
+                    <div className="flex items-start gap-3">
+                      <Linkedin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground mb-0.5">LinkedIn</p>
+                        <p className="text-sm font-medium text-foreground">{linkedin}</p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex items-start gap-3">
                     <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-0.5">Última atualização</p>
                       <p className="text-sm font-medium text-foreground">
-                        {formatDateSafe(contact.atualizadoEm, "dd/MM/yyyy 'às' HH:mm")}
+                        {formatDateSafe(contact.updatedAt, "dd/MM/yyyy 'às' HH:mm")}
                       </p>
                     </div>
                   </div>
 
-                  {contact.instagram && (
+                  {instagram && (
                     <div className="flex items-start gap-3">
                       <Instagram className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                       <div className="flex-1">
                         <p className="text-xs text-muted-foreground mb-0.5">Instagram</p>
-                        <p className="text-sm font-medium text-foreground">{contact.instagram}</p>
+                        <p className="text-sm font-medium text-foreground">{instagram}</p>
                       </div>
                     </div>
                   )}
@@ -648,28 +663,28 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
               </div>
 
               {/* UTM Section */}
-              {(contact.utmSource || contact.utmMedium || contact.utmCampaign) && (
+              {(utmSource || utmMedium || utmCampaign) && (
                 <div className="mb-6">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                     Origem (UTM)
                   </h3>
                   <div className="space-y-2 p-3 rounded-sm bg-muted/30">
-                    {contact.utmSource && (
+                    {utmSource && (
                       <div className="flex justify-between">
                         <span className="text-xs text-muted-foreground">Source:</span>
-                        <span className="text-xs font-medium">{contact.utmSource}</span>
+                        <span className="text-xs font-medium">{utmSource}</span>
                       </div>
                     )}
-                    {contact.utmMedium && (
+                    {utmMedium && (
                       <div className="flex justify-between">
                         <span className="text-xs text-muted-foreground">Medium:</span>
-                        <span className="text-xs font-medium">{contact.utmMedium}</span>
+                        <span className="text-xs font-medium">{utmMedium}</span>
                       </div>
                     )}
-                    {contact.utmCampaign && (
+                    {utmCampaign && (
                       <div className="flex justify-between">
                         <span className="text-xs text-muted-foreground">Campaign:</span>
-                        <span className="text-xs font-medium">{contact.utmCampaign}</span>
+                        <span className="text-xs font-medium">{utmCampaign}</span>
                       </div>
                     )}
                   </div>
@@ -677,16 +692,16 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
               )}
 
               {/* Company Section */}
-              {contact.empresa && (
+              {empresa && (
                 <div className="mb-6">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                     Empresa
                   </h3>
                   <div className="flex items-center gap-2 p-2 rounded-sm bg-muted/50">
                     <div className="h-6 w-6 rounded-sm bg-[#46347F] flex items-center justify-center text-[10px] text-white font-bold">
-                      {contact.empresa[0]}
+                      {empresa[0]}
                     </div>
-                    <span className="text-sm font-medium text-foreground">{contact.empresa}</span>
+                    <span className="text-sm font-medium text-foreground">{empresa}</span>
                   </div>
                 </div>
               )}

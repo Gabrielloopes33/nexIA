@@ -8,8 +8,7 @@ import {
   Search,
   RotateCcw,
   MoreVertical,
-  RotateCcw as IconRestore,
-  Check,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -43,11 +42,17 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import {
-  MOCK_TRASHED_CONTACTS,
-  calcularDiasRestantes,
-  type TrashedContact,
-} from "@/lib/mock/trash"
+import { useContacts, Contact } from "@/hooks/use-contacts"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
+
+// Helper to calculate days remaining (30 days from deletion)
+function calcularDiasRestantes(deletedAt: string): number {
+  const deleted = new Date(deletedAt)
+  const expiration = new Date(deleted.getTime() + 30 * 24 * 60 * 60 * 1000)
+  const now = new Date()
+  const diff = expiration.getTime() - now.getTime()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
@@ -80,29 +85,49 @@ function getExpirationBadge(dias: number) {
   }
 }
 
+// Helper to get initials from name
+function getInitials(name?: string | null, phone?: string): string {
+  const text = name || phone || ""
+  return text.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
+
 export default function LixeiraPage() {
-  const [contacts, setContacts] = useState<TrashedContact[]>(MOCK_TRASHED_CONTACTS)
+  const organizationId = useOrganizationId() ?? ''
+  const { 
+    contacts, 
+    total, 
+    isLoading, 
+    restoreContact, 
+    deleteContact 
+  } = useContacts(organizationId, {
+    includeDeleted: true,
+  })
+  
   const [search, setSearch] = useState("")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isEmptyDialogOpen, setIsEmptyDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [contactToDelete, setContactToDelete] = useState<TrashedContact | null>(null)
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null)
 
+  // Filter only deleted contacts and by search
   const filteredContacts = useMemo(() => {
-    return contacts.filter((contact) => {
-      const searchLower = search.toLowerCase()
-      return (
-        contact.nome.toLowerCase().includes(searchLower) ||
-        contact.sobrenome.toLowerCase().includes(searchLower) ||
-        contact.email.toLowerCase().includes(searchLower) ||
-        contact.empresa.toLowerCase().includes(searchLower)
-      )
-    })
+    return contacts
+      .filter((c) => c.deletedAt) // Only show deleted contacts
+      .filter((contact) => {
+        const searchLower = search.toLowerCase()
+        const name = contact.name || contact.phone || ""
+        const metadata = contact.metadata as Record<string, string> | undefined
+        return (
+          name.toLowerCase().includes(searchLower) ||
+          (metadata?.email?.toLowerCase() || "").includes(searchLower) ||
+          (metadata?.company?.toLowerCase() || "").includes(searchLower)
+        )
+      })
   }, [contacts, search])
 
   const selectedContacts = useMemo(() => {
-    return contacts.filter((c) => selectedIds.includes(c.id))
-  }, [contacts, selectedIds])
+    return filteredContacts.filter((c) => selectedIds.includes(c.id))
+  }, [filteredContacts, selectedIds])
 
   const toggleSelection = (id: string) => {
     setSelectedIds((prev) =>
@@ -118,42 +143,54 @@ export default function LixeiraPage() {
     }
   }
 
-  const handleRestore = (contact: TrashedContact) => {
-    setContacts((prev) => prev.filter((c) => c.id !== contact.id))
-    setSelectedIds((prev) => prev.filter((id) => id !== contact.id))
-    toast.success(`Contato "${contact.nome} ${contact.sobrenome}" restaurado com sucesso`)
+  const handleRestore = async (contact: Contact) => {
+    const success = await restoreContact(contact.id)
+    if (success) {
+      setSelectedIds((prev) => prev.filter((id) => id !== contact.id))
+      toast.success(`Contato "${contact.name || contact.phone}" restaurado com sucesso`)
+    }
   }
 
-  const handleRestoreSelected = () => {
-    setContacts((prev) => prev.filter((c) => !selectedIds.includes(c.id)))
-    const count = selectedIds.length
+  const handleRestoreSelected = async () => {
+    let successCount = 0
+    for (const id of selectedIds) {
+      const success = await restoreContact(id)
+      if (success) successCount++
+    }
     setSelectedIds([])
-    toast.success(`${count} contato(s) restaurado(s) com sucesso`)
+    toast.success(`${successCount} contato(s) restaurado(s) com sucesso`)
   }
 
-  const handleDeleteClick = (contact: TrashedContact) => {
+  const handleDeleteClick = (contact: Contact) => {
     setContactToDelete(contact)
     setIsDeleteDialogOpen(true)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (contactToDelete) {
-      setContacts((prev) => prev.filter((c) => c.id !== contactToDelete.id))
-      setSelectedIds((prev) => prev.filter((id) => id !== contactToDelete.id))
-      setIsDeleteDialogOpen(false)
-      setContactToDelete(null)
-      toast.success("Contato excluído permanentemente")
+      const success = await deleteContact(contactToDelete.id)
+      if (success) {
+        setSelectedIds((prev) => prev.filter((id) => id !== contactToDelete.id))
+        setIsDeleteDialogOpen(false)
+        setContactToDelete(null)
+        toast.success("Contato excluído permanentemente")
+      }
     }
   }
 
-  const handleEmptyTrash = () => {
-    setContacts([])
+  const handleEmptyTrash = async () => {
+    let successCount = 0
+    for (const contact of filteredContacts) {
+      const success = await deleteContact(contact.id)
+      if (success) successCount++
+    }
     setSelectedIds([])
     setIsEmptyDialogOpen(false)
-    toast.success("Lixeira esvaziada com sucesso")
+    toast.success(`Lixeira esvaziada. ${successCount} contato(s) excluído(s) permanentemente`)
   }
 
   const hasSelection = selectedIds.length > 0
+  const deletedCount = filteredContacts.length
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -165,10 +202,10 @@ export default function LixeiraPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Lixeira</h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              {contacts.length} contato{contacts.length !== 1 ? "s" : ""} ser{contacts.length !== 1 ? "ão" : "á"} excluído{contacts.length !== 1 ? "s" : ""} permanentemente após 30 dias
+              {deletedCount} contato{deletedCount !== 1 ? "s" : ""} ser{deletedCount !== 1 ? "ão" : "á"} excluído{deletedCount !== 1 ? "s" : ""} permanentemente após 30 dias
             </p>
           </div>
-          {contacts.length > 0 && (
+          {deletedCount > 0 && (
             <Button
               variant="outline"
               onClick={() => setIsEmptyDialogOpen(true)}
@@ -182,7 +219,11 @@ export default function LixeiraPage() {
 
         <Separator className="mb-6" />
 
-        {contacts.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+          </div>
+        ) : deletedCount === 0 ? (
           <Card className="py-12">
             <CardContent className="flex flex-col items-center justify-center p-0">
               <Trash2 className="h-12 w-12 text-muted-foreground mb-4" />
@@ -231,7 +272,7 @@ export default function LixeiraPage() {
                     onClick={handleRestoreSelected}
                     className="text-[#46347F] hover:text-[#46347F] hover:bg-[#46347F]/20"
                   >
-                    <IconRestore className="mr-2 h-4 w-4" />
+                    <RotateCcw className="mr-2 h-4 w-4" />
                     Restaurar selecionados
                   </Button>
                   <Button
@@ -272,8 +313,9 @@ export default function LixeiraPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredContacts.map((contact) => {
-                      const diasRestantes = calcularDiasRestantes(contact.expiracaoEm)
+                      const diasRestantes = calcularDiasRestantes(contact.deletedAt!)
                       const isSelected = selectedIds.includes(contact.id)
+                      const metadata = contact.metadata as Record<string, string> | undefined
 
                       return (
                         <TableRow key={contact.id} className={cn(isSelected && "bg-[#46347F]/5")}>
@@ -288,30 +330,30 @@ export default function LixeiraPage() {
                               <div
                                 className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium"
                                 style={{
-                                  backgroundColor: contact.avatarBg || "#E8E7F7",
+                                  backgroundColor: "#E8E7F7",
                                   color: "#555",
                                 }}
                               >
-                                {contact.avatar || `${contact.nome[0]}${contact.sobrenome[0]}`}
+                                {getInitials(contact.name, contact.phone)}
                               </div>
                               <div>
                                 <p className="font-medium">
-                                  {contact.nome} {contact.sobrenome}
+                                  {contact.name || contact.phone}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {contact.empresa}
+                                  {metadata?.company || ""}
                                 </p>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <span className="text-sm text-muted-foreground">
-                              {contact.email}
+                              {metadata?.email || "-"}
                             </span>
                           </TableCell>
-                          <TableCell>{formatDate(contact.excluidoEm)}</TableCell>
+                          <TableCell>{formatDate(contact.deletedAt!)}</TableCell>
                           <TableCell>
-                            <span className="text-sm">{contact.excluidoPor}</span>
+                            <span className="text-sm">-</span> {/* excluidoPor not in API */}
                           </TableCell>
                           <TableCell>{getExpirationBadge(diasRestantes)}</TableCell>
                           <TableCell>
@@ -326,7 +368,7 @@ export default function LixeiraPage() {
                                   onClick={() => handleRestore(contact)}
                                   className="text-[#46347F]"
                                 >
-                                  <IconRestore className="mr-2 h-4 w-4" />
+                                  <RotateCcw className="mr-2 h-4 w-4" />
                                   Restaurar
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -358,7 +400,7 @@ export default function LixeiraPage() {
             </DialogHeader>
             <p className="text-sm text-muted-foreground py-4">
               Esta ação excluirá permanentemente todos os{" "}
-              <strong>{contacts.length}</strong> contatos da lixeira. Esta ação NÃO pode ser
+              <strong>{deletedCount}</strong> contatos da lixeira. Esta ação NÃO pode ser
               desfeita.
             </p>
             <DialogFooter>
@@ -385,7 +427,7 @@ export default function LixeiraPage() {
             <p className="text-sm text-muted-foreground py-4">
               Tem certeza que deseja excluir permanentemente o contato &quot;
               <strong>
-                {contactToDelete?.nome} {contactToDelete?.sobrenome}
+                {contactToDelete?.name || contactToDelete?.phone}
               </strong>
               &quot;? Esta ação não pode ser desfeita.
             </p>

@@ -15,6 +15,7 @@ import {
   type WebhookEventHandlers,
 } from '@/lib/whatsapp/webhook-handler';
 import { updateLeadScore } from '@/lib/pipeline/scoring';
+import { handleDeliveredEvent, scheduleRetry } from '@/lib/whatsapp/form-delivery-processor';
 
 // Environment variables
 const WEBHOOK_VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || '';
@@ -480,7 +481,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             const updateData: Record<string, unknown> = { status: mappedStatus };
             
             if (mappedStatus === 'SENT') updateData.sentAt = new Date(timestamp);
-            if (mappedStatus === 'DELIVERED') updateData.deliveredAt = new Date(timestamp);
+            if (mappedStatus === 'DELIVERED') {
+              updateData.deliveredAt = new Date(timestamp);
+              
+              // Processar entrega de formulário pendente
+              try {
+                const deliveryResult = await handleDeliveredEvent(status.id);
+                if (deliveryResult.success) {
+                  console.log(`[Webhook] Form delivery processed: ${deliveryResult.messageId}`);
+                } else if (deliveryResult.shouldRetry) {
+                  // Agenda retry se necessário
+                  const pendingDelivery = await prisma.pendingFormDelivery.findFirst({
+                    where: { messageId: status.id },
+                  });
+                  if (pendingDelivery) {
+                    await scheduleRetry(pendingDelivery.id);
+                  }
+                }
+              } catch (deliveryError) {
+                console.error('[Webhook] Error processing form delivery:', deliveryError);
+                // Não throw - não queremos falhar o webhook por causa do form delivery
+              }
+            }
             if (mappedStatus === 'READ') updateData.readAt = new Date(timestamp);
             if (mappedStatus === 'FAILED') {
               updateData.failedAt = new Date(timestamp);

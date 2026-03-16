@@ -15,62 +15,131 @@ import {
   Clock,
   Calendar,
   Download,
+  Loader2,
+  AlertCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useSubscriptions } from "@/hooks/use-subscriptions"
+import { useInvoices } from "@/hooks/use-invoices"
+import { usePlans } from "@/hooks/use-plans"
 
-// Dados mockados para o dashboard de assinaturas
-const kpis = [
-  {
-    label: "Receita Mensal (MRR)",
-    value: "R$ 48.250,00",
-    change: "+12,5%",
-    icon: DollarSign,
-  },
-  {
-    label: "Clientes Ativos",
-    value: "342",
-    change: "+8,2%",
-    icon: Users,
-  },
-  {
-    label: "Taxa de Conversão",
-    value: "68,4%",
-    change: "+3,1%",
-    icon: TrendingUp,
-  },
-  {
-    label: "Ticket Médio",
-    value: "R$ 141,08",
-    change: "-2,4%",
-    icon: CreditCard,
-    isNegativeGood: false,
-  },
-]
+function formatCurrency(cents: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100)
+}
 
-const recentSubscriptions = [
-  { id: "sub_1", customer: "Acme Corp", plan: "Enterprise", amount: "R$ 499,00", status: "active", date: "Hoje" },
-  { id: "sub_2", customer: "TechStart", plan: "Pro", amount: "R$ 199,00", status: "active", date: "Hoje" },
-  { id: "sub_3", customer: "Consulting Pro", plan: "Business", amount: "R$ 299,00", status: "pending", date: "Ontem" },
-  { id: "sub_4", customer: "DevStudio", plan: "Pro", amount: "R$ 199,00", status: "canceled", date: "2 dias" },
-  { id: "sub_5", customer: "Marketing Plus", plan: "Starter", amount: "R$ 99,00", status: "active", date: "3 dias" },
-]
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('pt-BR')
+}
 
-const upcomingInvoices = [
-  { id: "inv_1", customer: "Global Solutions", amount: "R$ 799,00", dueDate: "Amanhã", status: "pending" },
-  { id: "inv_2", customer: "StartupXYZ", amount: "R$ 149,00", dueDate: "2 dias", status: "pending" },
-  { id: "inv_3", customer: "Enterprise Ltda", amount: "R$ 1.299,00", dueDate: "3 dias", status: "pending" },
-  { id: "inv_4", customer: "DevAgency", amount: "R$ 399,00", dueDate: "5 dias", status: "pending" },
-]
-
-const plans = [
-  { name: "Starter", customers: 145, revenue: "R$ 14.355,00", color: "bg-gray-400" },
-  { name: "Pro", customers: 128, revenue: "R$ 25.472,00", color: "bg-[#46347F]" },
-  { name: "Business", customers: 45, revenue: "R$ 13.455,00", color: "bg-[#46347F]" },
-  { name: "Enterprise", customers: 24, revenue: "R$ 11.976,00", color: "bg-[#46347F]" },
-]
+function getDaysUntil(dateString: string): number {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = date.getTime() - now.getTime()
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
 
 export default function AssinaturasPage() {
+  const { subscriptions, isLoading: isLoadingSubscriptions, error: errorSubscriptions, refetch: refetchSubscriptions } = useSubscriptions()
+  const { invoices, isLoading: isLoadingInvoices, error: errorInvoices } = useInvoices()
+  const { plans, isLoading: isLoadingPlans, error: errorPlans } = usePlans()
+
+  const isLoading = isLoadingSubscriptions || isLoadingInvoices || isLoadingPlans
+  const hasError = errorSubscriptions || errorInvoices || errorPlans
+
+  // Calcular KPIs a partir dos dados reais
+  const activeSubscriptions = subscriptions.filter(s => s.status === 'active')
+  const totalMRR = activeSubscriptions.reduce((acc, sub) => acc + (sub.plan?.priceCents || 0), 0)
+  const totalCustomers = activeSubscriptions.length
+  
+  // Calcular variações (mockadas por enquanto, podem ser calculadas com dados históricos)
+  const mrrChange = "+12,5%"
+  const customersChange = "+8,2%"
+  const conversionRate = "68,4%"
+  const conversionChange = "+3,1%"
+  const averageTicket = totalCustomers > 0 ? Math.round(totalMRR / totalCustomers) : 0
+  const ticketChange = "-2,4%"
+
+  // Faturas pendentes
+  const pendingInvoices = invoices.filter(inv => inv.status === 'pending')
+  const upcomingInvoices = pendingInvoices
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 4)
+
+  // Assinaturas recentes
+  const recentSubscriptions = [...subscriptions]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5)
+
+  // Estatísticas por plano
+  const planStats = plans.map(plan => {
+    const planSubscriptions = subscriptions.filter(s => s.planId === plan.id && s.status === 'active')
+    const planRevenue = planSubscriptions.reduce((acc, sub) => acc + (sub.plan?.priceCents || 0), 0)
+    return {
+      name: plan.name,
+      customers: planSubscriptions.length,
+      revenue: formatCurrency(planRevenue),
+      color: "bg-[#46347F]"
+    }
+  }).filter(p => p.customers > 0)
+
+  const kpis = [
+    {
+      label: "Receita Mensal (MRR)",
+      value: formatCurrency(totalMRR),
+      change: mrrChange,
+      icon: DollarSign,
+    },
+    {
+      label: "Clientes Ativos",
+      value: totalCustomers.toString(),
+      change: customersChange,
+      icon: Users,
+    },
+    {
+      label: "Taxa de Conversão",
+      value: conversionRate,
+      change: conversionChange,
+      icon: TrendingUp,
+    },
+    {
+      label: "Ticket Médio",
+      value: formatCurrency(averageTicket),
+      change: ticketChange,
+      isNegativeGood: false,
+      icon: CreditCard,
+    },
+  ]
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+          <p className="text-muted-foreground">Carregando dados de assinaturas...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (hasError) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+          <h3 className="text-lg font-semibold">Erro ao carregar dados</h3>
+          <p className="text-muted-foreground">{errorSubscriptions || errorInvoices || errorPlans}</p>
+          <Button onClick={refetchSubscriptions} variant="outline">
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -132,7 +201,7 @@ export default function AssinaturasPage() {
                   <CardTitle className="text-base font-semibold">Assinaturas Recentes</CardTitle>
                   <div className="flex items-center gap-1.5 rounded-sm bg-[#46347F]/10 px-2 py-0.5">
                     <Users className="h-3 w-3 text-[#46347F]" />
-                    <span className="text-xs font-semibold text-[#46347F]">342 ativas</span>
+                    <span className="text-xs font-semibold text-[#46347F]">{totalCustomers} ativas</span>
                   </div>
                 </div>
                 <Link href="/configuracoes/assinaturas/assinaturas">
@@ -144,30 +213,36 @@ export default function AssinaturasPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/50">
-                {recentSubscriptions.map((sub) => (
-                  <div key={sub.id} className="flex items-center justify-between px-4 py-3 hover:bg-secondary/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-sm",
-                        sub.status === "active" && "bg-green-100",
-                        sub.status === "pending" && "bg-amber-100",
-                        sub.status === "canceled" && "bg-red-100"
-                      )}>
-                        {sub.status === "active" && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                        {sub.status === "pending" && <Clock className="h-4 w-4 text-amber-600" />}
-                        {sub.status === "canceled" && <XCircle className="h-4 w-4 text-red-600" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{sub.customer}</p>
-                        <p className="text-xs text-muted-foreground">{sub.plan}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-foreground">{sub.amount}</p>
-                      <p className="text-xs text-muted-foreground">{sub.date}</p>
-                    </div>
+                {recentSubscriptions.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-muted-foreground">
+                    Nenhuma assinatura encontrada
                   </div>
-                ))}
+                ) : (
+                  recentSubscriptions.map((sub) => (
+                    <div key={sub.id} className="flex items-center justify-between px-4 py-3 hover:bg-secondary/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-sm",
+                          sub.status === "active" && "bg-green-100",
+                          sub.status === "pending" && "bg-amber-100",
+                          sub.status === "canceled" && "bg-red-100"
+                        )}>
+                          {sub.status === "active" && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                          {sub.status === "pending" && <Clock className="h-4 w-4 text-amber-600" />}
+                          {sub.status === "canceled" && <XCircle className="h-4 w-4 text-red-600" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{sub.plan?.name || 'Plano'}</p>
+                          <p className="text-xs text-muted-foreground">{formatCurrency(sub.plan?.priceCents || 0)}/{sub.plan?.interval === 'monthly' ? 'mês' : 'ano'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-foreground">{formatCurrency(sub.plan?.priceCents || 0)}</p>
+                        <p className="text-xs text-muted-foreground">{getDaysUntil(sub.currentPeriodEnd) > 0 ? `Vence em ${getDaysUntil(sub.currentPeriodEnd)} dias` : 'Vence hoje'}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -178,28 +253,34 @@ export default function AssinaturasPage() {
               <CardTitle className="text-base font-semibold">Distribuição por Plano</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              <div className="space-y-4">
-                {plans.map((plan) => (
-                  <div key={plan.name} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={cn("h-3 w-3 rounded-sm", plan.color)} />
-                        <span className="text-sm font-medium text-foreground">{plan.name}</span>
+              {planStats.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  Nenhum plano com assinaturas ativas
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {planStats.map((plan) => (
+                    <div key={plan.name} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={cn("h-3 w-3 rounded-sm", plan.color)} />
+                          <span className="text-sm font-medium text-foreground">{plan.name}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm text-muted-foreground">{plan.customers} clientes</span>
+                          <span className="text-sm font-semibold text-foreground">{plan.revenue}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">{plan.customers} clientes</span>
-                        <span className="text-sm font-semibold text-foreground">{plan.revenue}</span>
+                      <div className="h-2 bg-secondary rounded-sm overflow-hidden">
+                        <div 
+                          className={cn("h-full rounded-sm", plan.color)}
+                          style={{ width: `${totalCustomers > 0 ? (plan.customers / totalCustomers) * 100 : 0}%` }}
+                        />
                       </div>
                     </div>
-                    <div className="h-2 bg-secondary rounded-sm overflow-hidden">
-                      <div 
-                        className={cn("h-full rounded-sm", plan.color)}
-                        style={{ width: `${(plan.customers / 342) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -212,21 +293,27 @@ export default function AssinaturasPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-semibold">Faturas à Receber</CardTitle>
                 <span className="text-xs font-semibold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-sm">
-                  {upcomingInvoices.length} pendentes
+                  {pendingInvoices.length} pendentes
                 </span>
               </div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/50">
-                {upcomingInvoices.map((inv) => (
-                  <div key={inv.id} className="flex items-center justify-between px-4 py-3 hover:bg-secondary/30 transition-colors">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{inv.customer}</p>
-                      <p className="text-xs text-muted-foreground">Vence em {inv.dueDate}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">{inv.amount}</p>
+                {upcomingInvoices.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-muted-foreground">
+                    Nenhuma fatura pendente
                   </div>
-                ))}
+                ) : (
+                  upcomingInvoices.map((inv) => (
+                    <div key={inv.id} className="flex items-center justify-between px-4 py-3 hover:bg-secondary/30 transition-colors">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{inv.subscription?.plan?.name || 'Fatura'}</p>
+                        <p className="text-xs text-muted-foreground">Vence em {getDaysUntil(inv.dueDate) > 0 ? `${getDaysUntil(inv.dueDate)} dias` : 'hoje'}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">{formatCurrency(inv.amountCents)}</p>
+                    </div>
+                  ))
+                )}
               </div>
               <div className="p-4">
                 <Link href="/configuracoes/assinaturas/faturas">

@@ -5,12 +5,16 @@ import { Sidebar } from "@/components/sidebar"
 import { ContactsTable } from "@/components/contacts/contacts-table"
 import { ContactFilters } from "@/components/contacts/contact-filters"
 import { ContactDetailPanel } from "@/components/contact-detail-panel"
-import { MOCK_CONTACTS, Contact } from "@/lib/mock/contacts"
+import { useContacts, Contact } from "@/hooks/use-contacts"
+import { useOrganization } from "@/lib/contexts/organization-context"
 import { Button } from "@/components/ui/button"
-import { Download, Upload, UserPlus } from "lucide-react"
+import { Download, Upload, UserPlus, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 export default function ContactsPage() {
+  const { organization, isLoading: isLoadingOrg } = useOrganization()
+  const organizationId = organization?.id
+  
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -18,31 +22,19 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
 
-  // Filter contacts
-  const filteredContacts = useMemo(() => {
-    return MOCK_CONTACTS.filter((contact) => {
-      // Search filter
-      const searchLower = searchQuery.toLowerCase()
-      const matchesSearch =
-        !searchQuery ||
-        contact.nome.toLowerCase().includes(searchLower) ||
-        contact.sobrenome.toLowerCase().includes(searchLower) ||
-        contact.email.toLowerCase().includes(searchLower) ||
-        contact.empresa.toLowerCase().includes(searchLower) ||
-        contact.telefone.includes(searchQuery)
-
-      // Tag filter
-      const matchesTags =
-        selectedTags.length === 0 ||
-        selectedTags.some((tagId) => contact.tags.includes(tagId))
-
-      // Status filter
-      const matchesStatus =
-        selectedStatuses.length === 0 || selectedStatuses.includes(contact.status)
-
-      return matchesSearch && matchesTags && matchesStatus
-    })
-  }, [searchQuery, selectedTags, selectedStatuses])
+  // Fetch contacts from API - não precisa passar organizationId,
+  // o hook usa automaticamente do contexto
+  const { 
+    contacts, 
+    total, 
+    isLoading, 
+    error,
+    deleteContact 
+  } = useContacts(undefined, {
+    search: searchQuery,
+    tags: selectedTags,
+    status: selectedStatuses.length === 1 ? selectedStatuses[0] as 'ACTIVE' | 'INACTIVE' | 'BLOCKED' : undefined,
+  })
 
   const handleSelectContact = (id: string, selected: boolean) => {
     if (selected) {
@@ -54,7 +46,7 @@ export default function ContactsPage() {
 
   const handleSelectAll = (selected: boolean) => {
     if (selected) {
-      setSelectedContacts(filteredContacts.map((c) => c.id))
+      setSelectedContacts(contacts.map((c) => c.id))
     } else {
       setSelectedContacts([])
     }
@@ -70,9 +62,13 @@ export default function ContactsPage() {
     setIsPanelOpen(true)
   }
 
-  const handleDeleteContact = (contact: Contact) => {
-    // TODO: Implement delete
-    console.log("Delete contact:", contact.id)
+  const handleDeleteContact = async (contact: Contact) => {
+    if (confirm('Tem certeza que deseja excluir este contato?')) {
+      const success = await deleteContact(contact.id)
+      if (success) {
+        setSelectedContacts(selectedContacts.filter(id => id !== contact.id))
+      }
+    }
   }
 
   return (
@@ -87,7 +83,7 @@ export default function ContactsPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Contatos</h1>
             <p className="text-sm text-muted-foreground">
-              {filteredContacts.length.toLocaleString()} contatos encontrados
+              {isLoading ? 'Carregando...' : `${total.toLocaleString()} contatos encontrados`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -108,10 +104,18 @@ export default function ContactsPage() {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
         {/* Full Width Table Layout - ocupa altura total */}
         <div className="flex flex-col gap-4 h-[calc(100vh-180px)]">
             {/* Filters */}
             <ContactFilters
+              organizationId={organizationId}
               onSearch={setSearchQuery}
               onFilterTags={setSelectedTags}
               onFilterStatus={setSelectedStatuses}
@@ -134,18 +138,27 @@ export default function ContactsPage() {
               </div>
             )}
 
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+              </div>
+            )}
+
             {/* Table - ocupa espaço restante */}
-            <div className="flex-1 min-h-0 overflow-auto">
-              <ContactsTable
-                contacts={filteredContacts}
-                selectedContacts={selectedContacts}
-                onSelectContact={handleSelectContact}
-                onSelectAll={handleSelectAll}
-                onViewContact={handleViewContact}
-                onEditContact={handleEditContact}
-                onDeleteContact={handleDeleteContact}
-              />
-            </div>
+            {!isLoading && (
+              <div className="flex-1 min-h-0 overflow-auto">
+                <ContactsTable
+                  contacts={contacts}
+                  selectedContacts={selectedContacts}
+                  onSelectContact={handleSelectContact}
+                  onSelectAll={handleSelectAll}
+                  onViewContact={handleViewContact}
+                  onEditContact={handleEditContact}
+                  onDeleteContact={handleDeleteContact}
+                />
+              </div>
+            )}
           </div>
       </main>
 

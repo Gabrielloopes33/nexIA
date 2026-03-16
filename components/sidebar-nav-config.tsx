@@ -121,6 +121,7 @@ export const topNavItems: SidebarNavItem[] = [
       { label: "Números", href: "/meta-api/whatsapp/numeros", section: "WhatsApp" },
       { label: "Analytics", href: "/meta-api/whatsapp/analytics", section: "WhatsApp" },
       { label: "Enviar Mensagens", href: "/meta-api/whatsapp/send", section: "WhatsApp" },
+      { label: "Envio de Formulários", href: "/meta-api/whatsapp/form-submissions", section: "WhatsApp", badge: 0 },
       { label: "Webhooks", href: "/meta-api/whatsapp/webhooks", section: "WhatsApp" },
       { label: "Logs", href: "/meta-api/whatsapp/logs", section: "WhatsApp" },
       { label: "Compliance", href: "/meta-api/compliance", section: "Segurança" },
