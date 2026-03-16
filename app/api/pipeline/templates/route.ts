@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { supabaseServer } from "@/lib/supabase-server";
 
 // ============================================
 // Tipos
@@ -388,16 +388,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Verifica se já existem etapas para esta organização
-    const existingStages = await prisma.pipelineStage.findMany({
-      where: {
-        organizationId: body.organizationId,
-      },
-      orderBy: {
-        position: "asc",
-      },
-    });
+    const { data: existingStages, error: checkError } = await supabaseServer
+      .from('PipelineStage')
+      .select('*')
+      .eq('organizationId', body.organizationId)
+      .order('position', { ascending: true });
 
-    if (existingStages.length > 0) {
+    if (checkError) {
+      console.error('[PIPELINE_TEMPLATES_APPLY] Error checking existing stages:', checkError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Erro ao verificar etapas existentes",
+          message: checkError.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (existingStages && existingStages.length > 0) {
       return NextResponse.json(
         {
           success: false,
@@ -413,21 +422,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Cria as etapas do pipeline baseado no template
-    const createdStages = await prisma.$transaction(
-      template.stages.map((stage) =>
-        prisma.pipelineStage.create({
-          data: {
-            organizationId: body.organizationId,
-            name: stage.name,
-            position: stage.position,
-            color: stage.color,
-            probability: stage.probability,
-            isDefault: stage.isDefault,
-            isClosed: stage.isClosed,
-          },
-        })
-      )
-    );
+    const stagesToCreate = template.stages.map((stage) => ({
+      organizationId: body.organizationId,
+      name: stage.name,
+      position: stage.position,
+      color: stage.color,
+      probability: stage.probability,
+      isDefault: stage.isDefault,
+      isClosed: stage.isClosed,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+
+    const { data: createdStages, error: insertError } = await supabaseServer
+      .from('PipelineStage')
+      .insert(stagesToCreate)
+      .select();
+
+    if (insertError) {
+      console.error('[PIPELINE_TEMPLATES_APPLY] Error creating stages:', insertError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Erro ao criar etapas do pipeline",
+          message: insertError.message,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       {
