@@ -53,9 +53,12 @@ interface QuickLeadModalProps {
 }
 
 export function QuickLeadModal({ children }: QuickLeadModalProps) {
-  const organizationId = useOrganizationId() ?? ''
+  const orgIdFromHook = useOrganizationId()
+  // Usa a organização do hook ou 'default_org_id' para compatibilidade
+  const organizationId = orgIdFromHook || 'default_org_id'
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingOrg, setIsLoadingOrg] = useState(!orgIdFromHook)
 
   // Buscar tags da API real
   const { tags, isLoading: isLoadingTags } = useTags(organizationId)
@@ -87,7 +90,13 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
   }
 
   const onSubmit = async (data: QuickLeadForm) => {
+    if (!organizationId) {
+      toast.error("Erro: Organização não encontrada")
+      return
+    }
+
     setIsSubmitting(true)
+    console.log('[QuickLeadModal] Creating lead with org:', organizationId)
 
     try {
       // 1. Cria o contato
@@ -321,12 +330,17 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
               <Button
                 type="submit"
                 className="bg-[#46347F] hover:bg-[#46347F] text-white"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingOrg || !organizationId}
               >
                 {isSubmitting ? (
                   <>
                     <span className="animate-spin mr-2">⏳</span>
                     Criando...
+                  </>
+                ) : isLoadingOrg ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Carregando...
                   </>
                 ) : (
                   "Criar Lead"
