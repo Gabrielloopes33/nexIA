@@ -396,7 +396,7 @@ export async function POST(request: NextRequest) {
 
     // Verifica se já existem etapas para esta organização
     const { data: existingStages, error: checkError } = await supabaseServer
-      .from('PipelineStage')
+      .from('pipeline_stages')
       .select('*')
       .eq('organizationId', body.organizationId)
       .order('position', { ascending: true });
@@ -442,7 +442,7 @@ export async function POST(request: NextRequest) {
     }));
 
     const { data: createdStages, error: insertError } = await supabaseServer
-      .from('PipelineStage')
+      .from('pipeline_stages')
       .insert(stagesToCreate)
       .select();
 
