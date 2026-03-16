@@ -62,7 +62,7 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        "flex h-screen flex-col py-4 pl-3 sidebar-container w-[220px] flex-shrink-0",
+        "flex h-screen flex-col py-4 pl-3 sidebar-container w-[280px] flex-shrink-0",
         mounted && isReady && "transition-all duration-300 ease-in-out"
       )}
     >
@@ -74,7 +74,7 @@ export function Sidebar() {
             alt="NexIA Chat"
             width={200}
             height={60}
-            className="w-full h-auto max-w-[180px]"
+            className="w-full h-auto max-w-[240px]"
             priority
           />
         </Link>

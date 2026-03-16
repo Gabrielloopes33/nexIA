@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
 import Link from "next/link"
-import { X, Plus } from "lucide-react"
+import { X, Plus, Loader2 } from "lucide-react"
 
 import {
   Dialog,
@@ -26,7 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { MOCK_TAGS } from "@/lib/mock/tags"
+import { useTags } from "@/hooks/use-tags"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 const quickLeadSchema = z.object({
   nome: z.string().min(2, "Nome é obrigatório"),
@@ -52,8 +53,12 @@ interface QuickLeadModalProps {
 }
 
 export function QuickLeadModal({ children }: QuickLeadModalProps) {
+  const organizationId = useOrganizationId() ?? ''
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Buscar tags da API real
+  const { tags, isLoading: isLoadingTags } = useTags(organizationId)
 
   const form = useForm<QuickLeadForm>({
     resolver: zodResolver(quickLeadSchema),
@@ -190,31 +195,42 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
           {/* Tags */}
           <div className="space-y-2">
             <Label>Tags</Label>
-            <div className="flex flex-wrap gap-2">
-              {MOCK_TAGS.slice(0, 6).map((tag) => {
-                const isSelected = selectedTags.includes(tag.id)
-                return (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => toggleTag(tag.id)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                      isSelected
-                        ? "ring-2 ring-offset-1"
-                        : "opacity-70 hover:opacity-100"
-                    }`}
-                    style={{
-                      backgroundColor: isSelected ? tag.cor : `${tag.cor}40`,
-                      color: isSelected ? "#fff" : "#000",
-                      ringColor: tag.cor,
-                    }}
-                  >
-                    {tag.nome}
-                    {isSelected && <X className="h-3 w-3" />}
-                  </button>
-                )
-              })}
-            </div>
+            {isLoadingTags ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando tags...
+              </div>
+            ) : tags.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma tag disponível
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {tags.slice(0, 6).map((tag) => {
+                  const isSelected = selectedTags.includes(tag.id)
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => toggleTag(tag.id)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                        isSelected
+                          ? "ring-2 ring-offset-1"
+                          : "opacity-70 hover:opacity-100"
+                      }`}
+                      style={{
+                        backgroundColor: isSelected ? tag.color : `${tag.color}40`,
+                        color: isSelected ? "#fff" : "#000",
+                        ['--tw-ring-color' as string]: tag.color,
+                      }}
+                    >
+                      {tag.name}
+                      {isSelected && <X className="h-3 w-3" />}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Observações */}

@@ -1,28 +1,19 @@
 /**
  * TagSelector Component
- * Multi-select tag input with 3-section dropdown:
- * 1. Popular Tags (top 10)
- * 2. All Tags (grouped by category)
- * 3. Create New Tag
+ * Multi-select tag input com dropdown de tags reais da API
  */
 
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Check, Plus, Search, X } from 'lucide-react'
+import { Check, Plus, Search, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TagBadge } from '@/components/ui/tag-badge'
+import type { TagColor } from '@/lib/types/tag'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { 
-  MOCK_TAGS, 
-  POPULAR_TAGS, 
-  TAGS_BY_CATEGORY,
-  getTagById,
-  searchTags 
-} from '@/lib/mock-tags'
-import { TAG_CATEGORY_LABELS } from '@/lib/types/tag'
-import type { Tag, TagCategory } from '@/lib/types/tag'
+import { useTags } from '@/hooks/use-tags'
+import { useOrganizationId } from '@/lib/contexts/organization-context'
 
 export interface TagSelectorProps {
   /** IDs das tags selecionadas */
@@ -47,27 +38,31 @@ export function TagSelector({
   allowCreate = false,
   className
 }: TagSelectorProps) {
+  const organizationId = useOrganizationId() ?? ''
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
+
+  // Buscar tags da API real
+  const { tags, isLoading } = useTags(organizationId)
+  
+  // Helper para buscar tag por ID
+  const getTagById = (id: string) => tags.find(t => t.id === id)
   
   // Tags selecionadas completas
   const selectedTags = useMemo(
-    () => selectedTagIds.map(id => getTagById(id)).filter(Boolean) as Tag[],
-    [selectedTagIds]
+    () => selectedTagIds.map(id => getTagById(id)).filter(Boolean) as typeof tags,
+    [selectedTagIds, tags]
   )
   
   // Filtrar tags por busca
   const filteredTags = useMemo(() => {
-    if (!searchQuery.trim()) return MOCK_TAGS
-    return searchTags(searchQuery)
-  }, [searchQuery])
-  
-  // Popular tags não selecionadas
-  const availablePopularTags = useMemo(
-    () => POPULAR_TAGS.filter(tag => !selectedTagIds.includes(tag.id)),
-    [selectedTagIds]
-  )
+    if (!searchQuery.trim()) return tags
+    return tags.filter(tag => 
+      tag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tag.description && tag.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  }, [searchQuery, tags])
   
   // Toggle tag selection
   const toggleTag = (tagId: string) => {
@@ -101,7 +96,7 @@ export function TagSelector({
                 <TagBadge
                   key={tag.id}
                   name={tag.name}
-                  color={tag.color}
+                  color={tag.color as TagColor}
                   size="sm"
                   removable
                   onRemove={() => removeTag(tag.id)}
@@ -131,6 +126,7 @@ export function TagSelector({
               onFocus={() => setIsOpen(true)}
               placeholder={placeholder}
               className="pl-9 rounded-sm border"
+              disabled={isLoading}
             />
           </div>
           <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -150,109 +146,83 @@ export function TagSelector({
           
           {/* Dropdown Content */}
           <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[400px] overflow-y-auto rounded-sm shadow-lg bg-card">
-            {/* Popular Tags Section */}
-            {!searchQuery && availablePopularTags.length > 0 && (
-              <div className="border-b border-border p-3">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    📌 Tags Populares
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {availablePopularTags.map(tag => (
-                    <button
-                      key={tag.id}
-                      onClick={() => toggleTag(tag.id)}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-                        'border hover:bg-accent',
-                        selectedTagIds.includes(tag.id) 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-border'
-                      )}
-                    >
-                      <span>{tag.name}</span>
-                      <span className="text-muted-foreground">({tag.usageCount})</span>
-                    </button>
-                  ))}
-                </div>
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Carregando tags...</span>
               </div>
             )}
             
-            {/* All Tags by Category */}
-            <div className="p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  📂 Todas as Tags
-                </span>
-              </div>
-              
-              {(Object.keys(TAGS_BY_CATEGORY) as TagCategory[]).map(category => {
-                const categoryTags = TAGS_BY_CATEGORY[category].filter(tag =>
-                  filteredTags.includes(tag)
-                )
-                
-                if (categoryTags.length === 0) return null
-                
-                return (
-                  <div key={category} className="mb-4 last:mb-0">
-                    <h4 className="mb-2 text-xs font-medium text-muted-foreground">
-                      {TAG_CATEGORY_LABELS[category]}
-                    </h4>
-                    <div className="space-y-1">
-                      {categoryTags.map(tag => (
-                        <button
-                          key={tag.id}
-                          onClick={() => toggleTag(tag.id)}
-                          className={cn(
-                            'flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors',
-                            'hover:bg-accent',
-                            selectedTagIds.includes(tag.id) && 'bg-primary/10'
-                          )}
-                        >
-                          <div className={cn(
-                            'flex h-4 w-4 items-center justify-center rounded-sm border',
-                            selectedTagIds.includes(tag.id) 
-                              ? 'border-primary bg-primary' 
-                              : 'border-border'
-                          )}>
-                            {selectedTagIds.includes(tag.id) && (
-                              <Check className="h-3 w-3 text-white" strokeWidth={3} />
-                            )}
-                          </div>
-                          <TagBadge name={tag.name} color={tag.color} size="sm" />
-                          <span className="ml-auto text-xs text-muted-foreground">
-                            {tag.usageCount}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-              
-              {filteredTags.length === 0 && (
-                <div className="py-8 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Nenhuma tag encontrada para "{searchQuery}"
-                  </p>
-                  {allowCreate && (
-                    <Button
-                      onClick={() => setShowCreateForm(true)}
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Criar nova tag
-                    </Button>
-                  )}
+            {/* Tags List */}
+            {!isLoading && (
+              <div className="p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    📂 Tags Disponíveis
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({filteredTags.length})
+                  </span>
                 </div>
-              )}
-            </div>
+                
+                {filteredTags.length > 0 ? (
+                  <div className="space-y-1">
+                    {filteredTags.map(tag => (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTag(tag.id)}
+                        className={cn(
+                          'flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors',
+                          'hover:bg-accent',
+                          selectedTagIds.includes(tag.id) && 'bg-primary/10'
+                        )}
+                      >
+                        <div className={cn(
+                          'flex h-4 w-4 items-center justify-center rounded-sm border',
+                          selectedTagIds.includes(tag.id) 
+                            ? 'border-primary bg-primary' 
+                            : 'border-border'
+                        )}>
+                          {selectedTagIds.includes(tag.id) && (
+                            <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                          )}
+                        </div>
+                        <TagBadge name={tag.name} color={tag.color as TagColor} size="sm" />
+                        {tag._count?.contactTags !== undefined && (
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {tag._count.contactTags}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {searchQuery 
+                        ? `Nenhuma tag encontrada para "${searchQuery}"`
+                        : "Nenhuma tag disponível"
+                      }
+                    </p>
+                    {allowCreate && searchQuery && (
+                      <Button
+                        onClick={() => setShowCreateForm(true)}
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Criar nova tag
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Create New Tag Section */}
-            {allowCreate && !showCreateForm && filteredTags.length > 0 && (
+            {allowCreate && !showCreateForm && !isLoading && filteredTags.length > 0 && (
               <div className="border-t border-border p-3">
                 <Button
                   onClick={() => setShowCreateForm(true)}

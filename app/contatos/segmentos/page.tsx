@@ -42,18 +42,65 @@ import {
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import {
-  MOCK_SEGMENTS,
-  SEGMENT_COLORS,
-  RULE_FIELDS,
-  RULE_OPERATORS,
-  evaluateContact,
-  type Segment,
-  type SegmentRule,
-  type RuleField,
-  type RuleOperator,
-} from "@/lib/mock/segments"
-import { MOCK_CONTACTS } from "@/lib/mock/contacts"
+import { useContacts } from "@/hooks/use-contacts"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
+
+// Types defined locally
+type RuleField = "nome" | "email" | "telefone" | "status" | "tags" | "origem"
+type RuleOperator = "equals" | "contains" | "startsWith" | "endsWith" | "notEquals"
+
+interface SegmentRule {
+  id: string
+  field: RuleField
+  operator: RuleOperator
+  value: string
+}
+
+interface Segment {
+  id: string
+  nome: string
+  descricao?: string
+  cor: string
+  operador: "AND" | "OR"
+  regras: SegmentRule[]
+  contatosCount: number
+  criadoEm: string
+  atualizadoEm: string
+}
+
+// Constants defined locally
+const SEGMENT_COLORS = [
+  "#46347F", // Purple
+  "#10b981", // Emerald
+  "#f59e0b", // Amber
+  "#ef4444", // Red
+  "#3b82f6", // Blue
+  "#8b5cf6", // Violet
+  "#ec4899", // Pink
+  "#06b6d4", // Cyan
+  "#84cc16", // Lime
+  "#f97316", // Orange
+]
+
+const RULE_FIELDS = [
+  { value: "nome", label: "Nome" },
+  { value: "email", label: "Email" },
+  { value: "telefone", label: "Telefone" },
+  { value: "status", label: "Status" },
+  { value: "tags", label: "Tags" },
+  { value: "origem", label: "Origem" },
+]
+
+const RULE_OPERATORS = [
+  { value: "equals", label: "é igual a" },
+  { value: "contains", label: "contém" },
+  { value: "startsWith", label: "começa com" },
+  { value: "endsWith", label: "termina com" },
+  { value: "notEquals", label: "não é igual a" },
+]
+
+// Empty initial state
+const INITIAL_SEGMENTS: Segment[] = []
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
@@ -78,8 +125,33 @@ function getRuleDisplayText(rule: SegmentRule): string {
   return `${field} ${operator} ${rule.value}`
 }
 
+// Simple evaluation function for preview
+function evaluateContact(contact: any, rules: SegmentRule[], operator: "AND" | "OR"): boolean {
+  if (rules.length === 0) return false
+
+  const results = rules.map(rule => {
+    const contactValue = contact[rule.field] || ""
+    const ruleValue = rule.value.toLowerCase()
+    const contactValStr = String(contactValue).toLowerCase()
+
+    switch (rule.operator) {
+      case "equals": return contactValStr === ruleValue
+      case "contains": return contactValStr.includes(ruleValue)
+      case "startsWith": return contactValStr.startsWith(ruleValue)
+      case "endsWith": return contactValStr.endsWith(ruleValue)
+      case "notEquals": return contactValStr !== ruleValue
+      default: return false
+    }
+  })
+
+  return operator === "AND" ? results.every(r => r) : results.some(r => r)
+}
+
 export default function SegmentosPage() {
-  const [segments, setSegments] = useState<Segment[]>(MOCK_SEGMENTS)
+  const organizationId = useOrganizationId() ?? ''
+  const { contacts } = useContacts(organizationId)
+
+  const [segments, setSegments] = useState<Segment[]>(INITIAL_SEGMENTS)
   const [search, setSearch] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingSegment, setEditingSegment] = useState<Segment | null>(null)
@@ -107,10 +179,10 @@ export default function SegmentosPage() {
 
   const previewCount = useMemo(() => {
     if (formData.regras.length === 0) return 0
-    return MOCK_CONTACTS.filter((contact) =>
+    return contacts.filter((contact) =>
       evaluateContact(contact, formData.regras, formData.operador)
     ).length
-  }, [formData.regras, formData.operador])
+  }, [formData.regras, formData.operador, contacts])
 
   const handleCreateClick = () => {
     setEditingSegment(null)
@@ -541,10 +613,9 @@ export default function SegmentosPage() {
                             <SelectValue placeholder="Valor" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="ativo">Ativo</SelectItem>
-                            <SelectItem value="inativo">Inativo</SelectItem>
-                            <SelectItem value="pendente">Pendente</SelectItem>
-                            <SelectItem value="convertido">Convertido</SelectItem>
+                            <SelectItem value="ACTIVE">Ativo</SelectItem>
+                            <SelectItem value="INACTIVE">Inativo</SelectItem>
+                            <SelectItem value="BLOCKED">Bloqueado</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : isValueNumber ? (

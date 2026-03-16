@@ -7,12 +7,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Filter, X } from 'lucide-react'
+import { Filter, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { TagBadge } from '@/components/ui/tag-badge'
-import { getTagById } from '@/lib/mock-tags'
+import type { TagColor } from '@/lib/types/tag'
+import { useTags } from '@/hooks/use-tags'
 import type { TagFilter as TagFilterType } from '@/lib/types/tag'
+import { useOrganizationId } from '@/lib/contexts/organization-context'
 
 export interface TagFilterProps {
   /** Filtro atual */
@@ -28,7 +30,14 @@ export function TagFilter({
   onChange,
   className
 }: TagFilterProps) {
+  const organizationId = useOrganizationId() ?? ''
   const [isOpen, setIsOpen] = useState(false)
+
+  // Buscar tags da API real
+  const { tags, isLoading } = useTags(organizationId)
+  
+  // Helper para buscar tag por ID
+  const getTagById = (id: string) => tags.find(t => t.id === id)
   
   // Contagem de filtros ativos
   const activeFiltersCount = filter.include.length + (filter.exclude?.length || 0)
@@ -109,120 +118,132 @@ export function TagFilter({
               </button>
             </div>
             
-            {/* Mode Toggle */}
-            <div className="border-b border-border px-4 py-3">
-              <div className="mb-2 text-xs font-medium text-muted-foreground">
-                Modo de Combinação
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Carregando tags...</span>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onChange({ ...filter, mode: 'OR' })}
-                  className={cn(
-                    'flex-1 rounded-sm border px-3 py-2 text-sm font-medium transition-colors',
-                    filter.mode === 'OR'
-                      ? 'border-primary bg-primary text-white'
-                      : 'hover:bg-accent'
-                  )}
-                >
-                  <div className="font-semibold">OR (Qualquer)</div>
-                  <div className="text-xs opacity-80">
-                    Mostra contatos com qualquer tag selecionada
-                  </div>
-                </button>
-                <button
-                  onClick={() => onChange({ ...filter, mode: 'AND' })}
-                  className={cn(
-                    'flex-1 rounded-sm border px-3 py-2 text-sm font-medium transition-colors',
-                    filter.mode === 'AND'
-                      ? 'border-primary bg-primary text-white'
-                      : 'hover:bg-accent'
-                  )}
-                >
-                  <div className="font-semibold">AND (Todas)</div>
-                  <div className="text-xs opacity-80">
-                    Mostra contatos com todas as tags selecionadas
-                  </div>
-                </button>
-              </div>
-            </div>
+            )}
             
-            {/* Include Filters */}
-            <div className="border-b border-border px-4 py-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Incluir Tags
-                </span>
-                {filter.include.length > 0 && (
-                  <button
-                    onClick={() => onChange({ ...filter, include: [] })}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Limpar
-                  </button>
-                )}
-              </div>
-              {filter.include.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {filter.include.map(tagId => {
-                    const tag = getTagById(tagId)
-                    if (!tag) return null
-                    return (
-                      <TagBadge
-                        key={tagId}
-                        name={tag.name}
-                        color={tag.color}
-                        size="sm"
-                        removable
-                        onRemove={() => removeIncludeTag(tagId)}
-                      />
-                    )
-                  })}
+            {!isLoading && (
+              <>
+                {/* Mode Toggle */}
+                <div className="border-b border-border px-4 py-3">
+                  <div className="mb-2 text-xs font-medium text-muted-foreground">
+                    Modo de Combinação
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onChange({ ...filter, mode: 'OR' })}
+                      className={cn(
+                        'flex-1 rounded-sm border px-3 py-2 text-sm font-medium transition-colors',
+                        filter.mode === 'OR'
+                          ? 'border-primary bg-primary text-white'
+                          : 'hover:bg-accent'
+                      )}
+                    >
+                      <div className="font-semibold">OR (Qualquer)</div>
+                      <div className="text-xs opacity-80">
+                        Mostra contatos com qualquer tag selecionada
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => onChange({ ...filter, mode: 'AND' })}
+                      className={cn(
+                        'flex-1 rounded-sm border px-3 py-2 text-sm font-medium transition-colors',
+                        filter.mode === 'AND'
+                          ? 'border-primary bg-primary text-white'
+                          : 'hover:bg-accent'
+                      )}
+                    >
+                      <div className="font-semibold">AND (Todas)</div>
+                      <div className="text-xs opacity-80">
+                        Mostra contatos com todas as tags selecionadas
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma tag de inclusão selecionada
-                </p>
-              )}
-            </div>
-            
-            {/* Exclude Filters */}
-            <div className="px-4 py-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Excluir Tags
-                </span>
-                {(filter.exclude?.length || 0) > 0 && (
-                  <button
-                    onClick={() => onChange({ ...filter, exclude: [] })}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    Limpar
-                  </button>
-                )}
-              </div>
-              {(filter.exclude?.length || 0) > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {filter.exclude!.map(tagId => {
-                    const tag = getTagById(tagId)
-                    if (!tag) return null
-                    return (
-                      <TagBadge
-                        key={tagId}
-                        name={tag.name}
-                        color="gray"
-                        size="sm"
-                        removable
-                        onRemove={() => removeExcludeTag(tagId)}
-                      />
-                    )
-                  })}
+                
+                {/* Include Filters */}
+                <div className="border-b border-border px-4 py-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Incluir Tags
+                    </span>
+                    {filter.include.length > 0 && (
+                      <button
+                        onClick={() => onChange({ ...filter, include: [] })}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  {filter.include.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {filter.include.map(tagId => {
+                        const tag = getTagById(tagId)
+                        if (!tag) return null
+                        return (
+                          <TagBadge
+                            key={tagId}
+                            name={tag.name}
+                            color={tag.color as TagColor}
+                            size="sm"
+                            removable
+                            onRemove={() => removeIncludeTag(tagId)}
+                          />
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma tag de inclusão selecionada
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma tag de exclusão selecionada
-                </p>
-              )}
-            </div>
+                
+                {/* Exclude Filters */}
+                <div className="px-4 py-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Excluir Tags
+                    </span>
+                    {(filter.exclude?.length || 0) > 0 && (
+                      <button
+                        onClick={() => onChange({ ...filter, exclude: [] })}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  {(filter.exclude?.length || 0) > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {filter.exclude!.map(tagId => {
+                        const tag = getTagById(tagId)
+                        if (!tag) return null
+                        return (
+                          <TagBadge
+                            key={tagId}
+                            name={tag.name}
+                            color="gray"
+                            size="sm"
+                            removable
+                            onRemove={() => removeExcludeTag(tagId)}
+                          />
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma tag de exclusão selecionada
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
             
             {/* Footer Actions */}
             <div className="flex items-center justify-between border-t border-border px-4 py-3">
@@ -258,7 +279,7 @@ export function TagFilter({
               <TagBadge
                 key={tagId}
                 name={tag.name}
-                color={tag.color}
+                color={tag.color as TagColor}
                 size="sm"
                 removable
                 onRemove={() => removeIncludeTag(tagId)}
@@ -284,7 +305,7 @@ export function TagFilter({
                   <TagBadge
                     key={tagId}
                     name={tag.name}
-                    color="gray"
+                    color={'gray' as TagColor}
                     size="sm"
                     removable
                     onRemove={() => removeExcludeTag(tagId)}

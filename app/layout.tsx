@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Figtree } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ContactPanelProvider } from '@/lib/contexts/contact-panel-context'
+import { OrganizationProviderWrapper } from '@/components/providers/organization-provider-wrapper'
+import { QueryProvider } from '@/components/providers/query-provider'
 import './globals.css'
 
 const figtree = Figtree({
@@ -29,9 +31,13 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={figtree.variable}>
       <body className={`${figtree.className} antialiased`}>
-        <ContactPanelProvider>
-          {children}
-        </ContactPanelProvider>
+        <QueryProvider>
+          <OrganizationProviderWrapper>
+            <ContactPanelProvider>
+              {children}
+            </ContactPanelProvider>
+          </OrganizationProviderWrapper>
+        </QueryProvider>
         <Analytics />
       </body>
     </html>

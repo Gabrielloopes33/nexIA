@@ -8,8 +8,12 @@ type DateRange = {
   endDate: Date
 }
 
+type DashboardPeriod = '7d' | '30d' | '90d'
+
 type DashboardContextType = {
   // Filtro de período
+  period: DashboardPeriod
+  setPeriod: (period: DashboardPeriod) => void
   dateRange: DateRange
   setDateRange: (range: DateRange) => void
 
@@ -50,9 +54,10 @@ function getDefaultDateRange(): DateRange {
   return DATE_RANGES.last7days
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
+export const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
+  const [period, setPeriod] = useState<DashboardPeriod>('7d')
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange())
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -72,6 +77,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   return (
     <DashboardContext.Provider
       value={{
+        period,
+        setPeriod,
         dateRange,
         setDateRange,
         selectedUsers,

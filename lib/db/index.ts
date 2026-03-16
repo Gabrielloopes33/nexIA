@@ -136,3 +136,25 @@ export {
   type QualityMetrics,
   type HourlyActivity,
 } from './queries';
+
+// Exporta queries do Dashboard Sprint 2
+export {
+  // Dashboard Metrics
+  getFunnelMetrics,
+  getLostDealsWithRecoveryPotential,
+  getChannelPerformance,
+  getLostReasonsStats,
+  getWeeklyRevenue,
+  getKPIs,
+  getHealthScoreData,
+  
+  // Types
+  type FunnelMetrics,
+  type FunnelStage,
+  type RecoverableDeal,
+  type ChannelMetrics,
+  type LossReasonStat,
+  type WeeklyRevenue,
+  type KpiData,
+  type HealthScoreData,
+} from './dashboard-queries';

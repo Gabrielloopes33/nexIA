@@ -2,47 +2,35 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import {
-  List,
-  Plus,
-  Search,
-  TrendingUp,
-  Users,
-  MoreVertical,
-  Pencil,
-  Trash2,
-  Eye,
-} from "lucide-react"
-
+import { List, Plus, Search, TrendingUp, Users, MoreVertical, Pencil, Trash2, Eye, Loader2 } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { MOCK_LISTS, LIST_COLORS, type ContactList } from "@/lib/mock/lists"
+import { useLists, type List as ListType } from "@/hooks/use-lists"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
+
+// Hardcoded colors for lists
+const LIST_COLORS = [
+  "#46347F", // Primary purple
+  "#7b79c4", // Light purple
+  "#ef4444", // Red
+  "#f97316", // Orange
+  "#f59e0b", // Amber
+  "#84cc16", // Lime
+  "#10b981", // Emerald
+  "#06b6d4", // Cyan
+  "#3b82f6", // Blue
+  "#8b5cf6", // Violet
+  "#ec4899", // Pink
+  "#6b7280", // Gray
+]
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
@@ -53,39 +41,36 @@ function formatDate(dateString: string): string {
   })
 }
 
-function generateId(): string {
-  return `list-${Date.now()}`
-}
-
 export default function ListasPage() {
-  const [lists, setLists] = useState<ContactList[]>(MOCK_LISTS)
+  const organizationId = useOrganizationId() ?? ''
+  const { lists, isLoading, createList, updateList, deleteList } = useLists(organizationId)
   const [search, setSearch] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingList, setEditingList] = useState<ContactList | null>(null)
+  const [editingList, setEditingList] = useState<ListType | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [listToDelete, setListToDelete] = useState<ContactList | null>(null)
+  const [listToDelete, setListToDelete] = useState<ListType | null>(null)
   const [formData, setFormData] = useState({
-    nome: "",
-    descricao: "",
-    cor: LIST_COLORS[0],
+    name: "",
+    description: "",
+    color: LIST_COLORS[0],
   })
 
   const filteredLists = useMemo(() => {
     return lists.filter(
       (list) =>
-        list.nome.toLowerCase().includes(search.toLowerCase()) ||
-        (list.descricao?.toLowerCase() || "").includes(search.toLowerCase())
+        list.name.toLowerCase().includes(search.toLowerCase()) ||
+        (list.description?.toLowerCase() || "").includes(search.toLowerCase())
     )
   }, [lists, search])
 
   const stats = useMemo(() => {
     const totalListas = lists.length
     const totalContatos = lists.reduce(
-      (sum, list) => sum + list.contatosCount,
+      (sum, list) => sum + (list._count?.listContacts || 0),
       0
     )
     const maiorLista = lists.reduce(
-      (max, list) => (list.contatosCount > max.contatosCount ? list : max),
+      (max, list) => ((list._count?.listContacts || 0) > (max._count?.listContacts || 0) ? list : max),
       lists[0]
     )
     return { totalListas, totalContatos, maiorLista }
@@ -93,62 +78,47 @@ export default function ListasPage() {
 
   const handleCreateClick = () => {
     setEditingList(null)
-    setFormData({ nome: "", descricao: "", cor: LIST_COLORS[0] })
+    setFormData({ name: "", description: "", color: LIST_COLORS[0] })
     setIsDialogOpen(true)
   }
 
-  const handleEditClick = (list: ContactList) => {
+  const handleEditClick = (list: ListType) => {
     setEditingList(list)
     setFormData({
-      nome: list.nome,
-      descricao: list.descricao || "",
-      cor: list.cor,
+      name: list.name,
+      description: list.description || "",
+      color: list.color,
     })
     setIsDialogOpen(true)
   }
 
-  const handleDeleteClick = (list: ContactList) => {
+  const handleDeleteClick = (list: ListType) => {
     setListToDelete(list)
     setIsDeleteDialogOpen(true)
   }
 
-  const handleSave = () => {
-    if (!formData.nome.trim()) return
+  const handleSave = async () => {
+    if (!formData.name.trim()) return
 
     if (editingList) {
-      setLists((prev) =>
-        prev.map((l) =>
-          l.id === editingList.id
-            ? {
-                ...l,
-                nome: formData.nome,
-                descricao: formData.descricao,
-                cor: formData.cor,
-                atualizadoEm: new Date().toISOString(),
-              }
-            : l
-        )
-      )
+      await updateList(editingList.id, {
+        name: formData.name,
+        description: formData.description,
+        color: formData.color,
+      })
     } else {
-      const newList: ContactList = {
-        id: generateId(),
-        nome: formData.nome,
-        descricao: formData.descricao,
-        cor: formData.cor,
-        contatosCount: 0,
-        contatosIds: [],
-        criadoEm: new Date().toISOString(),
-        atualizadoEm: new Date().toISOString(),
-        criadoPor: "Admin",
-      }
-      setLists((prev) => [...prev, newList])
+      await createList({
+        name: formData.name,
+        description: formData.description,
+        color: formData.color,
+      })
     }
     setIsDialogOpen(false)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (listToDelete) {
-      setLists((prev) => prev.filter((l) => l.id !== listToDelete.id))
+      await deleteList(listToDelete.id)
       setIsDeleteDialogOpen(false)
       setListToDelete(null)
     }
@@ -213,7 +183,7 @@ export default function ListasPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Maior Lista</p>
                 <p className="text-lg font-bold truncate max-w-[180px]">
-                  {stats.maiorLista?.nome || "-"}
+                  {stats.maiorLista?.name || "-"}
                 </p>
               </div>
             </CardContent>
@@ -233,8 +203,15 @@ export default function ListasPage() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+          </div>
+        )}
+
         {/* Table or Empty State */}
-        {filteredLists.length === 0 ? (
+        {!isLoading && (filteredLists.length === 0 ? (
           <Card className="rounded-sm border border-border bg-white py-12">
             <CardContent className="flex flex-col items-center justify-center p-0">
               <List className="h-12 w-12 text-muted-foreground mb-4" />
@@ -270,20 +247,20 @@ export default function ListasPage() {
                       <span
                         className="inline-flex items-center rounded-sm px-2 py-1 text-xs font-medium"
                         style={{
-                          backgroundColor: `${list.cor}20`,
-                          color: list.cor,
+                          backgroundColor: `${list.color}20`,
+                          color: list.color,
                         }}
                       >
-                        {list.nome}
+                        {list.name}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className="text-muted-foreground line-clamp-1 max-w-[250px]">
-                        {list.descricao || "-"}
+                        {list.description || "-"}
                       </span>
                     </TableCell>
-                    <TableCell>{list.contatosCount}</TableCell>
-                    <TableCell>{formatDate(list.criadoEm)}</TableCell>
+                    <TableCell>{list._count?.listContacts || 0}</TableCell>
+                    <TableCell>{formatDate(list.createdAt)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -319,7 +296,7 @@ export default function ListasPage() {
               </TableBody>
             </Table>
           </div>
-        )}
+        ))}
 
         {/* Create/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -331,27 +308,27 @@ export default function ListasPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="nome">
+                <Label htmlFor="name">
                   Nome <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="nome"
+                  id="name"
                   placeholder="Nome da lista"
-                  value={formData.nome}
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, nome: e.target.value })
+                    setFormData({ ...formData, name: e.target.value })
                   }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="descricao">Descrição</Label>
+                <Label htmlFor="description">Descrição</Label>
                 <Textarea
-                  id="descricao"
+                  id="description"
                   placeholder="Descrição da lista"
                   rows={2}
-                  value={formData.descricao}
+                  value={formData.description}
                   onChange={(e) =>
-                    setFormData({ ...formData, descricao: e.target.value })
+                    setFormData({ ...formData, description: e.target.value })
                   }
                 />
               </div>
@@ -362,9 +339,9 @@ export default function ListasPage() {
                     <button
                       key={color}
                       type="button"
-                      onClick={() => setFormData({ ...formData, cor: color })}
+                      onClick={() => setFormData({ ...formData, color })}
                       className={`h-8 w-8 rounded-full transition-all ${
-                        formData.cor === color
+                        formData.color === color
                           ? "ring-2 ring-offset-2 ring-[#46347F]"
                           : "hover:scale-110"
                       }`}
@@ -381,7 +358,7 @@ export default function ListasPage() {
               <Button
                 onClick={handleSave}
                 className="bg-[#46347F] hover:bg-[#46347F] text-white"
-                disabled={!formData.nome.trim()}
+                disabled={!formData.name.trim()}
               >
                 {editingList ? "Salvar" : "Criar Lista"}
               </Button>
@@ -397,7 +374,7 @@ export default function ListasPage() {
             </DialogHeader>
             <p className="text-sm text-muted-foreground py-4">
               Tem certeza que deseja excluir a lista &quot;
-              <strong>{listToDelete?.nome}</strong>&quot;? Esta ação não pode
+              <strong>{listToDelete?.name}</strong>&quot;? Esta ação não pode
               ser desfeita.
             </p>
             <DialogFooter>

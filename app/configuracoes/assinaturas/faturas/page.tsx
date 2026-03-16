@@ -25,60 +25,85 @@ import {
   Calendar,
   FileText,
   Send,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useInvoices } from "@/hooks/use-invoices"
 
-interface Fatura {
-  id: string
-  cliente: string
-  email: string
-  valor: string
-  status: "paga" | "pendente" | "atrasada" | "cancelada"
-  dataEmissao: string
-  dataVencimento: string
-  dataPagamento?: string
-  metodo?: string
+function formatCurrency(cents: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100)
 }
 
-const faturas: Fatura[] = [
-  { id: "inv_001", cliente: "Acme Corp", email: "financeiro@acme.com", valor: "R$ 499,00", status: "paga", dataEmissao: "01/03/2026", dataVencimento: "10/03/2026", dataPagamento: "05/03/2026", metodo: "Cartão" },
-  { id: "inv_002", cliente: "TechStart Ltda", email: "contato@techstart.com", valor: "R$ 199,00", status: "paga", dataEmissao: "01/03/2026", dataVencimento: "10/03/2026", dataPagamento: "08/03/2026", metodo: "Boleto" },
-  { id: "inv_003", cliente: "Global Solutions", email: "billing@globalsolutions.com", valor: "R$ 799,00", status: "pendente", dataEmissao: "01/03/2026", dataVencimento: "15/03/2026" },
-  { id: "inv_004", cliente: "StartupXYZ", email: "founders@startupxyz.com", valor: "R$ 149,00", status: "atrasada", dataEmissao: "01/02/2026", dataVencimento: "10/02/2026" },
-  { id: "inv_005", cliente: "Enterprise Ltda", email: "pagamentos@enterprise.com", valor: "R$ 299,00", status: "paga", dataEmissao: "01/03/2026", dataVencimento: "10/03/2026", dataPagamento: "02/03/2026", metodo: "Pix" },
-  { id: "inv_006", cliente: "Consulting Pro", email: "admin@consulting.pro", valor: "R$ 299,00", status: "cancelada", dataEmissao: "01/03/2026", dataVencimento: "10/03/2026" },
-  { id: "inv_007", cliente: "DevStudio", email: "hello@devstudio.io", valor: "R$ 199,00", status: "pendente", dataEmissao: "05/03/2026", dataVencimento: "20/03/2026" },
-  { id: "inv_008", cliente: "Marketing Plus", email: "team@marketing.plus", valor: "R$ 99,00", status: "paga", dataEmissao: "01/03/2026", dataVencimento: "10/03/2026", dataPagamento: "09/03/2026", metodo: "Cartão" },
-]
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('pt-BR')
+}
+
+function getDaysUntil(dateString: string): number {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = date.getTime() - now.getTime()
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
 
 const statusConfig = {
-  paga: { label: "Paga", icon: CheckCircle2, color: "bg-green-100 text-green-700 border-green-200" },
-  pendente: { label: "Pendente", icon: Clock, color: "bg-amber-100 text-amber-700 border-amber-200" },
-  atrasada: { label: "Atrasada", icon: AlertCircle, color: "bg-red-100 text-red-700 border-red-200" },
-  cancelada: { label: "Cancelada", icon: XCircle, color: "bg-gray-100 text-gray-700 border-gray-200" },
+  paid: { label: "Paga", icon: CheckCircle2, color: "bg-green-100 text-green-700 border-green-200" },
+  pending: { label: "Pendente", icon: Clock, color: "bg-amber-100 text-amber-700 border-amber-200" },
+  failed: { label: "Falhou", icon: AlertCircle, color: "bg-red-100 text-red-700 border-red-200" },
 }
 
-const statusOptions = ["Todos", "Paga", "Pendente", "Atrasada", "Cancelada"]
+const statusOptions = ["Todos", "Paga", "Pendente", "Falhou"]
 
 export default function FaturasPage() {
+  const { invoices, isLoading, error, refetch, markAsPaid } = useInvoices()
   const [searchTerm, setSearchTerm] = useState("")
   const [filtroStatus, setFiltroStatus] = useState("Todos")
 
-  const faturasFiltradas = faturas.filter((inv) => {
+  const faturasFiltradas = invoices.filter((inv) => {
+    const planName = inv.subscription?.plan?.name || ''
     const matchSearch = 
-      inv.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inv.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      planName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inv.id.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchStatus = filtroStatus === "Todos" || statusConfig[inv.status].label === filtroStatus
+    const matchStatus = filtroStatus === "Todos" || statusConfig[inv.status as keyof typeof statusConfig]?.label === filtroStatus
     return matchSearch && matchStatus
   })
 
   const stats = {
-    total: faturas.length,
-    pagas: faturas.filter(f => f.status === "paga").length,
-    pendentes: faturas.filter(f => f.status === "pendente").length,
-    atrasadas: faturas.filter(f => f.status === "atrasada").length,
-    totalReceber: "R$ 1.247,00"
+    total: invoices.length,
+    pagas: invoices.filter(f => f.status === "paid").length,
+    pendentes: invoices.filter(f => f.status === "pending").length,
+    falhas: invoices.filter(f => f.status === "failed").length,
+    totalReceber: invoices
+      .filter(f => f.status === "pending")
+      .reduce((acc, inv) => acc + inv.amountCents, 0)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+          <p className="text-muted-foreground">Carregando faturas...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+          <h3 className="text-lg font-semibold">Erro ao carregar faturas</h3>
+          <p className="text-muted-foreground">{error}</p>
+          <Button onClick={refetch} variant="outline">
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -126,7 +151,7 @@ export default function FaturasPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">A Receber</p>
-            <p className="text-2xl font-bold text-[#46347F]">{stats.totalReceber}</p>
+            <p className="text-2xl font-bold text-[#46347F]">{formatCurrency(stats.totalReceber)}</p>
           </CardContent>
         </Card>
       </div>
@@ -138,7 +163,7 @@ export default function FaturasPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar por cliente, email ou ID..."
+                placeholder="Buscar por plano ou ID..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -173,7 +198,7 @@ export default function FaturasPage() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Fatura</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Plano</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Valor</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Vencimento</th>
@@ -183,27 +208,28 @@ export default function FaturasPage() {
               </thead>
               <tbody>
                 {faturasFiltradas.map((inv) => {
-                  const status = statusConfig[inv.status]
+                  const status = statusConfig[inv.status as keyof typeof statusConfig] || statusConfig.pending
                   const StatusIcon = status.icon
+                  const daysUntil = getDaysUntil(inv.dueDate)
                   return (
                     <tr key={inv.id} className="border-b hover:bg-muted/50 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <div>
-                            <p className="text-sm font-medium">{inv.id}</p>
-                            <p className="text-xs text-muted-foreground">{inv.dataEmissao}</p>
+                            <p className="text-sm font-medium">{inv.id.slice(0, 8)}...</p>
+                            <p className="text-xs text-muted-foreground">{formatDate(inv.createdAt)}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <p className="text-sm font-medium">{inv.cliente}</p>
-                          <p className="text-xs text-muted-foreground">{inv.email}</p>
+                          <p className="text-sm font-medium">{inv.subscription?.plan?.name || 'Plano'}</p>
+                          <p className="text-xs text-muted-foreground">{inv.subscription?.plan?.interval === 'monthly' ? 'Mensal' : 'Anual'}</p>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm font-semibold">{inv.valor}</span>
+                        <span className="text-sm font-semibold">{formatCurrency(inv.amountCents)}</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border", status.color)}>
@@ -214,23 +240,41 @@ export default function FaturasPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 text-sm">
                           <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                          {inv.dataVencimento}
+                          <span className={cn(
+                            daysUntil < 0 && inv.status === 'pending' && "text-red-600 font-medium"
+                          )}>
+                            {formatDate(inv.dueDate)}
+                            {daysUntil < 0 && inv.status === 'pending' && ` (Atrasada ${Math.abs(daysUntil)} dias)`}
+                            {daysUntil >= 0 && inv.status === 'pending' && ` (${daysUntil} dias)`}
+                          </span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {inv.dataPagamento ? (
+                        {inv.paidAt ? (
                           <div className="text-sm">
-                            <span className="text-green-600 font-medium">{inv.dataPagamento}</span>
-                            <p className="text-xs text-muted-foreground">{inv.metodo}</p>
+                            <span className="text-green-600 font-medium">{formatDate(inv.paidAt)}</span>
                           </div>
                         ) : (
                           <span className="text-sm text-muted-foreground">-</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          {inv.status === 'pending' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 text-green-600"
+                              onClick={() => markAsPaid(inv.id)}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Marcar Paga
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   )

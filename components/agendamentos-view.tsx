@@ -20,6 +20,7 @@ import {
   AlertCircle,
   TrendingUp,
   Target,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -34,15 +35,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ContactDetailPanel } from "@/components/contact-detail-panel"
 import { VerticalKpiCard } from "@/components/vertical-kpi-card"
-import { Contact } from "@/lib/mock/contacts"
+import { Contact } from "@/hooks/use-contacts"
 import { useAgendamentos, TipoAtividade, StatusAtividade, Atividade } from "@/lib/contexts/agendamentos-context"
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-interface AgendamentosViewProps {
-  defaultTipoFiltro?: TipoAtividade | "todos"
-  somenteConcluidasView?: boolean
-}
+import { useSchedules, Schedule } from "@/hooks/use-schedules"
+import { ScheduleType } from "@prisma/client"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -87,198 +84,6 @@ const TIPOS_CONFIG: Record<TipoAtividade, {
 
 const HORARIOS = Array.from({ length: 15 }, (_, i) => i + 6)
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-
-function gerarDataSemana(semanaOffset: number, diaSemana: number, hora: number, minuto: number = 0): Date {
-  const hoje = new Date()
-  const inicioSemana = new Date(hoje)
-  inicioSemana.setDate(hoje.getDate() - hoje.getDay() + (semanaOffset * 7))
-  inicioSemana.setHours(0, 0, 0, 0)
-
-  const data = new Date(inicioSemana)
-  data.setDate(inicioSemana.getDate() + diaSemana)
-  data.setHours(hora, minuto, 0, 0)
-  return data
-}
-
-const ATIVIDADES_MOCK: Atividade[] = [
-  {
-    id: 1,
-    titulo: "Demo do Produto",
-    contato: "Sarah Johnson",
-    empresa: "TechCorp Inc.",
-    data: gerarDataSemana(0, 1, 9, 0),
-    horaInicio: "09:00",
-    horaFim: "09:45",
-    tipo: "reuniao",
-    status: "confirmado",
-    local: "Google Meet",
-    descricao: "Apresentação da plataforma para equipe de vendas",
-    avatar: "SJ",
-  },
-  {
-    id: 2,
-    titulo: "Follow-up Proposta",
-    contato: "Michael Chen",
-    empresa: "DataFlow Systems",
-    data: gerarDataSemana(0, 1, 11, 30),
-    horaInicio: "11:30",
-    horaFim: "12:00",
-    tipo: "ligacao",
-    status: "pendente",
-    descricao: "Ligar para verificar interesse na proposta enviada",
-    avatar: "MC",
-  },
-  {
-    id: 3,
-    titulo: "Reunião Alinhamento",
-    contato: "Equipe Interna",
-    empresa: "Interno",
-    data: gerarDataSemana(0, 1, 14, 0),
-    horaInicio: "14:00",
-    horaFim: "15:00",
-    tipo: "reuniao",
-    status: "confirmado",
-    local: "Sala de Conferência A",
-    descricao: "Alinhamento trimestral de metas",
-    avatar: "EQ",
-  },
-  {
-    id: 4,
-    titulo: "Onboarding Cliente",
-    contato: "Emma Williams",
-    empresa: "CloudSync Ltd",
-    data: gerarDataSemana(0, 2, 10, 0),
-    horaInicio: "10:00",
-    horaFim: "11:30",
-    tipo: "reuniao",
-    status: "confirmado",
-    local: "Zoom",
-    descricao: "Sessão de onboarding para novos usuários",
-    avatar: "EW",
-  },
-  {
-    id: 5,
-    titulo: "Enviar Relatório",
-    contato: "Diretoria",
-    empresa: "Interno",
-    data: gerarDataSemana(0, 2, 16, 0),
-    horaInicio: "16:00",
-    horaFim: "17:00",
-    tipo: "tarefa",
-    status: "pendente",
-    descricao: "Consolidar e enviar relatório mensal",
-    avatar: "DR",
-  },
-  {
-    id: 6,
-    titulo: "Revisar Conteúdo",
-    contato: "Lista Prospects",
-    empresa: "Marketing",
-    data: gerarDataSemana(0, 2, 13, 0),
-    horaInicio: "13:00",
-    horaFim: "13:30",
-    tipo: "tarefa",
-    status: "confirmado",
-    descricao: "Revisar materiais de nurture",
-    avatar: "MK",
-  },
-  {
-    id: 7,
-    titulo: "Negociação Contrato",
-    contato: "Robert Silva",
-    empresa: "FinTrack SA",
-    data: gerarDataSemana(0, 3, 15, 0),
-    horaInicio: "15:00",
-    horaFim: "16:30",
-    tipo: "reuniao",
-    status: "confirmado",
-    local: "Escritório Cliente",
-    descricao: "Discutir termos do contrato anual",
-    avatar: "RS",
-  },
-  {
-    id: 8,
-    titulo: "Prazo Proposta",
-    contato: "Lisa Martinez",
-    empresa: "DevTools Pro",
-    data: gerarDataSemana(0, 3, 17, 0),
-    horaInicio: "17:00",
-    horaFim: "17:30",
-    tipo: "prazo",
-    status: "pendente",
-    descricao: "Proposta deve ser enviada até este horário",
-    avatar: "LM",
-  },
-  {
-    id: 9,
-    titulo: "Call Descoberta",
-    contato: "James Anderson",
-    empresa: "AI Solutions",
-    data: gerarDataSemana(0, 3, 9, 30),
-    horaInicio: "09:30",
-    horaFim: "10:00",
-    tipo: "ligacao",
-    status: "confirmado",
-    descricao: "Primeiro contato - qualificação",
-    avatar: "JA",
-  },
-  {
-    id: 10,
-    titulo: "Revisão Pipeline",
-    contato: "Gerentes",
-    empresa: "Interno",
-    data: gerarDataSemana(0, 4, 10, 0),
-    horaInicio: "10:00",
-    horaFim: "11:00",
-    tipo: "reuniao",
-    status: "confirmado",
-    local: "Sala B",
-    descricao: "Revisão semanal do funil de vendas",
-    avatar: "GE",
-  },
-  {
-    id: 11,
-    titulo: "Follow-up Pós-demo",
-    contato: "Sarah Johnson",
-    empresa: "TechCorp Inc.",
-    data: gerarDataSemana(0, 4, 14, 0),
-    horaInicio: "14:00",
-    horaFim: "14:30",
-    tipo: "ligacao",
-    status: "pendente",
-    descricao: "Verificar interesse após demonstração",
-    avatar: "SJ",
-  },
-  {
-    id: 12,
-    titulo: "Kickoff Projeto",
-    contato: "Pedro Alves",
-    empresa: "Startup Hub",
-    data: gerarDataSemana(0, 5, 13, 0),
-    horaInicio: "13:00",
-    horaFim: "14:30",
-    tipo: "reuniao",
-    status: "confirmado",
-    local: "Google Meet",
-    descricao: "Início do projeto de implementação",
-    avatar: "PA",
-  },
-  {
-    id: 13,
-    titulo: "Proposta Comercial",
-    contato: "Ana Costa",
-    empresa: "GrowthLab",
-    data: gerarDataSemana(0, 5, 16, 0),
-    horaInicio: "16:00",
-    horaFim: "17:00",
-    tipo: "tarefa",
-    status: "pendente",
-    descricao: "Finalizar proposta personalizada",
-    avatar: "AC",
-  },
-]
-
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function avatarColor(initials: string) {
@@ -307,6 +112,89 @@ function getDuracaoSlots(horaInicio: string, horaFim: string): number {
 
 function formatarHora(hora: number, minuto: number = 0): string {
   return `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`
+}
+
+// Mapeia ScheduleType para TipoAtividade
+function mapScheduleType(type: ScheduleType): TipoAtividade {
+  const map: Record<ScheduleType, TipoAtividade> = {
+    'meeting': 'reuniao',
+    'task': 'tarefa',
+    'call': 'ligacao',
+    'deadline': 'prazo',
+  }
+  return map[type]
+}
+
+// Mapeia TipoAtividade para ScheduleType
+function mapTipoAtividade(tipo: TipoAtividade): ScheduleType {
+  const map: Record<TipoAtividade, ScheduleType> = {
+    'reuniao': 'meeting',
+    'tarefa': 'task',
+    'ligacao': 'call',
+    'prazo': 'deadline',
+  }
+  return map[tipo]
+}
+
+// Mapeia Schedule para Atividade (para compatibilidade com o componente)
+function mapScheduleToAtividade(schedule: Schedule): Atividade {
+  const startDate = new Date(schedule.startTime)
+  const horaInicio = startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const endDate = new Date(schedule.endTime)
+  const horaFim = endDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })
+  
+  const contato = schedule.contact?.name || schedule.contact?.phone || 'Sem contato'
+  const empresa = schedule.deal?.title || ''
+  
+  // Gera avatar a partir das iniciais do contato
+  const avatar = contato
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+
+  return {
+    id: parseInt(schedule.id.slice(-6), 16), // Converte parte do UUID para número
+    titulo: schedule.title,
+    contato,
+    empresa,
+    data: startDate,
+    horaInicio,
+    horaFim,
+    tipo: mapScheduleType(schedule.type),
+    status: schedule.status === 'completed' ? 'confirmado' : 'pendente',
+    local: schedule.location || undefined,
+    descricao: schedule.description || undefined,
+    avatar,
+  }
+}
+
+// Helper para criar um Contact a partir dos dados da atividade
+function createContactFromAtividade(atividade: Atividade, schedule?: Schedule): Contact {
+  const nomeParts = atividade.contato.split(' ')
+  const primeiroNome = nomeParts[0] || atividade.contato
+  
+  return {
+    id: schedule?.contact?.id || `atividade-${atividade.id}`,
+    organizationId: schedule?.organizationId || '',
+    name: atividade.contato,
+    phone: schedule?.contact?.phone || "+55 11 98765-4321",
+    avatarUrl: schedule?.contact?.avatarUrl || null,
+    metadata: {
+      company: atividade.empresa,
+      jobTitle: atividade.tipo === "reuniao" ? "Diretor" : "Gerente",
+      city: "São Paulo",
+      state: "SP",
+    },
+    tags: [atividade.tipo],
+    leadScore: 0,
+    status: "ACTIVE",
+    lastInteractionAt: atividade.data.toISOString(),
+    deletedAt: null,
+    createdAt: atividade.data.toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
 }
 
 // ─── Componente Card de Atividade com Drag ──────────────────────────────────
@@ -668,24 +556,71 @@ function ModalDetalhes({
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
+interface AgendamentosViewProps {
+  defaultTipoFiltro?: TipoAtividade | "todos"
+  somenteConcluidasView?: boolean
+}
+
 export function AgendamentosView({
   defaultTipoFiltro = "todos",
   somenteConcluidasView = false,
 }: AgendamentosViewProps) {
   const { modalNovaAtividadeAberta, fecharModalNovaAtividade } = useAgendamentos()
+  const orgId = useOrganizationId()
   
   const [semanaOffset, setSemanaOffset] = useState(0)
   const [tipoFiltro, setTipoFiltro] = useState<TipoAtividade | "todos">(somenteConcluidasView ? "todos" : defaultTipoFiltro)
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0)
   const [atividadeSelecionada, setAtividadeSelecionada] = useState<Atividade | null>(null)
-  const [atividades, setAtividades] = useState<Atividade[]>(ATIVIDADES_MOCK)
   const [draggedAtividade, setDraggedAtividade] = useState<Atividade | null>(null)
   const [dragIndicator, setDragIndicator] = useState<{ diaIndex: number; hora: number; y: number } | null>(null)
+
+  // Calcula datas para filtro
+  const dataBase = new Date()
+  const inicioSemanaFiltro = new Date(dataBase)
+  inicioSemanaFiltro.setDate(dataBase.getDate() - dataBase.getDay() + (semanaOffset * 7))
+  inicioSemanaFiltro.setHours(0, 0, 0, 0)
+  const fimSemanaFiltro = new Date(inicioSemanaFiltro)
+  fimSemanaFiltro.setDate(inicioSemanaFiltro.getDate() + 6)
+  fimSemanaFiltro.setHours(23, 59, 59, 999)
+
+  // Prepara filtros para o hook
+  const scheduleFilters = useMemo(() => {
+    const filters: Parameters<typeof useSchedules>[1] = {
+      startDate: inicioSemanaFiltro.toISOString().split('T')[0],
+      endDate: fimSemanaFiltro.toISOString().split('T')[0],
+    }
+    
+    if (tipoFiltro !== 'todos') {
+      filters.type = mapTipoAtividade(tipoFiltro)
+    }
+    
+    if (somenteConcluidasView) {
+      filters.status = 'completed'
+    }
+    
+    return filters
+  }, [inicioSemanaFiltro, fimSemanaFiltro, tipoFiltro, somenteConcluidasView])
+
+  // Hook de schedules
+  const { 
+    schedules, 
+    isLoading, 
+    error, 
+    createSchedule, 
+    updateSchedule,
+    refreshSchedules,
+  } = useSchedules(orgId || undefined, scheduleFilters)
 
   // Sidebar state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+
+  // Converte schedules para atividades
+  const atividades = useMemo(() => {
+    return schedules.map(mapScheduleToAtividade)
+  }, [schedules])
 
   // Calcular dias da semana atual
   const diasSemana = useMemo(() => {
@@ -722,7 +657,7 @@ export function AgendamentosView({
     })
   }, [atividades, tipoFiltro, dataInicio, dataFim, somenteConcluidasView, hoje])
 
-  // Contar atividades por tipo
+  // Contar atividades por tipo (de todos os schedules, não apenas filtrados)
   const contagemPorTipo = useMemo(() => {
     const contagem: Record<TipoAtividade | "todos", number> = {
       todos: atividades.length,
@@ -780,9 +715,13 @@ export function AgendamentosView({
     setDragIndicator(null)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent, diaIndex: number) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, diaIndex: number) => {
     e.preventDefault()
     if (!draggedAtividade) return
+    
+    const schedule = schedules.find(s => mapScheduleToAtividade(s).id === draggedAtividade.id)
+    if (!schedule) return
+    
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const y = e.clientY - rect.top
     const horaIndex = Math.floor(y / 60)
@@ -791,37 +730,25 @@ export function AgendamentosView({
     const novaHoraInicio = formatarHora(hora)
     const duracao = getDuracaoSlots(draggedAtividade.horaInicio, draggedAtividade.horaFim)
     const novaHoraFim = formatarHora(Math.min(20, hora + duracao))
-    setAtividades(prev => prev.map(a => {
-      if (a.id === draggedAtividade.id) {
-        return { ...a, data: novaData, horaInicio: novaHoraInicio, horaFim: novaHoraFim }
-      }
-      return a
-    }))
+    
+    // Prepara novas datas
+    const dataStr = novaData.toISOString().split('T')[0]
+    const newStartTime = new Date(`${dataStr}T${novaHoraInicio}`).toISOString()
+    const newEndTime = new Date(`${dataStr}T${novaHoraFim}`).toISOString()
+    
+    // Atualiza via API
+    await updateSchedule(schedule.id, {
+      startTime: newStartTime,
+      endTime: newEndTime,
+    })
+    
+    await refreshSchedules()
     setDraggedAtividade(null)
     setDragIndicator(null)
-  }, [draggedAtividade, diasSemana])
+  }, [draggedAtividade, diasSemana, schedules, updateSchedule, refreshSchedules])
 
   const handleCardClick = useCallback((atividade: Atividade) => {
-    const contato: Contact = {
-      id: `atividade-${atividade.id}`,
-      nome: atividade.contato.split(' ')[0] || atividade.contato,
-      sobrenome: atividade.contato.split(' ').slice(1).join(' ') || '',
-      email: `${atividade.contato.toLowerCase().replace(/\s+/g, '.')}@${atividade.empresa.toLowerCase().replace(/\s+/g, '')}.com`,
-      telefone: "+55 11 98765-4321",
-      cidade: "São Paulo",
-      estado: "SP",
-      cargo: atividade.tipo === "reuniao" ? "Diretor" : "Gerente",
-      empresa: atividade.empresa,
-      tags: [atividade.tipo],
-
-      status: "ativo",
-      origem: "Agenda",
-      criadoEm: atividade.data.toISOString(),
-      atualizadoEm: new Date().toISOString(),
-      atualizadoPor: "Sistema",
-      avatar: atividade.avatar,
-      avatarBg: "#46347F",
-    }
+    const contato = createContactFromAtividade(atividade)
     setSelectedContact(contato)
     setIsSidebarOpen(true)
   }, [])
@@ -832,16 +759,37 @@ export function AgendamentosView({
   }, [])
 
   // Handler para salvar nova atividade
-  const handleSalvarAtividade = useCallback((novaAtividade: Omit<Atividade, "id">) => {
-    const novoId = Math.max(...atividades.map(a => a.id), 0) + 1
-    const atividadeCompleta: Atividade = {
-      ...novaAtividade,
-      id: novoId
-    }
-    setAtividades(prev => [...prev, atividadeCompleta])
-  }, [atividades])
+  const handleSalvarAtividade = useCallback(async (novaAtividade: Omit<Atividade, "id">) => {
+    if (!orgId) return
+
+    // Converte data e hora para ISO string
+    const dataParts = novaAtividade.data.toISOString().split('T')[0]
+    const startTime = new Date(`${dataParts}T${novaAtividade.horaInicio}`).toISOString()
+    const endTime = new Date(`${dataParts}T${novaAtividade.horaFim}`).toISOString()
+
+    await createSchedule({
+      type: mapTipoAtividade(novaAtividade.tipo),
+      title: novaAtividade.titulo,
+      description: novaAtividade.descricao,
+      startTime,
+      endTime,
+      location: novaAtividade.local,
+    })
+    
+    await refreshSchedules()
+  }, [orgId, createSchedule, refreshSchedules])
 
   const eSemanaAtual = semanaOffset === 0
+
+  // Estado de loading
+  if (isLoading && schedules.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+        <p className="mt-4 text-sm text-muted-foreground">Carregando agendamentos...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full bg-background">
