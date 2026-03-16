@@ -398,7 +398,7 @@ export async function POST(request: NextRequest) {
     const { data: existingStages, error: checkError } = await supabaseServer
       .from('pipeline_stages')
       .select('*')
-      .eq('organizationId', body.organizationId)
+      .eq('organization_id', body.organizationId)
       .order('position', { ascending: true });
 
     if (checkError) {
@@ -430,15 +430,15 @@ export async function POST(request: NextRequest) {
 
     // Cria as etapas do pipeline baseado no template
     const stagesToCreate = template.stages.map((stage) => ({
-      organizationId: body.organizationId,
+      organization_id: body.organizationId,
       name: stage.name,
       position: stage.position,
       color: stage.color,
       probability: stage.probability,
-      isDefault: stage.isDefault,
-      isClosed: stage.isClosed,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      is_default: stage.isDefault,
+      is_closed: stage.isClosed,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }));
 
     const { data: createdStages, error: insertError } = await supabaseServer
@@ -475,8 +475,8 @@ export async function POST(request: NextRequest) {
             position: stage.position,
             color: stage.color,
             probability: stage.probability,
-            isDefault: stage.isDefault,
-            isClosed: stage.isClosed,
+            isDefault: stage.is_default,
+            isClosed: stage.is_closed,
           })),
         },
       },
