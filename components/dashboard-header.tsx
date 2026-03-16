@@ -1,10 +1,11 @@
 "use client"
 
 import { Calendar, User, Download, ChevronDown, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useDashboard, DATE_RANGES } from "@/hooks/use-dashboard-context"
 import { useFilteredData } from "@/hooks/use-filtered-data"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
 import {
   Popover,
   PopoverContent,
@@ -25,6 +26,23 @@ export function DashboardHeader() {
   const { stats } = useFilteredData()
   const [open, setOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [userName, setUserName] = useState("John")
+
+  // Buscar nome do usuário logado
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        // Extrai nome do email (parte antes do @)
+        const nameFromEmail = user.email.split('@')[0]
+        // Capitaliza primeira letra
+        const capitalizedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1)
+        setUserName(capitalizedName)
+      }
+    }
+    getUser()
+  }, [])
 
   const handleSelectPeriod = (key: keyof typeof DATE_RANGES) => {
     setDateRange(DATE_RANGES[key])
@@ -116,7 +134,7 @@ export function DashboardHeader() {
       <div>
         <h1 className="text-[28px] font-bold leading-tight text-foreground">Início</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Oi John, bem-vindo de volta
+          Oi {userName}, bem-vindo de volta
         </p>
       </div>
       <div className="flex items-center gap-2">

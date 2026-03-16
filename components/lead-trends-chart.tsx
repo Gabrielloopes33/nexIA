@@ -10,7 +10,19 @@ import {
   YAxis,
 } from "recharts"
 
-const data = [
+export interface LeadTrendData {
+  year: string
+  total: number
+  verified: number
+  upcoming: number
+}
+
+interface LeadTrendsChartProps {
+  data?: LeadTrendData[]
+  isLoading?: boolean
+}
+
+const defaultData: LeadTrendData[] = [
   { year: "2014", total: 120, verified: 80, upcoming: 40 },
   { year: "2015", total: 180, verified: 120, upcoming: 60 },
   { year: "2016", total: 220, verified: 150, upcoming: 90 },
@@ -39,7 +51,22 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
   return null
 }
 
-export function LeadTrendsChart() {
+export function LeadTrendsChart({ data, isLoading }: LeadTrendsChartProps) {
+  const chartData = data && data.length > 0 ? data : defaultData
+
+  if (isLoading) {
+    return (
+      <div className="rounded-sm shadow-sm bg-card p-3">
+        <div className="mb-2">
+          <h3 className="text-base font-semibold text-gray-900">Crescimento de Leads</h3>
+        </div>
+        <div className="h-[220px] flex items-center justify-center">
+          <div className="text-muted-foreground text-sm">Carregando...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-sm shadow-sm bg-card p-3">
       <div className="mb-2 flex flex-col gap-1.5">
@@ -62,7 +89,7 @@ export function LeadTrendsChart() {
         </div>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#8B7DB8" stopOpacity={0.15} />

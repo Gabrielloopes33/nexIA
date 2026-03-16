@@ -21,7 +21,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Phone, Edit, Trash2, Eye } from "lucide-react"
-import { Contact, getContactTags, CONTACT_STATUS_OPTIONS } from "@/lib/mock/contacts"
+import { Contact } from "@/hooks/use-contacts"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -33,6 +33,23 @@ interface ContactsTableProps {
   onViewContact: (contact: Contact) => void
   onEditContact: (contact: Contact) => void
   onDeleteContact: (contact: Contact) => void
+}
+
+const CONTACT_STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: 'Ativo', color: '#10b981' },
+  { value: 'INACTIVE', label: 'Inativo', color: '#6b7280' },
+  { value: 'BLOCKED', label: 'Bloqueado', color: '#ef4444' },
+]
+
+// Helper to get display name
+const getDisplayName = (contact: Contact): string => {
+  return contact.name || contact.phone || 'Sem nome'
+}
+
+// Helper to get initials
+const getInitials = (contact: Contact): string => {
+  const name = contact.name || contact.phone || ''
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
 function getStatusColor(status: Contact["status"]): string {
@@ -87,7 +104,6 @@ export function ContactsTable({
             </TableRow>
           ) : (
             contacts.map((contact) => {
-              const tags = getContactTags(contact)
               const isSelected = selectedContacts.includes(contact.id)
 
               return (
@@ -102,46 +118,43 @@ export function ContactsTable({
                       onCheckedChange={(checked) =>
                         onSelectContact(contact.id, checked as boolean)
                       }
-                      aria-label={`Selecionar ${contact.nome}`}
+                      aria-label={`Selecionar ${getDisplayName(contact)}`}
                     />
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar
                         className="h-9 w-9"
-                        style={{ backgroundColor: contact.avatarBg }}
+                        style={{ backgroundColor: '#46347F' }}
                       >
                         <AvatarFallback className="text-xs font-semibold">
-                          {contact.avatar}
+                          {getInitials(contact)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">
-                          {contact.nome} {contact.sobrenome}
+                          {getDisplayName(contact)}
                         </p>
-                        <p className="text-sm text-muted-foreground">{contact.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(contact.metadata?.email as string) || contact.phone}
+                        </p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {tags.slice(0, 2).map((tag) => (
+                      {contact.tags.slice(0, 2).map((tagId) => (
                         <Badge
-                          key={tag.id}
-                          style={{
-                            backgroundColor: `${tag.cor}20`,
-                            color: tag.cor,
-                            borderColor: tag.cor,
-                          }}
+                          key={tagId}
                           variant="outline"
                           className="text-xs"
                         >
-                          {tag.nome}
+                          Tag {tagId.slice(0, 4)}
                         </Badge>
                       ))}
-                      {tags.length > 2 && (
+                      {contact.tags.length > 2 && (
                         <Badge variant="secondary" className="text-xs">
-                          +{tags.length - 2}
+                          +{contact.tags.length - 2}
                         </Badge>
                       )}
                     </div>
@@ -157,13 +170,15 @@ export function ContactsTable({
                   </TableCell>
         
                   <TableCell>
-                    <span className="text-sm text-muted-foreground">{contact.origem}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {(contact.metadata?.source as string) || 'Manual'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">
-                      {format(new Date(contact.atualizadoEm), "dd/MM/yyyy", {
+                      {contact.updatedAt ? format(new Date(contact.updatedAt), "dd/MM/yyyy", {
                         locale: ptBR,
-                      })}
+                      }) : '-'}
                     </span>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>

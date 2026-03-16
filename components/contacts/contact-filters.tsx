@@ -10,10 +10,16 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MOCK_TAGS } from "@/lib/mock/tags"
-import { CONTACT_STATUS_OPTIONS } from "@/lib/mock/contacts"
+import { useTags } from "@/hooks/use-tags"
+
+const CONTACT_STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: 'Ativo', color: '#10b981' },
+  { value: 'INACTIVE', label: 'Inativo', color: '#6b7280' },
+  { value: 'BLOCKED', label: 'Bloqueado', color: '#ef4444' },
+]
 
 interface ContactFiltersProps {
+  organizationId?: string
   onSearch: (query: string) => void
   onFilterTags: (tagIds: string[]) => void
   onFilterStatus: (statuses: string[]) => void
@@ -22,6 +28,7 @@ interface ContactFiltersProps {
 }
 
 export function ContactFilters({
+  organizationId,
   onSearch,
   onFilterTags,
   onFilterStatus,
@@ -29,6 +36,7 @@ export function ContactFilters({
   selectedStatuses,
 }: ContactFiltersProps) {
   const [searchQuery, setSearchQuery] = useState("")
+  const { tags, isLoading: tagsLoading } = useTags(organizationId)
 
   const handleSearch = (value: string) => {
     setSearchQuery(value)
@@ -63,28 +71,36 @@ export function ContactFilters({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          {MOCK_TAGS.map((tag) => (
-            <DropdownMenuCheckboxItem
-              key={tag.id}
-              checked={selectedTags.includes(tag.id)}
-              onCheckedChange={(checked) => {
-                if (checked) {
-                  onFilterTags([...selectedTags, tag.id])
-                } else {
-                  onFilterTags(selectedTags.filter((id) => id !== tag.id))
-                }
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: tag.cor }}
-                />
-                <span className="flex-1">{tag.nome}</span>
-                <span className="text-xs text-muted-foreground">({tag.contatosCount})</span>
-              </div>
-            </DropdownMenuCheckboxItem>
-          ))}
+          {tagsLoading ? (
+            <div className="px-2 py-3 text-sm text-muted-foreground">Carregando tags...</div>
+          ) : tags.length === 0 ? (
+            <div className="px-2 py-3 text-sm text-muted-foreground">Nenhuma tag</div>
+          ) : (
+            tags.map((tag) => (
+              <DropdownMenuCheckboxItem
+                key={tag.id}
+                checked={selectedTags.includes(tag.id)}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    onFilterTags([...selectedTags, tag.id])
+                  } else {
+                    onFilterTags(selectedTags.filter((id) => id !== tag.id))
+                  }
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  <span className="flex-1">{tag.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({tag._count?.contactTags || 0})
+                  </span>
+                </div>
+              </DropdownMenuCheckboxItem>
+            ))
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

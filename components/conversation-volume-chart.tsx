@@ -10,9 +10,21 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
-import { MessageSquare } from "lucide-react"
 
-const data = [
+export interface ConversationVolumeData {
+  month: string
+  whatsapp: number
+  instagram: number
+  telegram: number
+  iframe: number
+}
+
+interface ConversationVolumeChartProps {
+  data?: ConversationVolumeData[]
+  isLoading?: boolean
+}
+
+const defaultData: ConversationVolumeData[] = [
   { month: "Jan", whatsapp: 420, instagram: 180, telegram: 120, iframe: 80 },
   { month: "Fev", whatsapp: 480, instagram: 200, telegram: 150, iframe: 90 },
   { month: "Mar", whatsapp: 550, instagram: 220, telegram: 180, iframe: 110 },
@@ -22,12 +34,29 @@ const data = [
 ]
 
 const channelColors = {
-  whatsapp: "#8B7DB8",  // Tom médio-claro
-  instagram: "#8B7DB8", // Tom claro  
-  telegram: "#B8B0D4",  // Tom mais claro
+  whatsapp: "#8B7DB8",
+  instagram: "#8B7DB8",
+  telegram: "#B8B0D4",
 }
 
-export function ConversationVolumeChart() {
+export function ConversationVolumeChart({ data, isLoading }: ConversationVolumeChartProps) {
+  const chartData = data && data.length > 0 ? data : defaultData
+
+  if (isLoading) {
+    return (
+      <Card className="rounded-sm shadow-sm">
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="text-base font-semibold text-gray-900">Total de Conversas</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-1">
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="text-muted-foreground text-sm">Carregando...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="rounded-sm shadow-sm">
       <CardHeader className="p-3 pb-2">
@@ -44,7 +73,7 @@ export function ConversationVolumeChart() {
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={data}
+              data={chartData}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
               barSize={28}
             >

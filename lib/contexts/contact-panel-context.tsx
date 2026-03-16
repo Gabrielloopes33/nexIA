@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode } from 'react'
-import { Contact } from '@/lib/mock/contacts'
+import { Contact } from '@/hooks/use-contacts'
 
 interface ContactPanelContextType {
   isOpen: boolean

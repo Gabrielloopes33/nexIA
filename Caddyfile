@@ -1,0 +1,50 @@
+# ============================================
+# Caddy - Proxy Reverso para Supabase Self-Hosted
+# ============================================
+
+# Substitua pelo seu domínio real
+api.nexiachat.com.br {
+    # Proxy para o Supabase Kong (porta 8000)
+    reverse_proxy supabase-kong:8000 {
+        # Headers importantes para o Supabase
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+        
+        # WebSocket support (necessário para realtime)
+        header_up Connection {>Connection}
+        header_up Upgrade {>Upgrade}
+    }
+    
+    # SSL Automático (Let's Encrypt)
+    tls {
+        # Usa Let's Encrypt staging para testes (remova em produção)
+        # ca https://acme-staging-v02.api.letsencrypt.org/directory
+    }
+    
+    # Headers de segurança
+    header {
+        # CORS - permitir seu domínio frontend
+        Access-Control-Allow-Origin "https://nexiachat.com.br"
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        Access-Control-Allow-Headers "authorization, content-type, apikey, x-client-info"
+        Access-Control-Allow-Credentials "true"
+        
+        # Segurança
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+    
+    # Logs
+    log {
+        output file /data/access.log
+        format json
+    }
+}
+
+# Redirecionar HTTP para HTTPS
+:80 {
+    redir https://{host}{uri} permanent
+}

@@ -5,16 +5,93 @@
 
 'use client'
 
+import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
-import { CONVERSION_STAGES } from '@/lib/mock-charts-data'
+import { useContacts } from '@/hooks/use-contacts'
 import { TrendingUp } from 'lucide-react'
+import { useOrganizationId } from '@/lib/contexts/organization-context'
+
+// Cores para os estágios do funil
+const STAGE_COLORS = {
+  new: '#0070D2',      // Azul Salesforce
+  contacted: '#00A1E0', // Azul claro
+  qualified: '#F5A623', // Laranja
+  proposal: '#8B7DB8',  // Roxo
+  closed: '#027E46',    // Verde
+}
+
+interface ConversionStage {
+  stage: string
+  value: number
+  percentage: number
+  color: string
+}
 
 export function ConversionDonutChart() {
+  const organizationId = useOrganizationId() ?? ''
+  const { contacts, isLoading } = useContacts(organizationId)
+
+  // Calcula estágios de conversão a partir dos contatos reais
+  const conversionStages: ConversionStage[] = useMemo(() => {
+    if (!contacts || contacts.length === 0) {
+      // Fallback: dados vazios quando não há contatos
+      return [
+        { stage: 'Novos', value: 0, percentage: 0, color: STAGE_COLORS.new },
+        { stage: 'Contatados', value: 0, percentage: 0, color: STAGE_COLORS.contacted },
+        { stage: 'Qualificados', value: 0, percentage: 0, color: STAGE_COLORS.qualified },
+        { stage: 'Em Proposta', value: 0, percentage: 0, color: STAGE_COLORS.proposal },
+        { stage: 'Fechados', value: 0, percentage: 0, color: STAGE_COLORS.closed },
+      ]
+    }
+
+    const total = contacts.length
+    
+    // Conta contatos por status (mapeando status para estágios do funil)
+    const newLeads = contacts.filter(c => c.status === 'ACTIVE' && (!c._count?.conversations || c._count.conversations === 0)).length
+    const contacted = contacts.filter(c => c._count?.conversations && c._count.conversations > 0).length
+    const qualified = contacts.filter(c => c.leadScore >= 70).length
+    const proposal = contacts.filter(c => c._count?.deals && c._count.deals > 0).length
+    const closed = contacts.filter(c => c.metadata?.converted === true || c.metadata?.dealValue as number > 0).length
+
+    return [
+      { 
+        stage: 'Novos', 
+        value: newLeads, 
+        percentage: total > 0 ? Math.round((newLeads / total) * 100) : 0, 
+        color: STAGE_COLORS.new 
+      },
+      { 
+        stage: 'Contatados', 
+        value: contacted, 
+        percentage: total > 0 ? Math.round((contacted / total) * 100) : 0, 
+        color: STAGE_COLORS.contacted 
+      },
+      { 
+        stage: 'Qualificados', 
+        value: qualified, 
+        percentage: total > 0 ? Math.round((qualified / total) * 100) : 0, 
+        color: STAGE_COLORS.qualified 
+      },
+      { 
+        stage: 'Em Proposta', 
+        value: proposal, 
+        percentage: total > 0 ? Math.round((proposal / total) * 100) : 0, 
+        color: STAGE_COLORS.proposal 
+      },
+      { 
+        stage: 'Fechados', 
+        value: closed, 
+        percentage: total > 0 ? Math.round((closed / total) * 100) : 0, 
+        color: STAGE_COLORS.closed 
+      },
+    ]
+  }, [contacts])
+
   // Custom label for the center of donut
   const renderCenterLabel = () => {
-    const totalLeads = CONVERSION_STAGES[0]?.value || 0
-    const converted = CONVERSION_STAGES[CONVERSION_STAGES.length - 1]?.value || 0
+    const totalLeads = conversionStages[0]?.value || 0
+    const converted = conversionStages[conversionStages.length - 1]?.value || 0
     const conversionRate = totalLeads > 0 ? Math.round((converted / totalLeads) * 100) : 0
 
     return (
@@ -73,6 +150,21 @@ export function ConversionDonutChart() {
     )
   }
 
+  if (isLoading) {
+    return (
+      <Card className="rounded-sm shadow-sm">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-lg font-bold">Funil de Conversão</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-2">
+          <div className="h-[280px] flex items-center justify-center">
+            <div className="text-muted-foreground text-sm">Carregando...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="rounded-sm shadow-sm">
       <CardHeader className="p-4 pb-2">
@@ -90,7 +182,7 @@ export function ConversionDonutChart() {
         <ResponsiveContainer width="100%" height={280}>
           <PieChart>
             <Pie
-              data={CONVERSION_STAGES}
+              data={conversionStages}
               dataKey="value"
               nameKey="stage"
               cx="50%"
@@ -100,7 +192,7 @@ export function ConversionDonutChart() {
               paddingAngle={2}
               label={false}
             >
-              {CONVERSION_STAGES.map((entry, index) => (
+              {conversionStages.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
@@ -115,19 +207,19 @@ export function ConversionDonutChart() {
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Total Leads</p>
             <p className="text-lg font-bold text-foreground">
-              {CONVERSION_STAGES[0]?.value || 0}
+              {conversionStages[0]?.value || 0}
             </p>
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Em Proposta</p>
             <p className="text-lg font-bold text-foreground">
-              {CONVERSION_STAGES[3]?.value || 0}
+              {conversionStages[3]?.value || 0}
             </p>
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Fechados</p>
             <p className="text-lg font-bold text-[#027E46]">
-              {CONVERSION_STAGES[4]?.value || 0}
+              {conversionStages[4]?.value || 0}
             </p>
           </div>
         </div>

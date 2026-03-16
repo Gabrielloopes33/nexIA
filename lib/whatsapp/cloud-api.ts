@@ -491,9 +491,9 @@ export async function sendTextMessage(
 }
 
 /**
- * Send a template message
+ * Send a template message (internal implementation)
  */
-export async function sendTemplateMessage(
+async function sendTemplateMessageInternal(
   phoneNumberId: string,
   to: string,
   templateName: string,
@@ -853,4 +853,153 @@ export function extractErrorDetails(error: unknown): {
     message: 'Unknown error occurred',
     type: 'UnknownError',
   };
+}
+
+// ============================================================================
+// WRAPPER FUNCTIONS (Instance-based)
+// ============================================================================
+
+import { WhatsAppInstance } from "@prisma/client";
+
+interface SendTemplateMessageOptions {
+  instance: WhatsAppInstance;
+  to: string;
+  templateName: string;
+  language: string;
+  components?: Array<{
+    type: 'header' | 'body' | 'button';
+    parameters: Array<{
+      type: 'text' | 'currency' | 'date_time' | 'image' | 'document' | 'video';
+      text?: string;
+    }>;
+  }>;
+}
+
+interface SendTemplateResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+/**
+ * Send a template message using instance object
+ * Wrapper for the main sendTemplateMessage function
+ */
+export async function sendTemplateMessage({
+  instance,
+  to,
+  templateName,
+  language,
+  components,
+}: SendTemplateMessageOptions): Promise<SendTemplateResult> {
+  try {
+    if (!instance.phoneNumberId || !instance.accessToken) {
+      return {
+        success: false,
+        error: 'Instância não configurada corretamente (falta phoneNumberId ou accessToken)',
+      };
+    }
+
+    const response = await sendTemplateMessageInternal(
+      instance.phoneNumberId,
+      to,
+      templateName,
+      language,
+      instance.accessToken,
+      components
+    );
+    
+    return {
+      success: true,
+      messageId: response.messages?.[0]?.id,
+    };
+  } catch (error) {
+    const details = extractErrorDetails(error);
+    return {
+      success: false,
+      error: `[${details.code}] ${details.message}`,
+    };
+  }
+}
+
+interface SendDocumentMessageOptions {
+  instance: WhatsAppInstance;
+  to: string;
+  mediaId: string;
+  filename: string;
+  caption?: string;
+}
+
+interface SendDocumentResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+/**
+ * Send a document message using media_id (from uploaded media)
+ */
+export async function sendDocumentMessage({
+  instance,
+  to,
+  mediaId,
+  filename,
+  caption,
+}: SendDocumentMessageOptions): Promise<SendDocumentResult> {
+  try {
+    if (!instance.phoneNumberId || !instance.accessToken) {
+      return {
+        success: false,
+        error: 'Instância não configurada corretamente',
+      };
+    }
+
+    const endpoint = `/${instance.phoneNumberId}/messages`;
+    const url = `${BASE_URL}${endpoint}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${instance.accessToken}`,
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'document',
+        document: {
+          id: mediaId,
+          filename,
+          caption,
+        },
+      }),
+    });
+
+    const data = await response.json() as WhatsAppApiResponse<MessageResponse>;
+
+    if (!response.ok || data.error) {
+      if (data.error) {
+        return {
+          success: false,
+          error: `[${data.error.code}] ${data.error.message}`,
+        };
+      }
+      return {
+        success: false,
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    return {
+      success: true,
+      messageId: data.data?.messages?.[0]?.id,
+    };
+  } catch (error) {
+    const details = extractErrorDetails(error);
+    return {
+      success: false,
+      error: `[${details.code}] ${details.message}`,
+    };
+  }
 }

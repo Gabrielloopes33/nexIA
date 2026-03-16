@@ -16,7 +16,7 @@ import {
   Activity,
   Clock
 } from "lucide-react"
-import { MOCK_ACTIVITY_LOGS_DATA } from "@/lib/mock-integrations"
+import type { ActivityLog } from "@/lib/types/integration"
 
 const statusConfig = {
   success: { label: "Sucesso", icon: CheckCircle2, color: "bg-green-100 text-green-700 border-green-200" },
@@ -25,11 +25,12 @@ const statusConfig = {
 }
 
 export default function LogsPage() {
+  const [logs] = useState<ActivityLog[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filtroIntegracao, setFiltroIntegracao] = useState("Todas")
   const [filtroStatus, setFiltroStatus] = useState("Todos")
 
-  const logsFiltrados = MOCK_ACTIVITY_LOGS_DATA.filter((log) => {
+  const logsFiltrados = logs.filter((log) => {
     const matchSearch = 
       log.integrationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.event.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,7 +40,7 @@ export default function LogsPage() {
     return matchSearch && matchIntegracao && matchStatus
   })
 
-  const integracoesUnicas = ["Todas", ...Array.from(new Set(MOCK_ACTIVITY_LOGS_DATA.map(l => l.integrationName)))]
+  const integracoesUnicas = ["Todas", ...Array.from(new Set(logs.map(l => l.integrationName)))]
   const statusOptions = ["Todos", "Sucesso", "Erro", "Alerta"]
 
   return (
@@ -63,14 +64,14 @@ export default function LogsPage() {
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Total de Logs</p>
-            <p className="text-3xl font-bold">{MOCK_ACTIVITY_LOGS_DATA.length}</p>
+            <p className="text-3xl font-bold">{logs.length}</p>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Sucessos</p>
             <p className="text-3xl font-bold text-green-600">
-              {MOCK_ACTIVITY_LOGS_DATA.filter(l => l.status === 'success').length}
+              {logs.filter(l => l.status === 'success').length}
             </p>
           </CardContent>
         </Card>
@@ -78,14 +79,14 @@ export default function LogsPage() {
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Erros</p>
             <p className="text-3xl font-bold text-red-600">
-              {MOCK_ACTIVITY_LOGS_DATA.filter(l => l.status === 'error').length}
+              {logs.filter(l => l.status === 'error').length}
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">Última 24h</p>
-            <p className="text-3xl font-bold text-[#46347F]">24</p>
+            <p className="text-3xl font-bold text-[#46347F]">0</p>
           </CardContent>
         </Card>
       </div>

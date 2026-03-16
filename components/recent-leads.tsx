@@ -1,78 +1,98 @@
-import { Linkedin, ExternalLink, Star, Users } from "lucide-react"
+"use client"
+
+import { useMemo } from "react"
+import { Linkedin, ExternalLink, Star, Users, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { ENRICHED_LEADS } from "@/lib/mock-leads-enriched"
 import { getTagsByIds } from "@/lib/tag-utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useContactPanel } from "@/lib/contexts/contact-panel-context"
-import { Contact } from "@/lib/mock/contacts"
+import { Contact, useContacts } from "@/hooks/use-contacts"
+import { useTags } from "@/hooks/use-tags"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
-// Pega os 5 leads mais recentes (ordenados por atualizadoEm)
-const recentLeads = [...ENRICHED_LEADS]
-  .sort((a, b) => {
-    const dateA = a.atualizadoEm ? new Date(a.atualizadoEm).getTime() : 0
-    const dateB = b.atualizadoEm ? new Date(b.atualizadoEm).getTime() : 0
-    return dateB - dateA
-  })
-  .slice(0, 5)
-
-const leads = recentLeads.map(lead => {
-  const initials = lead.nome
+// Helper para converter Contact do hook para o formato esperado pelo painel
+function createDisplayLead(contact: Contact) {
+  const name = contact.name || contact.phone || "Sem nome"
+  const initials = name
     .split(' ')
     .map(n => n[0])
     .join('')
     .substring(0, 2)
     .toUpperCase()
   
+  const metadata = contact.metadata || {}
+  const cargo = metadata.jobTitle as string || "Contato"
+  const empresa = metadata.company as string || "-"
+  
   return {
-    id: lead.id,
-    name: lead.nome,
-    role: `${lead.cargo} | ${lead.empresa}`,
-    email: lead.email,
+    id: contact.id,
+    name,
+    role: `${cargo} | ${empresa}`,
+    email: metadata.email as string || "",
     status: "valid" as const,
     avatar: initials,
-    // Cores padronizadas em tons de roxo/cinza
-    avatarBg: "#E8E7F7",  // Roxo muito claro
-    avatarColor: "#8B7DB8", // Roxo claro
-    tags: lead.tags || [],
-    favorito: lead.favorito || false
+    avatarBg: "#E8E7F7",
+    avatarColor: "#8B7DB8",
+    tags: contact.tags || [],
+    favorito: false,
+    originalContact: contact,
   }
-})
+}
 
 interface RecentLeadsProps {
   compact?: boolean
 }
 
 export function RecentLeads({ compact }: RecentLeadsProps) {
+  const organizationId = useOrganizationId() ?? ''
   const { openContactPanel } = useContactPanel()
+  const { contacts, isLoading: isLoadingContacts } = useContacts(organizationId, {
+    limit: 5,
+    status: "ACTIVE"
+  })
+  const { tags, isLoading: isLoadingTags } = useTags(organizationId)
   
-  // Em modo compacto, mostra apenas 4 leads e força altura igual
+  // Transforma os contatos da API para o formato de exibição
+  const leads = useMemo(() => {
+    return contacts.map(createDisplayLead)
+  }, [contacts])
+  
+  // Em modo compacto, mostra apenas 4 leads
   const displayLeads = compact ? leads.slice(0, 4) : leads
 
-  const handleLeadClick = (lead: typeof leads[0], originalLead: typeof ENRICHED_LEADS[0]) => {
-    // Converte o lead do dashboard para o formato Contact
-    const contactData: Contact = {
-      id: String(originalLead.id),
-      nome: originalLead.nome.split(' ')[0] || originalLead.nome,
-      sobrenome: originalLead.nome.split(' ').slice(1).join(' ') || '',
-      email: originalLead.email,
-      telefone: originalLead.telefone || '+55 (11) 99999-9999',
-      cidade: originalLead.localizacao?.split(',')[0] || 'São Paulo',
-      estado: originalLead.localizacao?.split(',')[1]?.trim() || 'SP',
-      cargo: originalLead.cargo || 'Gerente',
-      empresa: originalLead.empresa || '',
-      tags: originalLead.tags || [],
+  const handleLeadClick = (lead: typeof leads[0]) => {
+    openContactPanel(lead.originalContact)
+  }
 
-      status: 'ativo',
-      origem: originalLead.fonte || 'Dashboard',
-      criadoEm: originalLead.criadoEm || new Date().toISOString(),
-      atualizadoEm: originalLead.atualizadoEm || new Date().toISOString(),
-      atualizadoPor: 'Sistema',
-      avatar: lead.avatar,
-      avatarBg: lead.avatarBg,
-      observacoes: ''
-    }
-    openContactPanel(contactData)
+  const isLoading = isLoadingContacts || isLoadingTags
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Card className="rounded-sm shadow-sm h-full flex flex-col">
+        <CardHeader className="p-3 pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base font-semibold text-gray-900">Novos Leads</CardTitle>
+              <div className="flex items-center gap-1 rounded-sm bg-[#8B7DB8]/10 px-2 py-0.5">
+                <Users className="h-4 w-4 text-[#8B7DB8]" />
+                <span className="text-sm font-medium text-[#8B7DB8]">-</span>
+              </div>
+            </div>
+            <Link href="/contatos" className="flex items-center gap-1 text-sm font-medium text-[#8B7DB8] transition-colors hover:opacity-80">
+              Ver Todos
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0 flex-1 overflow-hidden">
+          <div className="flex items-center justify-center h-32">
+            <Loader2 className="h-6 w-6 animate-spin text-[#8B7DB8]" />
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -94,13 +114,13 @@ export function RecentLeads({ compact }: RecentLeadsProps) {
       </CardHeader>
       <CardContent className="p-0 flex-1 overflow-hidden">
         <div className="divide-y divide-border">
-        {displayLeads.map((lead, index) => {
-          const leadTags = getTagsByIds(lead.tags.slice(0, 1)) // Mostra apenas 1 tag
+        {displayLeads.map((lead) => {
+          const leadTags = getTagsByIds(tags, lead.tags.slice(0, 1)) // Mostra apenas 1 tag
           
           return (
             <div
               key={lead.id}
-              onClick={() => handleLeadClick(lead, recentLeads[index])}
+              onClick={() => handleLeadClick(lead)}
               className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-[#F3F2F2] cursor-pointer"
             >
               {/* Avatar */}
@@ -150,6 +170,11 @@ export function RecentLeads({ compact }: RecentLeadsProps) {
             </div>
           )
         })}
+        {displayLeads.length === 0 && (
+          <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+            Nenhum lead encontrado
+          </div>
+        )}
         </div>
       </CardContent>
     </Card>

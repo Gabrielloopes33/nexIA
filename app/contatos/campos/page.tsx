@@ -55,16 +55,52 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import {
-  DEFAULT_FIELDS,
-  MOCK_CUSTOM_FIELDS,
-  FIELD_TYPE_LABELS,
-  FIELD_TYPE_COLORS,
-  type CustomField,
-  type FieldType,
-} from "@/lib/mock/custom-fields"
 
+// Types defined locally
+export type FieldType = "texto" | "numero" | "data" | "selecao" | "booleano" | "url"
+
+export interface CustomField {
+  id: string
+  nome: string
+  label: string
+  tipo: FieldType
+  obrigatorio: boolean
+  descricao?: string
+  opcoes?: string[]
+  ordem: number
+  criadoEm: string
+}
+
+// Constants defined locally
 const FIELD_TYPES: FieldType[] = ["texto", "numero", "data", "selecao", "booleano", "url"]
+
+const FIELD_TYPE_LABELS: Record<FieldType, string> = {
+  texto: "Texto",
+  numero: "Número",
+  data: "Data",
+  selecao: "Seleção",
+  booleano: "Sim/Não",
+  url: "URL",
+}
+
+const FIELD_TYPE_COLORS: Record<FieldType, string> = {
+  texto: "#46347F",
+  numero: "#10b981",
+  data: "#f59e0b",
+  selecao: "#8b5cf6",
+  booleano: "#3b82f6",
+  url: "#06b6d4",
+}
+
+const DEFAULT_FIELDS: Omit<CustomField, 'id' | 'criadoEm'>[] = [
+  { nome: "nome", label: "Nome", tipo: "texto", obrigatorio: true, descricao: "Nome do contato", ordem: 1 },
+  { nome: "email", label: "Email", tipo: "texto", obrigatorio: true, descricao: "Email principal", ordem: 2 },
+  { nome: "telefone", label: "Telefone", tipo: "texto", obrigatorio: false, descricao: "Número de telefone", ordem: 3 },
+  { nome: "empresa", label: "Empresa", tipo: "texto", obrigatorio: false, descricao: "Nome da empresa", ordem: 4 },
+]
+
+// Initial empty state - no mock data
+const INITIAL_CUSTOM_FIELDS: CustomField[] = []
 
 function getFieldIcon(tipo: FieldType) {
   switch (tipo) {
@@ -98,7 +134,7 @@ function generateId(): string {
 }
 
 export default function CamposPage() {
-  const [customFields, setCustomFields] = useState<CustomField[]>(MOCK_CUSTOM_FIELDS)
+  const [customFields, setCustomFields] = useState<CustomField[]>(INITIAL_CUSTOM_FIELDS)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingField, setEditingField] = useState<CustomField | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
