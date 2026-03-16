@@ -347,7 +347,14 @@ export async function GET() {
 // ============================================
 export async function POST(request: NextRequest) {
   try {
+    console.log('[PIPELINE_TEMPLATES_APPLY] Request received');
+    
     const body: ApplyTemplateRequest = await request.json();
+    console.log('[PIPELINE_TEMPLATES_APPLY] Body:', JSON.stringify(body, null, 2));
+    
+    // Verifica configuração do Supabase
+    console.log('[PIPELINE_TEMPLATES_APPLY] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('[PIPELINE_TEMPLATES_APPLY] Service Key exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
 
     // Validação dos campos obrigatórios
     if (!body.templateId || typeof body.templateId !== "string") {
@@ -475,13 +482,15 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("[PIPELINE_TEMPLATES_APPLY] Error:", error);
+    console.error("[PIPELINE_TEMPLATES_APPLY] Error stack:", error?.stack);
     return NextResponse.json(
       {
         success: false,
         error: "Erro ao aplicar template",
         message: error instanceof Error ? error.message : "Unknown error",
+        details: error?.stack || null,
       },
       { status: 500 }
     );
