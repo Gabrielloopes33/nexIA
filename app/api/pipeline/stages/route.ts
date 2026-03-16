@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { supabaseServer } from "@/lib/supabase-server";
 
 // ============================================
 // TIPOS
@@ -39,21 +39,34 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get("organizationId") || "default_org_id";
 
-    const stages = await prisma.pipelineStage.findMany({
-      where: { organizationId },
-      orderBy: { position: "asc" },
-      include: {
-        _count: {
-          select: { deals: true },
+    console.log('[Pipeline Stages GET] organizationId:', organizationId);
+
+    const { data: stages, error } = await supabaseServer
+      .from('pipeline_stages')
+      .select(`
+        *,
+        deals:deals(count)
+      `)
+      .eq('organization_id', organizationId)
+      .order('position', { ascending: true });
+
+    if (error) {
+      console.error('[Pipeline Stages GET] Error:', error);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Failed to fetch pipeline stages",
+          details: error.message
         },
-      },
-    });
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: stages.map((stage) => ({
+      data: (stages || []).map((stage) => ({
         ...stage,
-        dealsCount: stage._count.deals,
+        dealsCount: stage.deals?.[0]?.count || 0,
       })),
     });
   } catch (error) {
@@ -78,6 +91,8 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateStagesBody = await request.json();
     const { organizationId, stages } = body;
+
+    console.log('[Pipeline Stages POST] Body:', body);
 
     // Validação: organizationId é obrigatório
     if (!organizationId) {
@@ -139,43 +154,66 @@ export async function POST(request: NextRequest) {
     }
 
     // Verifica se já existe um pipeline para esta organização
-    const existingStagesCount = await prisma.pipelineStage.count({
-      where: { organizationId }
-    });
+    const { count: existingStagesCount, error: countError } = await supabaseServer
+      .from('pipeline_stages')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId);
 
-    const isFirstPipeline = existingStagesCount === 0;
+    if (countError) {
+      console.error('[Pipeline Stages POST] Error counting:', countError);
+    }
+
+    const isFirstPipeline = (existingStagesCount || 0) === 0;
 
     // Busca a última posição existente (se houver)
-    const lastStage = await prisma.pipelineStage.findFirst({
-      where: { organizationId },
-      orderBy: { position: "desc" },
-    });
+    const { data: lastStage, error: lastError } = await supabaseServer
+      .from('pipeline_stages')
+      .select('position')
+      .eq('organization_id', organizationId)
+      .order('position', { ascending: false })
+      .limit(1)
+      .single();
 
     const startPosition = lastStage ? lastStage.position + 1 : 0;
 
     // Prepara os dados para criação em batch
     const stagesData = stages.map((stage, index) => ({
-      organizationId,
+      organization_id: organizationId,
       name: stage.name.trim(),
       color: stage.color || DEFAULT_STAGE_COLOR,
       position: startPosition + index,
       probability: stage.probability ?? 0,
-      isClosed: stage.isClosed ?? false,
-      isDefault: isFirstPipeline && index === 0, // Primeira etapa é default se for o primeiro pipeline
+      is_closed: stage.isClosed ?? false,
+      is_default: isFirstPipeline && index === 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }));
 
-    // Cria todas as etapas em uma transação
-    const createdStages = await prisma.$transaction(
-      stagesData.map(data => prisma.pipelineStage.create({ data }))
-    );
+    // Cria todas as etapas
+    const { data: createdStages, error: insertError } = await supabaseServer
+      .from('pipeline_stages')
+      .insert(stagesData)
+      .select();
+
+    if (insertError) {
+      console.error('[Pipeline Stages POST] Error creating:', insertError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Failed to create pipeline stages",
+          details: insertError.message
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       data: createdStages,
       meta: {
-        totalCreated: createdStages.length,
+        totalCreated: createdStages?.length || 0,
         isFirstPipeline,
-        defaultStageId: isFirstPipeline ? createdStages[0].id : null,
+        defaultStageId: isFirstPipeline ? createdStages?.[0]?.id : null,
       }
     }, { status: 201 });
 
@@ -199,7 +237,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const body: DeleteStagesBody = await request.json();
+    const body: DeleteStagesBody = await body.json();
     const { organizationId } = body;
 
     // Validação: organizationId é obrigatório
@@ -211,11 +249,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Conta quantas etapas serão removidas
-    const stagesCount = await prisma.pipelineStage.count({
-      where: { organizationId }
-    });
+    const { count: stagesCount, error: countError } = await supabaseServer
+      .from('pipeline_stages')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId);
 
-    if (stagesCount === 0) {
+    if (countError) {
+      console.error('[Pipeline Stages DELETE] Error counting:', countError);
+    }
+
+    if ((stagesCount || 0) === 0) {
       return NextResponse.json(
         { 
           success: false, 
@@ -227,28 +270,57 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verifica se existem deals associados às etapas
-    const stagesWithDeals = await prisma.pipelineStage.findMany({
-      where: { organizationId },
-      include: {
-        _count: {
-          select: { deals: true }
-        }
-      }
-    });
+    const { data: stagesWithDeals, error: dealsError } = await supabaseServer
+      .from('pipeline_stages')
+      .select(`
+        id,
+        name,
+        deals:deals(count)
+      `)
+      .eq('organization_id', organizationId);
 
-    const stagesWithDealsList = stagesWithDeals.filter(s => s._count.deals > 0);
+    if (dealsError) {
+      console.error('[Pipeline Stages DELETE] Error checking deals:', dealsError);
+    }
+
+    const stagesWithDealsList = (stagesWithDeals || []).filter(s => (s.deals?.[0]?.count || 0) > 0);
 
     // Deleta todas as etapas da organização
-    // Nota: Se houver deals, a operação falhará devido às constraints de FK
-    // dependendo de como o schema está configurado (onDelete)
-    const deleteResult = await prisma.pipelineStage.deleteMany({
-      where: { organizationId }
-    });
+    const { count: deletedCount, error: deleteError } = await supabaseServer
+      .from('pipeline_stages')
+      .delete()
+      .eq('organization_id', organizationId)
+      .select('count');
+
+    if (deleteError) {
+      console.error('[Pipeline Stages DELETE] Error:', deleteError);
+      
+      // Tratamento específico para erro de constraint de FK
+      if (deleteError.message.includes("foreign key constraint")) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "Cannot delete stages with associated deals",
+            details: "Please move or delete all deals from these stages before resetting the pipeline"
+          },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Failed to delete pipeline stages",
+          details: deleteError.message
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        deletedCount: deleteResult.count,
+        deletedCount: deletedCount || 0,
         organizationId,
       },
       meta: {
@@ -261,26 +333,11 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error("[Pipeline Stages] Error deleting stages:", error);
     
-    // Tratamento específico para erro de constraint de FK (P2003)
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const isForeignKeyError = errorMessage.includes("P2003") || errorMessage.includes("foreign key constraint");
-    
-    if (isForeignKeyError) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "Cannot delete stages with associated deals",
-          details: "Please move or delete all deals from these stages before resetting the pipeline"
-        },
-        { status: 409 }
-      );
-    }
-
     return NextResponse.json(
       { 
         success: false, 
         error: "Failed to delete pipeline stages",
-        details: errorMessage
+        details: error instanceof Error ? error.message : "Unknown error"
       },
       { status: 500 }
     );
