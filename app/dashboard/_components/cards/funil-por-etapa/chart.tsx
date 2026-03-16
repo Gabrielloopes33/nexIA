@@ -52,12 +52,12 @@ export function FunilPorEtapaChart({ data }: FunilPorEtapaChartProps) {
 
   // Formatar dados para o Recharts
   const chartData: ChartDataItem[] = data.stages.map((stage, index) => ({
-    name: stage.stageName,
+    name: stage.stageName || (stage as { name?: string }).name || 'Etapa',
     count: stage.count,
     value: stage.value,
     conversionRate: stage.conversionRate,
-    avgTime: stage.avgTimeHours,
-    fill: stage.color || COLORS[index % COLORS.length],
+    avgTime: stage.avgTimeHours || (stage as { avgTime?: number }).avgTime || 0,
+    fill: (stage as { color?: string }).color || COLORS[index % COLORS.length],
   }))
 
   if (!mounted) return <div className="h-full" data-testid="funil-chart" />
@@ -75,19 +75,19 @@ export function FunilPorEtapaChart({ data }: FunilPorEtapaChartProps) {
         <BarChart 
           data={chartData} 
           layout="vertical" 
-          margin={{ left: 80, right: 20, top: 10, bottom: 10 }}
+          margin={{ left: 0, right: 10, top: 0, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
           <XAxis 
             type="number" 
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 10 }}
             tickLine={false}
           />
           <YAxis 
             dataKey="name" 
             type="category" 
-            width={75}
-            tick={{ fontSize: 11 }}
+            width={100}
+            tick={{ fontSize: 10 }}
             tickLine={false}
             axisLine={false}
           />
