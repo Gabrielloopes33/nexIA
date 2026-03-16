@@ -74,7 +74,7 @@ type ContactFormData = z.infer<typeof contactSchema>
 
 export default function NovoContatoPage() {
   const router = useRouter()
-  const organizationId = useOrganizationId() ?? ''
+  const organizationId = useOrganizationId()
   const [isUtmExpanded, setIsUtmExpanded] = useState(false)
   const { tags, isLoading: tagsLoading } = useTags(organizationId)
   const { createContact, isLoading: isSubmitting } = useContacts(organizationId)
@@ -105,6 +105,12 @@ export default function NovoContatoPage() {
   }
 
   const onSubmit = async (data: ContactFormData) => {
+    // Validate organizationId before attempting to create
+    if (!organizationId) {
+      toast.error("Organização não identificada. Por favor, recarregue a página.")
+      return
+    }
+
     // Build metadata from extra fields
     const metadata: Record<string, unknown> = {}
     if (data.email) metadata.email = data.email
@@ -120,17 +126,22 @@ export default function NovoContatoPage() {
     if (data.utmCampaign) metadata.utmCampaign = data.utmCampaign
     if (data.observacoes) metadata.notes = data.observacoes
 
-    const newContact = await createContact({
-      name: data.name,
-      phone: data.phone,
-      status: data.status,
-      tags: data.tags,
-      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
-    })
+    try {
+      const newContact = await createContact({
+        name: data.name,
+        phone: data.phone,
+        status: data.status,
+        tags: data.tags,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+      })
 
-    if (newContact) {
-      toast.success("Contato criado com sucesso!")
-      router.push("/contatos")
+      if (newContact) {
+        toast.success("Contato criado com sucesso!")
+        router.push("/contatos")
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao criar contato"
+      toast.error(message)
     }
   }
 

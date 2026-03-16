@@ -70,7 +70,7 @@ export function useContacts(
   }
 
   const fetchContacts = useCallback(async () => {
-    if (!organizationId) return
+    if (!effectiveOrgId) return
     
     setIsLoading(true)
     setError(null)
@@ -110,8 +110,9 @@ export function useContacts(
       await fetchContacts()
       return data.data
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar contato')
-      return null
+      const message = err instanceof Error ? err.message : 'Erro ao criar contato'
+      setError(message)
+      throw new Error(message)
     }
   }
 
@@ -132,8 +133,9 @@ export function useContacts(
       await fetchContacts()
       return data.data
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar contato')
-      return null
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar contato'
+      setError(message)
+      throw new Error(message)
     }
   }
 
@@ -152,8 +154,9 @@ export function useContacts(
       await fetchContacts()
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao excluir contato')
-      return false
+      const message = err instanceof Error ? err.message : 'Erro ao excluir contato'
+      setError(message)
+      throw new Error(message)
     }
   }
 
@@ -172,8 +175,9 @@ export function useContacts(
       await fetchContacts()
       return data.data
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao restaurar contato')
-      return null
+      const message = err instanceof Error ? err.message : 'Erro ao restaurar contato'
+      setError(message)
+      throw new Error(message)
     }
   }
 
