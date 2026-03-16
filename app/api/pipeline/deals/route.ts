@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { DealPriority, DealStatus } from "@prisma/client";
+import { supabaseServer } from "@/lib/supabase-server";
+type DealStatus = 'OPEN' | 'WON' | 'LOST' | 'CANCELLED';
 
 /**
  * GET /api/pipeline/deals
@@ -14,42 +14,43 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") as DealStatus | null;
     const contactId = searchParams.get("contactId");
 
-    const where: Record<string, unknown> = { organizationId };
-    if (stageId) where.stageId = stageId;
-    if (status) where.status = status;
-    if (contactId) where.contactId = contactId;
+    console.log('[Pipeline Deals GET] Params:', { organizationId, stageId, status, contactId });
 
-    const deals = await prisma.deal.findMany({
-      where,
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
-        },
-        stage: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
-            probability: true,
-          },
-        },
-        _count: {
-          select: { activities: true },
-        },
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+    // Build query
+    let query = supabaseServer
+      .from('deals')
+      .select(`
+        *,
+        contact:contacts(id, name, phone, avatar_url),
+        stage:pipeline_stages(id, name, color, probability),
+        activities:deal_activities(count)
+      `)
+      .eq('organization_id', organizationId)
+      .order('updated_at', { ascending: false });
 
-    // Calculate lead score for each deal
-    const dealsWithScore = deals.map((deal) => ({
+    if (stageId) query = query.eq('stage_id', stageId);
+    if (status) query = query.eq('status', status);
+    if (contactId) query = query.eq('contact_id', contactId);
+
+    const { data: deals, error } = await query;
+
+    if (error) {
+      console.error('[Pipeline Deals GET] Supabase error:', error);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Failed to fetch deals",
+          details: error.message
+        },
+        { status: 500 }
+      );
+    }
+
+    // Transform data to match expected format
+    const dealsWithScore = (deals || []).map((deal) => ({
       ...deal,
       leadScore: calculateLeadScore(deal),
-      activitiesCount: deal._count.activities,
+      activitiesCount: deal.activities?.[0]?.count || 0,
     }));
 
     return NextResponse.json({
@@ -91,6 +92,8 @@ export async function POST(request: NextRequest) {
       metadata,
     } = body;
 
+    console.log('[Pipeline Deals POST] Body:', body);
+
     if (!stageId || !contactId || !title) {
       return NextResponse.json(
         { success: false, error: "stageId, contactId, and title are required" },
@@ -98,51 +101,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const deal = await prisma.deal.create({
-      data: {
-        organizationId,
-        stageId,
-        contactId,
+    // Create deal
+    const { data: deal, error: dealError } = await supabaseServer
+      .from('deals')
+      .insert({
+        organization_id: organizationId,
+        stage_id: stageId,
+        contact_id: contactId,
         title,
         description,
         amount: value ?? 0,
         currency,
-        priority: priority as DealPriority,
-        expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
+        priority: priority,
+        expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : null,
         source,
         tags: tags ?? [],
         metadata: metadata ?? {},
-      },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
+        status: 'OPEN',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select(`
+        *,
+        contact:contacts(id, name, phone, avatar_url),
+        stage:pipeline_stages(id, name, color, probability)
+      `)
+      .single();
+
+    if (dealError) {
+      console.error('[Pipeline Deals POST] Error creating deal:', dealError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Failed to create deal",
+          details: dealError.message
         },
-        stage: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
-            probability: true,
-          },
-        },
-      },
-    });
+        { status: 500 }
+      );
+    }
 
     // Create initial activity
-    await prisma.dealActivity.create({
-      data: {
-        dealId: deal.id,
+    const { error: activityError } = await supabaseServer
+      .from('deal_activities')
+      .insert({
+        deal_id: deal.id,
         type: "NOTE",
         title: "Deal criado",
         content: "Deal criado manualmente no sistema",
         metadata: { source: "manual" },
-      },
-    });
+        created_at: new Date().toISOString(),
+      });
+
+    if (activityError) {
+      console.error('[Pipeline Deals POST] Error creating activity:', activityError);
+      // Don't fail the request if activity creation fails
+    }
 
     return NextResponse.json({
       success: true,
@@ -166,11 +179,11 @@ export async function POST(request: NextRequest) {
 
 interface DealWithRelations {
   id: string;
-  createdAt: Date;
+  created_at: string;
   amount: number;
-  priority: DealPriority;
+  priority: string;
   stage: { probability: number };
-  activities: { createdAt: Date }[];
+  activities?: { created_at: string }[];
 }
 
 /**
@@ -181,7 +194,7 @@ function calculateLeadScore(deal: DealWithRelations): number {
 
   // 1. Age of deal (newer = hotter)
   const daysSinceCreated = Math.floor(
-    (Date.now() - new Date(deal.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    (Date.now() - new Date(deal.created_at).getTime()) / (1000 * 60 * 60 * 24)
   );
   if (daysSinceCreated <= 7) score += 20;
   else if (daysSinceCreated <= 30) score += 10;
@@ -208,13 +221,13 @@ function calculateLeadScore(deal: DealWithRelations): number {
   }
 
   // 4. Stage probability
-  score += deal.stage.probability * 0.15;
+  score += deal.stage?.probability * 0.15 || 0;
 
   // 5. Recent activity (if available)
   if (deal.activities && deal.activities.length > 0) {
     const lastActivity = deal.activities[0];
     const daysSinceActivity = Math.floor(
-      (Date.now() - new Date(lastActivity.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - new Date(lastActivity.created_at).getTime()) / (1000 * 60 * 60 * 24)
     );
     if (daysSinceActivity <= 3) score += 20;
     else if (daysSinceActivity <= 7) score += 10;
