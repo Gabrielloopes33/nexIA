@@ -41,13 +41,15 @@ export async function GET(request: NextRequest) {
 
     console.log('[Pipeline Stages GET] organizationId:', organizationId);
 
+    // Converte organization_id para UUID se necessário
+    const orgId = organizationId === 'default_org_id' 
+      ? '00000000-0000-0000-0000-000000000000' 
+      : organizationId;
+
     const { data: stages, error } = await supabaseServer
       .from('pipeline_stages')
-      .select(`
-        *,
-        deals:deals(count)
-      `)
-      .eq('organization_id', organizationId)
+      .select('*')
+      .eq('organization_id', orgId)
       .order('position', { ascending: true });
 
     if (error) {
@@ -62,11 +64,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Conta deals por estágio
+    const { data: dealsCount } = await supabaseServer
+      .from('deals')
+      .select('stage_id', { count: 'exact' })
+      .eq('organization_id', orgId);
+
+    const dealsByStage: Record<string, number> = {};
+    dealsCount?.forEach((d: any) => {
+      dealsByStage[d.stage_id] = (dealsByStage[d.stage_id] || 0) + 1;
+    });
+
     return NextResponse.json({
       success: true,
       data: (stages || []).map((stage) => ({
         ...stage,
-        dealsCount: stage.deals?.[0]?.count || 0,
+        dealsCount: dealsByStage[stage.id] || 0,
       })),
     });
   } catch (error) {
@@ -153,11 +166,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Converte organization_id para UUID
+    const orgId = organizationId === 'default_org_id' 
+      ? '00000000-0000-0000-0000-000000000000' 
+      : organizationId;
+
     // Verifica se já existe um pipeline para esta organização
     const { count: existingStagesCount, error: countError } = await supabaseServer
       .from('pipeline_stages')
       .select('*', { count: 'exact', head: true })
-      .eq('organization_id', organizationId);
+      .eq('organization_id', orgId);
 
     if (countError) {
       console.error('[Pipeline Stages POST] Error counting:', countError);
@@ -169,7 +187,7 @@ export async function POST(request: NextRequest) {
     const { data: lastStage, error: lastError } = await supabaseServer
       .from('pipeline_stages')
       .select('position')
-      .eq('organization_id', organizationId)
+      .eq('organization_id', orgId)
       .order('position', { ascending: false })
       .limit(1)
       .single();
@@ -178,7 +196,7 @@ export async function POST(request: NextRequest) {
 
     // Prepara os dados para criação em batch
     const stagesData = stages.map((stage, index) => ({
-      organization_id: organizationId,
+      organization_id: orgId,
       name: stage.name.trim(),
       color: stage.color || DEFAULT_STAGE_COLOR,
       position: startPosition + index,
@@ -237,7 +255,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const body: DeleteStagesBody = await body.json();
+    const body: DeleteStagesBody = await request.json();
     const { organizationId } = body;
 
     // Validação: organizationId é obrigatório
@@ -248,11 +266,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Converte organization_id para UUID
+    const orgId = organizationId === 'default_org_id' 
+      ? '00000000-0000-0000-0000-000000000000' 
+      : organizationId;
+
     // Conta quantas etapas serão removidas
     const { count: stagesCount, error: countError } = await supabaseServer
       .from('pipeline_stages')
       .select('*', { count: 'exact', head: true })
-      .eq('organization_id', organizationId);
+      .eq('organization_id', orgId);
 
     if (countError) {
       console.error('[Pipeline Stages DELETE] Error counting:', countError);
@@ -270,27 +293,31 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verifica se existem deals associados às etapas
-    const { data: stagesWithDeals, error: dealsError } = await supabaseServer
-      .from('pipeline_stages')
-      .select(`
-        id,
-        name,
-        deals:deals(count)
-      `)
-      .eq('organization_id', organizationId);
+    const { data: dealsData, error: dealsError } = await supabaseServer
+      .from('deals')
+      .select('stage_id')
+      .eq('organization_id', orgId);
+    
+    const stagesWithDealsIds = new Set(dealsData?.map(d => d.stage_id) || []);
 
     if (dealsError) {
       console.error('[Pipeline Stages DELETE] Error checking deals:', dealsError);
     }
 
-    const stagesWithDealsList = (stagesWithDeals || []).filter(s => (s.deals?.[0]?.count || 0) > 0);
+    // Busca nomes dos estágios com deals
+    const { data: stagesData } = await supabaseServer
+      .from('pipeline_stages')
+      .select('id, name')
+      .eq('organization_id', orgId)
+      .in('id', Array.from(stagesWithDealsIds));
+    
+    const stagesWithDealsList = stagesData || [];
 
     // Deleta todas as etapas da organização
     const { count: deletedCount, error: deleteError } = await supabaseServer
       .from('pipeline_stages')
       .delete()
-      .eq('organization_id', organizationId)
-      .select('count');
+      .eq('organization_id', orgId);
 
     if (deleteError) {
       console.error('[Pipeline Stages DELETE] Error:', deleteError);

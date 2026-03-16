@@ -16,16 +16,16 @@ export async function GET(request: NextRequest) {
 
     console.log('[Pipeline Deals GET] Params:', { organizationId, stageId, status, contactId });
 
-    // Build query
+    // Converte organization_id para UUID se necessário
+    const orgId = organizationId === 'default_org_id' 
+      ? '00000000-0000-0000-0000-000000000000' 
+      : organizationId;
+
+    // Build query (sem relacionamentos complexos)
     let query = supabaseServer
       .from('deals')
-      .select(`
-        *,
-        contact:contacts(id, name, phone, avatar_url),
-        stage:pipeline_stages(id, name, color, probability),
-        activities:deal_activities(count)
-      `)
-      .eq('organization_id', organizationId)
+      .select('*')
+      .eq('organization_id', orgId)
       .order('updated_at', { ascending: false });
 
     if (stageId) query = query.eq('stage_id', stageId);
@@ -46,11 +46,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Busca estágios para calcular score
+    const { data: stages } = await supabaseServer
+      .from('pipeline_stages')
+      .select('id, probability')
+      .eq('organization_id', orgId);
+
+    const stagesMap = new Map(stages?.map(s => [s.id, s.probability]) || []);
+
     // Transform data to match expected format
     const dealsWithScore = (deals || []).map((deal) => ({
       ...deal,
-      leadScore: calculateLeadScore(deal),
-      activitiesCount: deal.activities?.[0]?.count || 0,
+      leadScore: calculateLeadScore({
+        ...deal,
+        stage: { probability: stagesMap.get(deal.stage_id) || 0 }
+      }),
+      activitiesCount: 0, // Simplificado por enquanto
     }));
 
     return NextResponse.json({
