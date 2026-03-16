@@ -21,6 +21,7 @@ import {
   TrendingDown,
   Activity,
   BarChart3,
+  Loader2,
 } from "lucide-react"
 
 import { Sidebar } from "@/components/sidebar"
@@ -35,16 +36,23 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { MOCK_CONTACTS } from "@/lib/mock/contacts"
-import { MOCK_TAGS } from "@/lib/mock/tags"
+import { useContacts } from "@/hooks/use-contacts"
+import { useTags } from "@/hooks/use-tags"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
+// Updated status colors for API values
 const STATUS_COLORS: Record<string, string> = {
-  ativo: "#81C784",
-  inativo: "#E57373",
-  pendente: "#FFB74D",
-  convertido: "#46347F",
+  ACTIVE: "#10b981",
+  INACTIVE: "#6b7280",
+  BLOCKED: "#ef4444",
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Ativo",
+  INACTIVE: "Inativo",
+  BLOCKED: "Bloqueado",
 }
 
 const CustomTooltip = ({ active, payload, label }: {
@@ -68,7 +76,10 @@ const CustomTooltip = ({ active, payload, label }: {
 }
 
 export default function TendenciasPage() {
+  const organizationId = useOrganizationId() ?? ''
   const [period, setPeriod] = useState("12meses")
+  const { contacts, total, isLoading } = useContacts(organizationId)
+  const { tags } = useTags(organizationId)
 
   // Calcular novos contatos por mês (últimos 12 meses)
   const newContactsByMonth = useMemo(() => {
@@ -83,8 +94,8 @@ export default function TendenciasPage() {
     }
 
     // Contar contatos
-    MOCK_CONTACTS.forEach((contact) => {
-      const date = new Date(contact.criadoEm)
+    contacts.forEach((contact) => {
+      const date = new Date(contact.createdAt)
       const key = `${MONTHS[date.getMonth()]} ${date.getFullYear()}`
       if (counts.hasOwnProperty(key)) {
         counts[key]++
@@ -92,37 +103,39 @@ export default function TendenciasPage() {
     })
 
     return Object.entries(counts).map(([mes, contatos]) => ({ mes, contatos }))
-  }, [])
+  }, [contacts])
 
-  // Top origens
+  // Top origens (from metadata)
   const originDistribution = useMemo(() => {
     const origins: Record<string, number> = {}
-    MOCK_CONTACTS.forEach((c) => {
-      origins[c.origem] = (origins[c.origem] || 0) + 1
+    contacts.forEach((c) => {
+      const metadata = c.metadata as Record<string, string> | undefined
+      const origem = metadata?.source || "Manual"
+      origins[origem] = (origins[origem] || 0) + 1
     })
     return Object.entries(origins)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6)
       .map(([origem, total]) => ({ origem, total }))
-  }, [])
+  }, [contacts])
 
-  // Distribuição por status
+  // Distribuição por status (use API status values)
   const statusDistribution = useMemo(() => {
     const statuses: Record<string, number> = {}
-    MOCK_CONTACTS.forEach((c) => {
+    contacts.forEach((c) => {
       statuses[c.status] = (statuses[c.status] || 0) + 1
     })
     return Object.entries(statuses).map(([status, total]) => ({
-      status,
+      status: STATUS_LABELS[status] || status,
       total,
       fill: STATUS_COLORS[status] || "#999",
     }))
-  }, [])
+  }, [contacts])
 
   // Top tags
   const topTags = useMemo(() => {
     const tagCounts: Record<string, number> = {}
-    MOCK_CONTACTS.forEach((c) => {
+    contacts.forEach((c) => {
       c.tags.forEach((tagId) => {
         tagCounts[tagId] = (tagCounts[tagId] || 0) + 1
       })
@@ -132,21 +145,20 @@ export default function TendenciasPage() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([tagId, total]) => {
-        const tag = MOCK_TAGS.find((t) => t.id === tagId)
+        const tag = tags.find((t) => t.id === tagId)
         return {
-          tag: tag?.nome || tagId,
-          cor: tag?.cor || "#46347F",
+          tag: tag?.name || tagId.slice(0, 8),
+          cor: tag?.color || "#46347F",
           total,
         }
       })
-  }, [])
+  }, [contacts, tags])
 
   // KPIs
-  const totalContacts = MOCK_CONTACTS.length
-  const activeContacts = MOCK_CONTACTS.filter((c) => c.status === "ativo").length
+  const totalContacts = total
+  const activeContacts = contacts.filter((c) => c.status === "ACTIVE").length
 
-
-  // Novos este mês vs mês anterior (simulado)
+  // Novos este mês vs mês anterior
   const currentMonthCount = newContactsByMonth[newContactsByMonth.length - 1]?.contatos || 0
   const lastMonthCount = newContactsByMonth[newContactsByMonth.length - 2]?.contatos || 0
   const monthChange = lastMonthCount === 0 ? 0 : ((currentMonthCount - lastMonthCount) / lastMonthCount) * 100
@@ -182,210 +194,220 @@ export default function TendenciasPage() {
 
         <Separator className="mb-6" />
 
-        {/* KPI Cards */}
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#46347F]/10">
-                <Users className="h-6 w-6 text-[#46347F]" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total de Contatos</p>
-                <p className="text-2xl font-bold">{totalContacts}</p>
-              </div>
-            </CardContent>
-          </Card>
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+          </div>
+        )}
 
-          <Card>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-                <BarChart3 className="h-6 w-6 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Novos este mês</p>
-                <p className="text-2xl font-bold">{currentMonthCount}</p>
-                <p className={cn("text-xs flex items-center gap-1", isPositive ? "text-emerald-600" : "text-red-600")}>
-                  {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {Math.abs(monthChange).toFixed(0)}% vs mês anterior
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-                <Activity className="h-6 w-6 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Contatos Ativos</p>
-                <p className="text-2xl font-bold">{activeContacts}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#46347F]/10">
-                <BarChart3 className="h-6 w-6 text-[#46347F]" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Taxa de Atividade</p>
-                <p className="text-2xl font-bold">{Math.round((activeContacts / totalContacts) * 100)}%</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Gráficos */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Gráfico de Linha */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">Novos Contatos por Mês</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={newContactsByMonth}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                    <XAxis
-                      dataKey="mes"
-                      tick={{ fontSize: 12 }}
-                      stroke="#888"
-                    />
-                    <YAxis tick={{ fontSize: 12 }} stroke="#888" />
-                    <RechartsTooltip content={<CustomTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="contatos"
-                      stroke="#46347F"
-                      strokeWidth={2}
-                      dot={{ fill: "#46347F", strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Gráfico de Barras - Origens */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Top Origens</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={originDistribution}
-                    layout="vertical"
-                    margin={{ left: 40, right: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 12 }} stroke="#888" />
-                    <YAxis
-                      type="category"
-                      dataKey="origem"
-                      tick={{ fontSize: 11 }}
-                      stroke="#888"
-                      width={100}
-                    />
-                    <RechartsTooltip content={<CustomTooltip />} />
-                    <Bar dataKey="total" fill="#46347F" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Gráfico de Pizza - Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Distribuição por Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-6">
-                <div className="h-[280px] flex-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statusDistribution}
-                        dataKey="total"
-                        nameKey="status"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        innerRadius={40}
-                      >
-                        {statusDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip content={<CustomTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2 text-sm">
-                  {statusDistribution.map((item) => (
-                    <div key={item.status} className="flex items-center gap-2">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: item.fill }}
-                      />
-                      <span className="capitalize">{item.status}</span>
-                      <span className="text-muted-foreground">({item.total})</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabela de Top Tags */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-base">Tags Mais Usadas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {topTags.map((tag, index) => {
-                const percentage = (tag.total / totalContacts) * 100
-                return (
-                  <div
-                    key={index}
-                    className="flex items-center gap-4 py-2"
-                  >
-                    <Badge
-                      className="w-28 justify-center text-xs"
-                      style={{
-                        backgroundColor: `${tag.cor}20`,
-                        color: tag.cor,
-                        borderColor: tag.cor,
-                      }}
-                    >
-                      {tag.tag}
-                    </Badge>
-                    <span className="w-16 text-sm font-medium">{tag.total}</span>
-                    <div className="flex-1">
-                      <div className="h-2 w-full rounded-full bg-gray-100">
-                        <div
-                          className="h-2 rounded-full bg-[#46347F]"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className="w-16 text-right text-sm text-muted-foreground">
-                      {percentage.toFixed(0)}%
-                    </span>
+        {!isLoading && (
+          <>
+            {/* KPI Cards */}
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#46347F]/10">
+                    <Users className="h-6 w-6 text-[#46347F]" />
                   </div>
-                )
-              })}
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total de Contatos</p>
+                    <p className="text-2xl font-bold">{totalContacts}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                    <BarChart3 className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Novos este mês</p>
+                    <p className="text-2xl font-bold">{currentMonthCount}</p>
+                    <p className={cn("text-xs flex items-center gap-1", isPositive ? "text-emerald-600" : "text-red-600")}>
+                      {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                      {Math.abs(monthChange).toFixed(0)}% vs mês anterior
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                    <Activity className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Contatos Ativos</p>
+                    <p className="text-2xl font-bold">{activeContacts}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#46347F]/10">
+                    <BarChart3 className="h-6 w-6 text-[#46347F]" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Taxa de Atividade</p>
+                    <p className="text-2xl font-bold">{Math.round((activeContacts / totalContacts) * 100)}%</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Gráficos */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Gráfico de Linha */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Novos Contatos por Mês</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[280px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={newContactsByMonth}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                        <XAxis
+                          dataKey="mes"
+                          tick={{ fontSize: 12 }}
+                          stroke="#888"
+                        />
+                        <YAxis tick={{ fontSize: 12 }} stroke="#888" />
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <Line
+                          type="monotone"
+                          dataKey="contatos"
+                          stroke="#46347F"
+                          strokeWidth={2}
+                          dot={{ fill: "#46347F", strokeWidth: 2, r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Gráfico de Barras - Origens */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Top Origens</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[280px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={originDistribution}
+                        layout="vertical"
+                        margin={{ left: 40, right: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#eee" horizontal={false} />
+                        <XAxis type="number" tick={{ fontSize: 12 }} stroke="#888" />
+                        <YAxis
+                          type="category"
+                          dataKey="origem"
+                          tick={{ fontSize: 11 }}
+                          stroke="#888"
+                          width={100}
+                        />
+                        <RechartsTooltip content={<CustomTooltip />} />
+                        <Bar dataKey="total" fill="#46347F" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Gráfico de Pizza - Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Distribuição por Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-6">
+                    <div className="h-[280px] flex-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={statusDistribution}
+                            dataKey="total"
+                            nameKey="status"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            innerRadius={40}
+                          >
+                            {statusDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip content={<CustomTooltip />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      {statusDistribution.map((item) => (
+                        <div key={item.status} className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: item.fill }}
+                          />
+                          <span>{item.status}</span>
+                          <span className="text-muted-foreground">({item.total})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tabela de Top Tags */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-base">Tags Mais Usadas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {topTags.map((tag, index) => {
+                    const percentage = (tag.total / totalContacts) * 100
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center gap-4 py-2"
+                      >
+                        <Badge
+                          className="w-28 justify-center text-xs"
+                          style={{
+                            backgroundColor: `${tag.cor}20`,
+                            color: tag.cor,
+                            borderColor: tag.cor,
+                          }}
+                        >
+                          {tag.tag}
+                        </Badge>
+                        <span className="w-16 text-sm font-medium">{tag.total}</span>
+                        <div className="flex-1">
+                          <div className="h-2 w-full rounded-full bg-gray-100">
+                            <div
+                              className="h-2 rounded-full bg-[#46347F]"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className="w-16 text-right text-sm text-muted-foreground">
+                          {percentage.toFixed(0)}%
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </main>
     </div>
   )

@@ -17,34 +17,42 @@ const STORAGE_KEY = 'sidebar-open-groups'
 export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropdownsReturn {
   const pathname = usePathname()
   
-  // Initialize from localStorage or auto-open active groups
-  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
-    // Try to get from localStorage first
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) {
-        try {
-          return new Set(JSON.parse(saved))
-        } catch {
-          // Fallback to auto-open if parse fails
-        }
+  // Start with empty set for SSR consistency
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  // Hydrate from localStorage after mount (client-side only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        setOpenGroups(new Set(JSON.parse(saved)))
+      } catch {
+        // Fallback to auto-open if parse fails
+        const activeKeys = navItems
+          .filter((item) => isGroupActive(item, pathname))
+          .map((item) => item.key)
+        setOpenGroups(new Set(activeKeys))
       }
+    } else {
+      // Auto-open groups that contain the active route
+      const activeKeys = navItems
+        .filter((item) => isGroupActive(item, pathname))
+        .map((item) => item.key)
+      setOpenGroups(new Set(activeKeys))
     }
     
-    // Auto-open groups that contain the active route
-    const activeKeys = navItems
-      .filter((item) => isGroupActive(item, pathname))
-      .map((item) => item.key)
-    
-    return new Set(activeKeys)
-  })
+    setIsHydrated(true)
+  }, [pathname, navItems])
 
   // Persist to localStorage when openGroups changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && isHydrated) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...openGroups]))
     }
-  }, [openGroups])
+  }, [openGroups, isHydrated])
 
   const toggleGroup = useCallback((key: string) => {
     setOpenGroups((prev) => {

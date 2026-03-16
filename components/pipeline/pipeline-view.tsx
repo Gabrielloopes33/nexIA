@@ -15,13 +15,15 @@ import {
   XCircle,
   AlertCircle,
   Check,
-  GripVertical
+  GripVertical,
+  Loader2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ContactDetailPanel } from "@/components/contact-detail-panel"
-import { MOCK_CONTACTS, Contact } from "@/lib/mock/contacts"
+import { Contact, useContacts } from "@/hooks/use-contacts"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -115,30 +117,34 @@ function formatCurrency(val: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(val)
 }
 
-function findContactByDeal(deal: Deal): Contact | undefined {
-  if (deal.contactId) {
-    return MOCK_CONTACTS.find(c => c.id === deal.contactId)
+// Helper para criar um Contact a partir de um Deal
+function createContactFromDeal(deal: Deal, existingContact?: Contact, organizationId = ''): Contact {
+  if (existingContact) {
+    return existingContact
   }
+
+  const nomeParts = deal.responsavel.split(' ')
+
   return {
     id: `deal-contact-${deal.id}`,
-    nome: deal.responsavel.split(' ')[0],
-    sobrenome: deal.responsavel.split(' ').slice(1).join(' ') || "Sobrenome",
-    email: deal.email,
-    telefone: deal.telefone,
-    cidade: "São Paulo",
-    estado: "SP",
-    cargo: "Diretor Comercial",
-    empresa: deal.empresa,
+    organizationId: organizationId,
+    name: deal.responsavel,
+    phone: deal.telefone,
+    avatarUrl: null,
+    metadata: {
+      company: deal.empresa,
+      jobTitle: "Diretor Comercial",
+      city: "São Paulo",
+      state: "SP",
+    },
     tags: ["pipeline"],
-
-    status: "ativo",
-    origem: "Pipeline",
-    criadoEm: deal.criadoEm,
-    atualizadoEm: new Date().toISOString(),
-    atualizadoPor: "Sistema",
-    avatar: deal.avatar,
-    avatarBg: "#46347F",
-  } as Contact
+    leadScore: 0,
+    status: "ACTIVE",
+    lastInteractionAt: deal.criadoEm,
+    deletedAt: null,
+    createdAt: deal.criadoEm,
+    updatedAt: new Date().toISOString(),
+  }
 }
 
 // ─── Components ──────────────────────────────────────────────────────────────
@@ -640,8 +646,9 @@ function FilterDropdown({ filtros, onChange }: FilterDropdownProps) {
 // ─── Main View ───────────────────────────────────────────────────────────────
 
 export function PipelineView() {
+  const organizationId = useOrganizationId() ?? ''
   const [deals, setDeals] = useState<Deal[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingDeals, setIsLoadingDeals] = useState(true)
   const [selectedDealId, setSelectedDealId] = useState<number | null>(null)
   const [draggedDealId, setDraggedDealId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -655,10 +662,13 @@ export function PipelineView() {
     valorMax: null
   })
 
+  // Busca contatos reais da API
+  const { contacts, isLoading: isLoadingContacts } = useContacts(organizationId)
+
   // Generate mock data only on client to avoid hydration mismatch
   useEffect(() => {
     setDeals(gerarDealsMock())
-    setIsLoading(false)
+    setIsLoadingDeals(false)
   }, [])
 
   const filteredDeals = useMemo(() => {
@@ -701,10 +711,14 @@ export function PipelineView() {
     [deals, selectedDealId]
   )
 
+  // Encontra o contato associado ao deal selecionado
   const selectedContact = useMemo(() => {
     if (!selectedDeal) return undefined
-    return findContactByDeal(selectedDeal)
-  }, [selectedDeal])
+    const existingContact = selectedDeal.contactId 
+      ? contacts.find(c => c.id === selectedDeal.contactId)
+      : undefined
+    return createContactFromDeal(selectedDeal, existingContact, organizationId)
+  }, [selectedDeal, contacts])
 
   // Totals
   const totalValue = deals.filter(d => d.status === "open").reduce((sum, d) => sum + d.valor, 0)
@@ -770,6 +784,8 @@ export function PipelineView() {
     setDeals([novoDeal, ...deals])
     setShowAddModal(false)
   }
+
+  const isLoading = isLoadingDeals || isLoadingContacts
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -852,33 +868,42 @@ export function PipelineView() {
         </div>
       </div>
 
-      {/* Content */}
-      {viewMode === "board" ? (
-        <div className="flex flex-1 gap-4 overflow-x-auto overflow-y-hidden p-4">
-          {STAGES.map((stage) => (
-            <PipelineColumn
-              key={stage.key}
-              stage={stage}
-              deals={filteredDeals.filter((d) => d.stage === stage.key)}
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+        </div>
+      ) : (
+        <>
+          {/* Content */}
+          {viewMode === "board" ? (
+            <div className="flex flex-1 gap-4 overflow-x-auto overflow-y-hidden p-4">
+              {STAGES.map((stage) => (
+                <PipelineColumn
+                  key={stage.key}
+                  stage={stage}
+                  deals={filteredDeals.filter((d) => d.stage === stage.key)}
+                  draggedDealId={draggedDealId}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onDealClick={handleDealClick}
+                  selectedDealId={selectedDealId}
+                />
+              ))}
+            </div>
+          ) : (
+            <DealListView 
+              deals={filteredDeals} 
+              onDealClick={handleDealClick}
+              selectedDealId={selectedDealId}
               draggedDealId={draggedDealId}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
-              onDealClick={handleDealClick}
-              selectedDealId={selectedDealId}
             />
-          ))}
-        </div>
-      ) : (
-        <DealListView 
-          deals={filteredDeals} 
-          onDealClick={handleDealClick}
-          selectedDealId={selectedDealId}
-          draggedDealId={draggedDealId}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-        />
+          )}
+        </>
       )}
 
       {/* Add Deal Modal */}

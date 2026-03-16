@@ -1,0 +1,106 @@
+# ============================================
+# Vector Configuration for Supabase Logs
+# ============================================
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  docker_syslog:
+    type: docker_logs
+    exclude_containers:
+      - supabase-vector
+
+transforms:
+  project_logs:
+    type: remap
+    inputs:
+      - docker_syslog
+    source: |-
+      .project = "default"
+      
+  router:
+    type: route
+    inputs:
+      - project_logs
+    route:
+      kong: '.appname == "kong"'
+      auth: '.appname == "auth"'
+      rest: '.appname == "rest"'
+      realtime: '.appname == "realtime"'
+      storage: '.appname == "storage"'
+      functions: '.appname == "functions"'
+      db: '.appname == "db"'
+      pgmeta: '.appname == "pgmeta"'
+      studio: '.appname == "studio"'
+      analytics: '.appname == "analytics"'
+      imgproxy: '.appname == "imgproxy"'
+      other: 'true'
+
+sinks:
+  logflare_auth:
+    type: http
+    inputs:
+      - router.auth
+    uri: "${LOGFLARE_URL}/logs/browser?api_key=${LOGFLARE_API_KEY}&source=${LOGFLARE_TOKEN}"
+    method: post
+    encoding:
+      codec: json
+    request:
+      headers:
+        Content-Type: application/json
+
+  logflare_rest:
+    type: http
+    inputs:
+      - router.rest
+    uri: "${LOGFLARE_URL}/logs/rest?api_key=${LOGFLARE_API_KEY}&source=${LOGFLARE_TOKEN}"
+    method: post
+    encoding:
+      codec: json
+
+  logflare_realtime:
+    type: http
+    inputs:
+      - router.realtime
+    uri: "${LOGFLARE_URL}/logs/realtime?api_key=${LOGFLARE_API_KEY}&source=${LOGFLARE_TOKEN}"
+    method: post
+    encoding:
+      codec: json
+
+  logflare_storage:
+    type: http
+    inputs:
+      - router.storage
+    uri: "${LOGFLARE_URL}/logs/storage?api_key=${LOGFLARE_API_KEY}&source=${LOGFLARE_TOKEN}"
+    method: post
+    encoding:
+      codec: json
+
+  logflare_db:
+    type: http
+    inputs:
+      - router.db
+    uri: "${LOGFLARE_URL}/logs/postgres?api_key=${LOGFLARE_API_KEY}&source=${LOGFLARE_TOKEN}"
+    method: post
+    encoding:
+      codec: json
+
+  logflare_functions:
+    type: http
+    inputs:
+      - router.functions
+    uri: "${LOGFLARE_URL}/logs/functions?api_key=${LOGFLARE_API_KEY}&source=${LOGFLARE_TOKEN}"
+    method: post
+    encoding:
+      codec: json
+
+  logflare_other:
+    type: http
+    inputs:
+      - router.other
+    uri: "${LOGFLARE_URL}/logs/default?api_key=${LOGFLARE_API_KEY}&source=${LOGFLARE_TOKEN}"
+    method: post
+    encoding:
+      codec: json

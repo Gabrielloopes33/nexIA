@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/tooltip'
 import { formatPercentage } from '@/lib/formatters'
 import { calculateObjectionStats } from '@/lib/ai/objection-detector'
-import { MOCK_TRANSCRIPTIONS } from '@/lib/mock-transcriptions'
 import { 
   AlertTriangle, 
   DollarSign, 
@@ -49,9 +48,17 @@ const BAR_COLORS = [
   'bg-[#8B7DB8]',      // Roxo pastel
 ]
 
-export function ObjectionsChart() {
+interface ObjectionsChartProps {
+  transcriptions?: Array<{
+    objections?: string[]
+    converted?: boolean
+    resolutionDays?: number
+  }>
+}
+
+export function ObjectionsChart({ transcriptions = [] }: ObjectionsChartProps) {
   const objectionStats = calculateObjectionStats(
-    MOCK_TRANSCRIPTIONS.map(t => ({
+    transcriptions.map(t => ({
       objections: t.objections,
       converted: t.converted,
       resolutionDays: t.resolutionDays

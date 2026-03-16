@@ -7,24 +7,18 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { ChevronDown, ChevronUp } from "lucide-react"
-
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { MOCK_TAGS } from "@/lib/mock/tags"
-import type { Contact } from "@/lib/mock/contacts"
+import { useTags } from "@/hooks/use-tags"
+import { useContacts } from "@/hooks/use-contacts"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 const estadosBrasileiros = [
   { value: "AC", label: "AC" },
@@ -56,23 +50,20 @@ const estadosBrasileiros = [
   { value: "TO", label: "TO" },
 ]
 
-const avatarBackgrounds = ["#E8E7F7", "#FFF3E0", "#E8F5E9", "#E3F2FD", "#FCE4EC"]
-
+// Updated schema for API Contact type
 const contactSchema = z.object({
-  nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  sobrenome: z.string().min(1, "Sobrenome é obrigatório"),
-  email: z.string().email("Email inválido"),
-  telefone: z.string().min(1, "Telefone é obrigatório"),
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  email: z.string().email("Email inválido").optional(),
   empresa: z.string().optional(),
   cargo: z.string().optional(),
   cidade: z.string().optional(),
   estado: z.string().optional(),
   instagram: z.string().optional(),
   linkedin: z.string().optional(),
-  status: z.enum(["ativo", "inativo", "pendente", "convertido"]),
+  status: z.enum(["ACTIVE", "INACTIVE", "BLOCKED"]),
   origem: z.string().optional(),
   tags: z.array(z.string()).default([]),
-
   utmSource: z.string().optional(),
   utmMedium: z.string().optional(),
   utmCampaign: z.string().optional(),
@@ -81,17 +72,12 @@ const contactSchema = z.object({
 
 type ContactFormData = z.infer<typeof contactSchema>
 
-function generateAvatar(nome: string, sobrenome: string): string {
-  return (nome.charAt(0) + sobrenome.charAt(0)).toUpperCase()
-}
-
-function generateAvatarBg(): string {
-  return avatarBackgrounds[Math.floor(Math.random() * avatarBackgrounds.length)]
-}
-
 export default function NovoContatoPage() {
   const router = useRouter()
+  const organizationId = useOrganizationId() ?? ''
   const [isUtmExpanded, setIsUtmExpanded] = useState(false)
+  const { tags, isLoading: tagsLoading } = useTags(organizationId)
+  const { createContact, isLoading: isSubmitting } = useContacts(organizationId)
 
   const {
     register,
@@ -102,7 +88,7 @@ export default function NovoContatoPage() {
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
-      status: "pendente",
+      status: "ACTIVE",
       tags: [],
     },
   })
@@ -112,47 +98,40 @@ export default function NovoContatoPage() {
   const toggleTag = (tagId: string) => {
     const currentTags = selectedTags
     if (currentTags.includes(tagId)) {
-      setValue(
-        "tags",
-        currentTags.filter((id) => id !== tagId)
-      )
+      setValue("tags", currentTags.filter((id) => id !== tagId))
     } else {
       setValue("tags", [...currentTags, tagId])
     }
   }
 
-  const onSubmit = (data: ContactFormData) => {
-    const newContact: Contact = {
-      id: `cont-${Date.now()}`,
-      nome: data.nome,
-      sobrenome: data.sobrenome,
-      email: data.email,
-      telefone: data.telefone,
-      cidade: data.cidade || "",
-      estado: data.estado || "",
-      cargo: data.cargo || "",
-      empresa: data.empresa || "",
-      instagram: data.instagram,
-      linkedin: data.linkedin,
-      tags: data.tags,
+  const onSubmit = async (data: ContactFormData) => {
+    // Build metadata from extra fields
+    const metadata: Record<string, unknown> = {}
+    if (data.email) metadata.email = data.email
+    if (data.empresa) metadata.company = data.empresa
+    if (data.cargo) metadata.jobTitle = data.cargo
+    if (data.cidade) metadata.city = data.cidade
+    if (data.estado) metadata.state = data.estado
+    if (data.instagram) metadata.instagram = data.instagram
+    if (data.linkedin) metadata.linkedin = data.linkedin
+    if (data.origem) metadata.source = data.origem
+    if (data.utmSource) metadata.utmSource = data.utmSource
+    if (data.utmMedium) metadata.utmMedium = data.utmMedium
+    if (data.utmCampaign) metadata.utmCampaign = data.utmCampaign
+    if (data.observacoes) metadata.notes = data.observacoes
 
+    const newContact = await createContact({
+      name: data.name,
+      phone: data.phone,
       status: data.status,
-      origem: data.origem || "",
-      utmSource: data.utmSource,
-      utmMedium: data.utmMedium,
-      utmCampaign: data.utmCampaign,
-      criadoEm: new Date().toISOString(),
-      atualizadoEm: new Date().toISOString(),
-      atualizadoPor: "Admin",
-      avatar: generateAvatar(data.nome, data.sobrenome),
-      avatarBg: generateAvatarBg(),
-      observacoes: data.observacoes,
+      tags: data.tags,
+      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+    })
+
+    if (newContact) {
+      toast.success("Contato criado com sucesso!")
+      router.push("/contatos")
     }
-
-    console.log("Novo contato criado:", newContact)
-
-    toast.success("Contato criado com sucesso!")
-    router.push("/contatos")
   }
 
   return (
@@ -190,38 +169,39 @@ export default function NovoContatoPage() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">
+                {/* Nome */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="name">
                     Nome <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    id="nome"
-                    placeholder="Digite o nome"
-                    {...register("nome")}
+                    id="name"
+                    placeholder="Digite o nome completo"
+                    {...register("name")}
                   />
-                  {errors.nome && (
-                    <p className="text-xs text-red-500">{errors.nome.message}</p>
+                  {errors.name && (
+                    <p className="text-xs text-red-500">{errors.name.message}</p>
                   )}
                 </div>
+
+                {/* Telefone */}
                 <div className="space-y-2">
-                  <Label htmlFor="sobrenome">
-                    Sobrenome <span className="text-red-500">*</span>
+                  <Label htmlFor="phone">
+                    Telefone <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    id="sobrenome"
-                    placeholder="Digite o sobrenome"
-                    {...register("sobrenome")}
+                    id="phone"
+                    placeholder="+55 (00) 00000-0000"
+                    {...register("phone")}
                   />
-                  {errors.sobrenome && (
-                    <p className="text-xs text-red-500">
-                      {errors.sobrenome.message}
-                    </p>
+                  {errors.phone && (
+                    <p className="text-xs text-red-500">{errors.phone.message}</p>
                   )}
                 </div>
+
+                {/* Email - now optional and in metadata */}
                 <div className="space-y-2">
-                  <Label htmlFor="email">
-                    Email <span className="text-red-500">*</span>
-                  </Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -230,21 +210,6 @@ export default function NovoContatoPage() {
                   />
                   {errors.email && (
                     <p className="text-xs text-red-500">{errors.email.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">
-                    Telefone <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="telefone"
-                    placeholder="+55 (00) 00000-0000"
-                    {...register("telefone")}
-                  />
-                  {errors.telefone && (
-                    <p className="text-xs text-red-500">
-                      {errors.telefone.message}
-                    </p>
                   )}
                 </div>
               </div>
@@ -355,8 +320,8 @@ export default function NovoContatoPage() {
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select
-                    defaultValue="pendente"
-                    onValueChange={(value: Contact["status"]) =>
+                    defaultValue="ACTIVE"
+                    onValueChange={(value: "ACTIVE" | "INACTIVE" | "BLOCKED") =>
                       setValue("status", value)
                     }
                   >
@@ -364,10 +329,9 @@ export default function NovoContatoPage() {
                       <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ativo">Ativo</SelectItem>
-                      <SelectItem value="inativo">Inativo</SelectItem>
-                      <SelectItem value="pendente">Pendente</SelectItem>
-                      <SelectItem value="convertido">Convertido</SelectItem>
+                      <SelectItem value="ACTIVE">Ativo</SelectItem>
+                      <SelectItem value="INACTIVE">Inativo</SelectItem>
+                      <SelectItem value="BLOCKED">Bloqueado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -379,30 +343,37 @@ export default function NovoContatoPage() {
                     {...register("origem")}
                   />
                 </div>
+
+                {/* Tags */}
                 <div className="space-y-3 md:col-span-2">
                   <Label>Tags</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {MOCK_TAGS.map((tag) => {
-                      const isSelected = selectedTags.includes(tag.id)
-                      return (
-                        <button
-                          key={tag.id}
-                          type="button"
-                          onClick={() => toggleTag(tag.id)}
-                          className="rounded-sm px-3 py-1 text-xs font-medium transition-all"
-                          style={{
-                            backgroundColor: isSelected
-                              ? tag.cor
-                              : `${tag.cor}20`,
-                            color: isSelected ? "#fff" : tag.cor,
-                            border: `1px solid ${tag.cor}`,
-                          }}
-                        >
-                          {tag.nome}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  {tagsLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando tags...
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map((tag) => {
+                        const isSelected = selectedTags.includes(tag.id)
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.id)}
+                            className="rounded-sm px-3 py-1 text-xs font-medium transition-all"
+                            style={{
+                              backgroundColor: isSelected ? tag.color : `${tag.color}20`,
+                              color: isSelected ? "#fff" : tag.color,
+                              border: `1px solid ${tag.color}`,
+                            }}
+                          >
+                            {tag.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -479,8 +450,16 @@ export default function NovoContatoPage() {
             <Button
               type="submit"
               className="bg-[#46347F] hover:bg-[#46347F] text-white"
+              disabled={isSubmitting}
             >
-              Salvar Contato
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar Contato"
+              )}
             </Button>
           </div>
         </form>

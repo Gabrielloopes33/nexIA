@@ -57,9 +57,11 @@ function ConversasPageShellContent({
     selectedConversation,
     handleSelectConversation,
     selectedConversationData,
+    isLoading,
+    error,
   } = useConversasPage({ filterFn, basePath })
 
-  const isEmpty = conversations.length === 0
+  const isEmpty = !isLoading && conversations.length === 0
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

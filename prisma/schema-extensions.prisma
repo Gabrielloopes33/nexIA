@@ -1,0 +1,251 @@
+// ============================================
+// EXTENSÕES DO SCHEMA PARA MÉTRICAS DO DASHBOARD CRM
+// ============================================
+// Este arquivo contém as alterações necessárias no schema.prisma existente
+// Para aplicar: copie os campos/models abaixo para o schema.prisma principal
+// e execute: npx prisma migrate dev --name add_dashboard_metrics
+
+// ============================================
+// NOVOS ENUMS
+// ============================================
+
+enum LostReason {
+  PRICE
+  COMPETITOR
+  TIMING
+  NO_BUDGET
+  NO_INTEREST
+  UNREACHABLE
+  OTHER
+}
+
+enum ChannelType {
+  WHATSAPP_OFFICIAL
+  WHATSAPP_UNOFFICIAL
+  INSTAGRAM
+  MANUAL
+  API
+}
+
+enum RecoveryPotential {
+  HIGH
+  MEDIUM
+  LOW
+  NONE
+}
+
+// ============================================
+// CAMPOS ADICIONAIS NO MODEL DEAL
+// ============================================
+// Adicionar ao model Deal existente:
+
+/*
+model Deal {
+  // ... campos existentes ...
+
+  // Campos para métricas de perda e recuperação
+  lostReason        LostReason?       @map("lost_reason")
+  lostReasonDetail  String?           @map("lost_reason_detail")
+  lostAt            DateTime?         @map("lost_at")
+  recoveryPotential RecoveryPotential? @map("recovery_potential")
+  recoveryScore     Float?            @map("recovery_score") // 0-100
+
+  // Campos para tracking de origem e canal
+  channel           ChannelType?      @map("channel")
+  channelInstanceId String?           @map("channel_instance_id") // ID da instância WhatsApp/Instagram
+
+  // Campos para velocidade do funil
+  enteredStageAt    DateTime?         @map("entered_stage_at") // Quando entrou na etapa atual
+  firstContactAt    DateTime?         @map("first_contact_at") // Primeiro contato
+  qualifiedAt       DateTime?         @map("qualified_at")     // Quando foi qualificado
+  proposalAt        DateTime?         @map("proposal_at")      // Quando proposta foi enviada
+  negotiationAt     DateTime?         @map("negotiation_at")   // Quando entrou em negociação
+
+  // Campos para follow-up tracking
+  lastFollowUpAt    DateTime?         @map("last_follow_up_at")
+  nextFollowUpAt    DateTime?         @map("next_follow_up_at")
+  followUpCount     Int               @default(0) @map("follow_up_count")
+
+  // Campos para metas e forecast
+  monthlyGoalId     String?           @map("monthly_goal_id")
+  expectedRevenue   Decimal?          @db.Decimal(15, 2) @map("expected_revenue")
+
+  // Novos índices
+  @@index([organizationId, lostAt])
+  @@index([organizationId, status, lostReason])
+  @@index([organizationId, channel])
+  @@index([organizationId, recoveryPotential])
+  @@index([organizationId, nextFollowUpAt])
+  @@index([organizationId, enteredStageAt])
+}
+*/
+
+// ============================================
+// NOVO MODEL: PipelineStageHistory
+// Para tracking de tempo em cada etapa
+// ============================================
+
+model PipelineStageHistory {
+  id String @id @default(uuid())
+
+  dealId String @map("deal_id")
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  stageId String        @map("stage_id")
+  stage   PipelineStage @relation(fields: [stageId], references: [id])
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Timing
+  enteredAt DateTime  @map("entered_at")
+  exitedAt  DateTime? @map("exited_at")
+  durationHours Int?  @map("duration_hours") // Calculado: exitedAt - enteredAt
+
+  // Snapshot do deal na entrada
+  amount   Decimal? @db.Decimal(15, 2)
+  leadScore Int?    @map("lead_score")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([dealId])
+  @@index([stageId])
+  @@index([organizationId])
+  @@index([enteredAt])
+  @@index([organizationId, enteredAt])
+  @@map("pipeline_stage_history")
+}
+
+// ============================================
+// NOVO MODEL: MonthlyGoal
+// Metas mensais por organização
+// ============================================
+
+model MonthlyGoal {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Período
+  year  Int
+  month Int // 1-12
+
+  // Metas
+  revenueGoal      Decimal   @db.Decimal(15, 2) @map("revenue_goal")
+  dealsGoal        Int       @map("deals_goal")
+  leadsGoal        Int       @map("leads_goal")
+  conversionGoal   Float     @map("conversion_goal") // % esperada
+
+  // Realizado (atualizado por trigger/trabalho agendado)
+  revenueAchieved  Decimal?  @db.Decimal(15, 2) @map("revenue_achieved")
+  dealsAchieved    Int       @default(0) @map("deals_achieved")
+  leadsAchieved    Int       @default(0) @map("leads_achieved")
+
+  // Configurações
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, year, month])
+  @@index([organizationId])
+  @@index([year, month])
+  @@map("monthly_goals")
+}
+
+// ============================================
+// NOVO MODEL: DashboardMetricCache
+// Cache de métricas calculadas
+// ============================================
+
+model DashboardMetricCache {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Identificação da métrica
+  metricType String @map("metric_type") // 'funnel', 'revenue', 'channels', 'health_score'
+  period     String @map("period")      // '7d', '30d', '90d', 'current_month'
+
+  // Dados cacheados (JSON)
+  data Json
+
+  // TTL
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([organizationId, metricType, period])
+  @@index([organizationId])
+  @@index([metricType])
+  @@index([expiresAt])
+  @@map("dashboard_metric_cache")
+}
+
+// ============================================
+// NOVO MODEL: ChannelMetric
+// Métricas agregadas por canal (diário)
+// ============================================
+
+model ChannelMetric {
+  id String @id @default(uuid())
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Data da métrica
+  date DateTime @db.Date
+
+  // Canal
+  channel ChannelType
+
+  // Métricas de mensagens
+  messagesSent     Int @default(0) @map("messages_sent")
+  messagesReceived Int @default(0) @map("messages_received")
+  messagesRead     Int @default(0) @map("messages_read")
+
+  // Métricas de resposta
+  firstResponseCount   Int @default(0) @map("first_response_count")
+  avgFirstResponseSecs Int @default(0) @map("avg_first_response_secs") // Tempo médio em segundos
+
+  // Métricas de conversão
+  leadsGenerated Int @default(0) @map("leads_generated")
+  dealsCreated   Int @default(0) @map("deals_created")
+  dealsWon       Int @default(0) @map("deals_won")
+  revenueWon     Decimal @default(0) @db.Decimal(15, 2) @map("revenue_won")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([organizationId, date, channel])
+  @@index([organizationId, date])
+  @@index([organizationId, channel])
+  @@map("channel_metrics")
+}
+
+// ============================================
+// VIEW MATERIALIZADA (Opcional - PostgreSQL)
+// ============================================
+// Para grandes volumes, criar via migration SQL:
+
+/*
+-- View materializada para funil por etapa
+CREATE MATERIALIZED VIEW mv_funnel_by_stage AS
+SELECT 
+  organization_id,
+  stage_id,
+  COUNT(*) as deal_count,
+  SUM(amount) as total_value,
+  AVG(lead_score) as avg_lead_score,
+  DATE_TRUNC('week', created_at) as week
+FROM deals
+WHERE status = 'OPEN'
+GROUP BY organization_id, stage_id, DATE_TRUNC('week', created_at);
+
+-- Índice na view
+CREATE INDEX idx_mv_funnel_org ON mv_funnel_by_stage(organization_id);
+
+-- Refresh automático (executar a cada 15 minutos via cron/job)
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_funnel_by_stage;
+*/

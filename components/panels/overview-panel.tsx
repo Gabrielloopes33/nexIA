@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { BarChart3, Bell, Target, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AIInsight, InsightType } from '@/lib/types/ai-insights'
-import { MOCK_AI_INSIGHTS } from '@/lib/mock-ai-insights'
 
 const INSIGHT_TYPES = [
   {
@@ -50,7 +49,7 @@ interface OverviewPanelProps {
 }
 
 export function OverviewPanel({ 
-  insights = MOCK_AI_INSIGHTS,
+  insights = [],
   onInsightClick 
 }: OverviewPanelProps) {
   const [activePanel, setActivePanel] = useState<InsightType>('previsoes')
