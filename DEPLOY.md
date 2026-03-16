@@ -29,6 +29,7 @@
 | Método | Dificuldade | Automação | Recomendado |
 |--------|-------------|-----------|-------------|
 | **[EasyPanel + GitHub](./EASYPANEL.md)** | ⭐ Fácil | 🔄 Auto-deploy | ✅ **SIM** |
+| [Portainer + GHCR](#-deploy-com-portainer-imagem-ghcr) | ⭐ Fácil | 🔄 Auto-deploy | ✅ **SIM** |
 | [Docker Manual](#-deploy-manual-sem-easypanel) | ⭐⭐ Médio | 🔧 Manual | Opcional |
 | [EasyPanel Template](#-deploy-com-easypanel-template) | ⭐ Fácil | 🔄 Auto | Alternativa |
 
@@ -262,9 +263,121 @@ curl http://localhost:3000/api/health
 
 ---
 
+## 🐳 Deploy com Portainer (Imagem GHCR)
+
+Deploy usando o Portainer com imagem pré-construída do GitHub Container Registry.
+
+### Vantagens
+- ✅ Não precisa construir imagem na VPS
+- ✅ Deploy mais rápido
+- ✅ Imagem sempre atualizada a cada push na main
+- ✅ Fácil rollback para versões anteriores
+
+### 1. Configurar GitHub Actions
+
+O arquivo `.github/workflows/docker-publish.yml` já está configurado. A cada push na branch `main`, a imagem é automaticamente publicada no GHCR.
+
+### 2. Configurar Portainer
+
+#### Acesse o Portainer:
+```
+https://SEU_IP:9443
+```
+
+#### Criar Stack:
+1. **Stacks** → **Add stack**
+2. **Name**: `nexia`
+3. **Build method**: **Web editor**
+4. Cole o conteúdo do arquivo `docker-compose.portainer.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    image: ghcr.io/gabrielloopes33/nexia:latest
+    container_name: nexia-portainer
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    networks:
+      - nexia-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  nexia-network:
+    driver: bridge
+```
+
+### 3. Configurar Environment Variables
+
+No Portainer, na seção **Environment variables**, adicione:
+
+```env
+DATABASE_URL=postgresql://user:password@host:5432/nexia
+AUTH_SECRET=sua_chave_secreta_32_caracteres
+NEXT_PUBLIC_SUPABASE_URL=https://wqbppfngjolnxbwqngfo.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+> 💡 **Gerar AUTH_SECRET**: `openssl rand -hex 32`
+
+### 4. Deploy
+
+Clique em **Deploy the stack**.
+
+### 5. Atualizar Imagem
+
+Para atualizar para a última versão:
+1. No Portainer → **Stacks** → **nexia**
+2. Clique em **Editor** → **Update the stack**
+3. Marque **Re-pull image and redeploy**
+4. Clique em **Update**
+
+Ou use webhook para atualização automática:
+```bash
+# Configurar webhook no Portainer para receber notificações do GitHub
+curl -X POST "https://portainer.seu-dominio.com/api/stacks/1/git/redeploy?endpointId=1&registryId=1"
+```
+
+---
+
 ## 🔄 CI/CD Pipeline (GitHub Actions)
 
-Crie `.github/workflows/deploy.yml`:
+O projeto já possui CI/CD configurado para publicar imagens Docker automaticamente.
+
+### Workflow Existente: Docker Publish
+
+Arquivo: `.github/workflows/docker-publish.yml`
+
+**Triggers:**
+- Push na branch `main` ou `master`
+- Tags `v*` (releases)
+- Pull requests (apenas build, não publica)
+- Manual (`workflow_dispatch`)
+
+**Funcionalidades:**
+- Build multi-plataforma (amd64, arm64)
+- Cache de camadas Docker
+- Tags automáticas: `latest`, `main`, versões semver
+- Publicação no GHCR (GitHub Container Registry)
+
+### Workflow Opcional: Deploy para VPS
+
+Se quiser deploy automático para VPS, crie `.github/workflows/deploy.yml`:
 
 ```yaml
 name: Deploy to VPS
