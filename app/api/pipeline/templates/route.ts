@@ -395,10 +395,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Verifica se já existem etapas para esta organização
+    // Usa um UUID fixo para organizações default
+    const orgId = body.organizationId === 'default_org_id' 
+      ? '00000000-0000-0000-0000-000000000000' 
+      : body.organizationId;
+    
     const { data: existingStages, error: checkError } = await supabaseServer
       .from('pipeline_stages')
       .select('*')
-      .eq('organization_id', body.organizationId)
+      .eq('organization_id', orgId)
       .order('position', { ascending: true });
 
     if (checkError) {
@@ -430,7 +435,7 @@ export async function POST(request: NextRequest) {
 
     // Cria as etapas do pipeline baseado no template
     const stagesToCreate = template.stages.map((stage) => ({
-      organization_id: body.organizationId,
+      organization_id: orgId,
       name: stage.name,
       position: stage.position,
       color: stage.color,
@@ -467,7 +472,7 @@ export async function POST(request: NextRequest) {
           templateName: template.name,
           category: template.category,
           customName: body.customName || null,
-          organizationId: body.organizationId,
+          organizationId: orgId,
           stagesCreated: createdStages.length,
           stages: createdStages.map((stage) => ({
             id: stage.id,
