@@ -115,8 +115,8 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
       })
 
       if (!contactResponse.ok) {
-        const error = await contactResponse.json()
-        throw new Error(error.message || 'Erro ao criar contato')
+        const errorData = await contactResponse.json()
+        throw new Error(errorData.error || errorData.message || 'Erro ao criar contato')
       }
 
       const { data: contact } = await contactResponse.json()
@@ -145,7 +145,8 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
         })
 
         if (!dealResponse.ok) {
-          console.error('Erro ao criar deal:', await dealResponse.json())
+          const dealError = await dealResponse.json().catch(() => ({ error: 'Erro desconhecido' }))
+          console.error('Erro ao criar deal:', dealError)
         } else {
           console.log("Deal criado no pipeline")
         }
