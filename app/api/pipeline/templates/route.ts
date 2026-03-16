@@ -394,11 +394,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verifica se já existem etapas para esta organização
-    // Usa um UUID fixo para organizações default
-    const orgId = body.organizationId === 'default_org_id' 
-      ? '00000000-0000-0000-0000-000000000000' 
-      : body.organizationId;
+    // Busca ou cria uma organização válida
+    let orgId = body.organizationId;
+    
+    if (body.organizationId === 'default_org_id') {
+      // Tenta buscar uma organização existente
+      const { data: existingOrg } = await supabaseServer
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      if (existingOrg) {
+        orgId = existingOrg.id;
+        console.log('[PIPELINE_TEMPLATES_APPLY] Using existing org:', orgId);
+      } else {
+        // Cria uma organização default
+        const { data: newOrg, error: orgError } = await supabaseServer
+          .from('organizations')
+          .insert({
+            name: 'Default Organization',
+            slug: 'default',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        
+        if (orgError || !newOrg) {
+          console.error('[PIPELINE_TEMPLATES_APPLY] Error creating org:', orgError);
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Erro ao criar organização",
+              message: orgError?.message || "Unknown error",
+            },
+            { status: 500 }
+          );
+        }
+        
+        orgId = newOrg.id;
+        console.log('[PIPELINE_TEMPLATES_APPLY] Created new org:', orgId);
+      }
+    }
     
     const { data: existingStages, error: checkError } = await supabaseServer
       .from('pipeline_stages')

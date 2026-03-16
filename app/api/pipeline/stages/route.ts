@@ -41,10 +41,18 @@ export async function GET(request: NextRequest) {
 
     console.log('[Pipeline Stages GET] organizationId:', organizationId);
 
-    // Converte organization_id para UUID se necessário
-    const orgId = organizationId === 'default_org_id' 
-      ? '00000000-0000-0000-0000-000000000000' 
-      : organizationId;
+    // Busca uma organização válida
+    let orgId = organizationId;
+    
+    if (organizationId === 'default_org_id') {
+      const { data: existingOrg } = await supabaseServer
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      orgId = existingOrg?.id || organizationId;
+    }
 
     const { data: stages, error } = await supabaseServer
       .from('pipeline_stages')
@@ -166,10 +174,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Converte organization_id para UUID
-    const orgId = organizationId === 'default_org_id' 
-      ? '00000000-0000-0000-0000-000000000000' 
-      : organizationId;
+    // Busca uma organização válida
+    let orgId = organizationId;
+    
+    if (organizationId === 'default_org_id') {
+      const { data: existingOrg } = await supabaseServer
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      orgId = existingOrg?.id || organizationId;
+    }
 
     // Verifica se já existe um pipeline para esta organização
     const { count: existingStagesCount, error: countError } = await supabaseServer
@@ -266,10 +282,18 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Converte organization_id para UUID
-    const orgId = organizationId === 'default_org_id' 
-      ? '00000000-0000-0000-0000-000000000000' 
-      : organizationId;
+    // Busca uma organização válida
+    let orgId = organizationId;
+    
+    if (organizationId === 'default_org_id') {
+      const { data: existingOrg } = await supabaseServer
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      orgId = existingOrg?.id || organizationId;
+    }
 
     // Conta quantas etapas serão removidas
     const { count: stagesCount, error: countError } = await supabaseServer

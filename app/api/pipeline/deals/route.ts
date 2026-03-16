@@ -16,10 +16,18 @@ export async function GET(request: NextRequest) {
 
     console.log('[Pipeline Deals GET] Params:', { organizationId, stageId, status, contactId });
 
-    // Converte organization_id para UUID se necessário
-    const orgId = organizationId === 'default_org_id' 
-      ? '00000000-0000-0000-0000-000000000000' 
-      : organizationId;
+    // Busca uma organização válida
+    let orgId = organizationId;
+    
+    if (organizationId === 'default_org_id') {
+      const { data: existingOrg } = await supabaseServer
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      orgId = existingOrg?.id || organizationId;
+    }
 
     // Build query (sem relacionamentos complexos)
     let query = supabaseServer
