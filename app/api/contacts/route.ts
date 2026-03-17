@@ -208,7 +208,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (existingContact) {
       return NextResponse.json(
-        { success: false, error: 'Contact with this phone number already exists' },
+        { success: false, error: `Já existe um contato com o telefone ${normalizedPhone}` },
         { status: 409 }
       );
     }
