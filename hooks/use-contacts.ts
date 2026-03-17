@@ -92,13 +92,14 @@ export function useContacts(
   }, [effectiveOrgId, JSON.stringify(options)])
 
   const createContact = async (contactData: Partial<Contact>): Promise<Contact | null> => {
-    if (!effectiveOrgId) return null
+    // Se não tiver organizationId, usa um valor padrão que a API vai tratar
+    const orgId = effectiveOrgId || 'default_org_id'
     
     try {
       const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...contactData, organizationId: effectiveOrgId }),
+        body: JSON.stringify({ ...contactData, organizationId: orgId }),
       })
       
       const data = await response.json()
