@@ -194,32 +194,62 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Normalize phone number
     const normalizedPhone = phone.replace(/\D/g, '');
 
-    // Check if contact already exists
-    const { data: existingContact, error: checkError } = await supabaseServer
+    // Busca contato pelo telefone — ativo ou soft-deleted
+    const { data: anyContact, error: checkError } = await supabaseServer
       .from('contacts')
-      .select('id')
+      .select('id, name, deleted_at')
       .eq('organization_id', orgId)
       .eq('phone', normalizedPhone)
-      .single();
+      .maybeSingle();
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = not found
+    if (checkError) {
       console.error('Error checking existing contact:', checkError);
-    }
-
-    if (existingContact) {
-      return NextResponse.json(
-        { success: false, error: `Já existe um contato com o telefone ${normalizedPhone}` },
-        { status: 409 }
-      );
     }
 
     const now = new Date().toISOString();
 
-    // Monta metadata com campos extras (email, notes, source não existem na tabela contacts)
+    // Monta metadata com campos extras
     const contactMetadata: Record<string, unknown> = metadata || {};
     if (email) contactMetadata.email = email;
     if (notes) contactMetadata.notes = notes;
     if (source) contactMetadata.source = source;
+
+    // Se existir mas estiver deletado, reativa com os novos dados
+    if (anyContact?.deleted_at) {
+      const { data: restored, error: restoreError } = await supabaseServer
+        .from('contacts')
+        .update({
+          name: name || anyContact.name || null,
+          avatar_url: avatarUrl || null,
+          metadata: contactMetadata,
+          tags: tags || [],
+          status: status || 'ACTIVE',
+          deleted_at: null,
+          updated_at: now,
+          last_interaction_at: now,
+        })
+        .eq('id', anyContact.id)
+        .select()
+        .single();
+
+      if (restoreError) {
+        console.error('Error restoring contact:', restoreError);
+        return NextResponse.json(
+          { success: false, error: 'Falha ao restaurar contato', details: restoreError.message },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, data: restored }, { status: 201 });
+    }
+
+    // Contato ativo já existe — retorna 409
+    if (anyContact) {
+      return NextResponse.json(
+        { success: false, error: `Já existe um contato com o telefone ${phone}${anyContact.name ? ` (${anyContact.name})` : ''}` },
+        { status: 409 }
+      );
+    }
 
     const { data: contact, error } = await supabaseServer
       .from('contacts')
