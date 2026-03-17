@@ -48,18 +48,20 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         throw new Error("Organização não encontrada para o usuário")
       }
 
-      // 3. Busca os dados da organização
-      const { data: orgData, error: orgError } = await supabase
+      // 3. Busca os dados da organização (pode falhar por RLS no client)
+      const { data: orgData } = await supabase
         .from("organizations")
         .select("id, name, slug, status")
         .eq("id", userData.organization_id)
         .single()
 
-      if (orgError || !orgData) {
-        throw new Error("Dados da organização não encontrados")
-      }
-
-      setOrganization(orgData)
+      // Se RLS bloquear a query, usa o ID que já temos da tabela users
+      setOrganization(orgData || {
+        id: userData.organization_id,
+        name: "",
+        slug: "",
+        status: "ACTIVE",
+      })
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Erro desconhecido"))
       setOrganization(null)

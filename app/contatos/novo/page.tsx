@@ -76,8 +76,9 @@ export default function NovoContatoPage() {
   const router = useRouter()
   const organizationId = useOrganizationId()
   const [isUtmExpanded, setIsUtmExpanded] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { tags, isLoading: tagsLoading } = useTags(organizationId || 'default_org_id')
-  const { createContact, isLoading: isSubmitting } = useContacts('default_org_id')
+  const { createContact } = useContacts(organizationId || undefined)
 
   const {
     register,
@@ -126,6 +127,7 @@ export default function NovoContatoPage() {
     if (data.utmCampaign) metadata.utmCampaign = data.utmCampaign
     if (data.observacoes) metadata.notes = data.observacoes
 
+    setIsSubmitting(true)
     try {
       const newContact = await createContact({
         name: data.name,
@@ -142,6 +144,8 @@ export default function NovoContatoPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro ao criar contato"
       toast.error(message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
