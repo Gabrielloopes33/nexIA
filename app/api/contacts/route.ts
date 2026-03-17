@@ -209,19 +209,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const now = new Date().toISOString();
 
+    // Monta metadata com campos extras (email, notes, source não existem na tabela contacts)
+    const contactMetadata: Record<string, unknown> = metadata || {};
+    if (email) contactMetadata.email = email;
+    if (notes) contactMetadata.notes = notes;
+    if (source) contactMetadata.source = source;
+
     const { data: contact, error } = await supabaseServer
       .from('contacts')
       .insert({
         organization_id: orgId,
         phone: normalizedPhone,
         name: name || null,
-        email: email || null,
         avatar_url: avatarUrl || null,
-        notes: notes || null,
-        metadata: metadata || {},
+        metadata: contactMetadata,
         tags: tags || [],
         status: status || 'ACTIVE',
-        source: source || null,
         lead_score: 0,
         created_at: now,
         updated_at: now,
