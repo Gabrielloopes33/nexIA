@@ -13,7 +13,8 @@ import Link from "next/link"
 
 export default function ContactsPage() {
   const { organization, isLoading: isLoadingOrg } = useOrganization()
-  const organizationId = organization?.id
+  // Usa default_org_id quando não tiver organização carregada
+  const organizationId = organization?.id || 'default_org_id'
   
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
