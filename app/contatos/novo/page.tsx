@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useTags } from "@/hooks/use-tags"
 import { useContacts } from "@/hooks/use-contacts"
-import { useOrganization, useOrganizationId } from "@/lib/contexts/organization-context"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 const estadosBrasileiros = [
   { value: "AC", label: "AC" },
@@ -75,10 +75,9 @@ type ContactFormData = z.infer<typeof contactSchema>
 export default function NovoContatoPage() {
   const router = useRouter()
   const organizationId = useOrganizationId()
-  const { organization, isLoading: orgLoading, error: orgError } = useOrganization()
   const [isUtmExpanded, setIsUtmExpanded] = useState(false)
-  const { tags, isLoading: tagsLoading } = useTags(organizationId)
-  const { createContact, isLoading: isSubmitting } = useContacts(organizationId)
+  const { tags, isLoading: tagsLoading } = useTags(organizationId || 'default_org_id')
+  const { createContact, isLoading: isSubmitting } = useContacts('default_org_id')
 
   const {
     register,
@@ -458,12 +457,7 @@ export default function NovoContatoPage() {
           </Card>
 
           {/* Botão Salvar */}
-          <div className="flex flex-col items-end gap-2 pt-4">
-            {orgError && (
-              <p className="text-sm text-red-500">
-                Erro ao carregar organização: {orgError.message}
-              </p>
-            )}
+          <div className="flex justify-end pt-4">
             <Button
               type="submit"
               className="bg-[#46347F] hover:bg-[#46347F] text-white"
