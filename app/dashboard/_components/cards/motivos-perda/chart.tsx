@@ -68,9 +68,9 @@ export function MotivosPerdaChart({ data }: MotivosPerdaChartProps) {
                     <div className="bg-white p-3 border rounded shadow-lg text-sm">
                       <p className="font-medium">{data.name}</p>
                       <p>Quantidade: {data.value}</p>
-                      <p>Porcentagem: {data.percentage.toFixed(1)}%</p>
+                      <p>Porcentagem: {(Number(data.percentage) || 0).toFixed(1)}%</p>
                       <p className={data.trend > 0 ? 'text-red-500' : data.trend < 0 ? 'text-green-500' : 'text-gray-500'}>
-                        Trend: {data.trend > 0 ? '+' : ''}{data.trend.toFixed(1)}%
+                        Trend: {data.trend > 0 ? '+' : ''}{(Number(data.trend) || 0).toFixed(1)}%
                       </p>
                     </div>
                   )
@@ -91,7 +91,7 @@ export function MotivosPerdaChart({ data }: MotivosPerdaChartProps) {
               style={{ backgroundColor: COLORS[index % COLORS.length] }}
             />
             <span className="truncate flex-1">{item.name}</span>
-            <span className="font-medium">{item.percentage.toFixed(0)}%</span>
+            <span className="font-medium">{(Number(item.percentage) || 0).toFixed(0)}%</span>
           </div>
         ))}
       </div>

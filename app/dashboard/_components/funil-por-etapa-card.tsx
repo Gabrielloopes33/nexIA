@@ -83,7 +83,7 @@ export function FunilPorEtapaCard() {
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
             <span>Taxa de conversão geral:</span>
             <span className="font-medium text-slate-900">
-              {data.taxaConversaoGeral.toFixed(1)}%
+              {(Number(data.taxaConversaoGeral) || 0).toFixed(1)}%
             </span>
           </div>
           
