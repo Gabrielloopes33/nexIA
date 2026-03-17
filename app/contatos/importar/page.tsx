@@ -234,7 +234,10 @@ export default function ImportarContatosPage() {
     })
   }, [csvData, mapeamento])
 
-  const camposObrigatoriosMapeados = mapeamento.nome && mapeamento.nome !== "ignore" && mapeamento.email && mapeamento.email !== "ignore"
+  // Verifica se existe alguma coluna mapeada para 'nome' e outra para 'email'
+  const camposObrigatoriosMapeados = 
+    Object.values(mapeamento).includes('nome') && 
+    Object.values(mapeamento).includes('email')
 
   const { validos, erros } = useMemo(() => {
     const valid: Record<string, string>[] = []
