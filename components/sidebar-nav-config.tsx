@@ -67,9 +67,6 @@ export const topNavItems: SidebarNavItem[] = [
       { label: "Campos", href: "/contatos/campos", section: "Gerenciar" },
       { label: "Importar", href: "/contatos/importar", section: "Dados" },
       { label: "Exportar", href: "/contatos/exportar", section: "Dados" },
-      { label: "Lixeira", href: "/contatos/lixeira", section: "Dados" },
-      { label: "Tendências", href: "/contatos/relatorios/tendencias", section: "Relatórios" },
-      { label: "Desempenho", href: "/contatos/relatorios/desempenho", section: "Relatórios" },
     ],
   },
   {
