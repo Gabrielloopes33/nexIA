@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 const STEPS = [
   { id: 1, label: "Upload" },
@@ -59,16 +60,44 @@ const SYSTEM_FIELDS = [
   { value: "ignore", label: "Ignorar coluna", required: false },
 ]
 
-const CSV_HEADERS = ["nome", "sobrenome", "email", "telefone", "cidade", "estado", "empresa", "cargo", "origem", "status"]
+// Parser CSV simples que lida com campos entre aspas e vírgulas
+function parseCSV(text: string): { headers: string[]; rows: string[][] } {
+  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '')
+  if (lines.length === 0) {
+    return { headers: [], rows: [] }
+  }
 
-function generateMockData(): Record<string, string>[] {
-  return [
-    { nome: "Ana", sobrenome: "Silva", email: "ana.silva@email.com", telefone: "+55 11 98765-4321", cidade: "São Paulo", estado: "SP", empresa: "TechCorp", cargo: "Gerente", origem: "Site", status: "ativo" },
-    { nome: "Bruno", sobrenome: "Costa", email: "bruno.costa@email.com", telefone: "+55 21 99876-5432", cidade: "Rio de Janeiro", estado: "RJ", empresa: "StartUp", cargo: "CEO", origem: "Indicação", status: "pendente" },
-    { nome: "", sobrenome: "Ferreira", email: "invalid-email", telefone: "+55 41 99988-7766", cidade: "Curitiba", estado: "PR", empresa: "InovaTech", cargo: "Analista", origem: "Facebook", status: "ativo" },
-    { nome: "Carolina", sobrenome: "Mendes", email: "carol.mendes@email.com", telefone: "+55 31 98765-1234", cidade: "Belo Horizonte", estado: "MG", empresa: "Vendas", cargo: "Vendedora", origem: "Webinar", status: "ativo" },
-    { nome: "Daniel", sobrenome: "Souza", email: "daniel.souza@email.com", telefone: "+55 51 98877-6655", cidade: "Porto Alegre", estado: "RS", empresa: "Tech", cargo: "Dev", origem: "LinkedIn", status: "inativo" },
-  ]
+  const parseLine = (line: string): string[] => {
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      const nextChar = line[i + 1]
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          current += '"'
+          i++
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    result.push(current.trim())
+    return result
+  }
+
+  const headers = parseLine(lines[0]).map(h => h.toLowerCase().trim())
+  const rows = lines.slice(1).map(parseLine)
+
+  return { headers, rows }
 }
 
 function validateRow(row: Record<string, string>): string[] {
@@ -83,6 +112,7 @@ function validateRow(row: Record<string, string>): string[] {
 }
 
 function downloadTemplate() {
+  const CSV_HEADERS = ["nome", "sobrenome", "email", "telefone", "cidade", "estado", "empresa", "cargo", "origem", "status"]
   const csv = CSV_HEADERS.join(",") + "\n"
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
   const link = document.createElement("a")
@@ -94,22 +124,72 @@ function downloadTemplate() {
 export default function ImportarContatosPage() {
   const [step, setStep] = useState(1)
   const [arquivo, setArquivo] = useState<File | null>(null)
-  const [dadosMock, setDadosMock] = useState<Record<string, string>[]>([])
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([])
+  const [csvData, setCsvData] = useState<Record<string, string>[]>([])
   const [mapeamento, setMapeamento] = useState<Record<string, string>>({})
   const [progresso, setProgresso] = useState(0)
   const [importando, setImportando] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [importResult, setImportResult] = useState<{
+    imported: number
+    errors: number
+    duplicates: number
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = useCallback((file: File) => {
     if (file && file.name.endsWith(".csv")) {
       setArquivo(file)
-      setDadosMock(generateMockData())
-      const autoMap: Record<string, string> = {}
-      CSV_HEADERS.forEach((header) => {
-        autoMap[header] = header
-      })
-      setMapeamento(autoMap)
+      
+      // Ler e parsear o arquivo CSV
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const text = e.target?.result as string
+        const { headers, rows } = parseCSV(text)
+        
+        if (headers.length === 0) {
+          toast.error("Arquivo CSV vazio ou inválido")
+          return
+        }
+
+        setCsvHeaders(headers)
+        
+        // Converter linhas em objetos
+        const parsedData = rows.map(row => {
+          const obj: Record<string, string> = {}
+          headers.forEach((header, index) => {
+            obj[header] = row[index] || ''
+          })
+          return obj
+        }).filter(row => Object.values(row).some(v => v.trim() !== ''))
+
+        setCsvData(parsedData)
+        
+        // Auto-mapeamento baseado em nomes similares
+        const autoMap: Record<string, string> = {}
+        headers.forEach((header) => {
+          const normalizedHeader = header.toLowerCase().trim()
+          // Tenta encontrar campo correspondente
+          const match = SYSTEM_FIELDS.find(field => 
+            field.value === normalizedHeader ||
+            field.label.toLowerCase() === normalizedHeader
+          )
+          if (match) {
+            autoMap[header] = match.value
+          } else {
+            autoMap[header] = "ignore"
+          }
+        })
+        setMapeamento(autoMap)
+        
+        toast.success(`Arquivo carregado: ${parsedData.length} registros encontrados`)
+      }
+      reader.onerror = () => {
+        toast.error("Erro ao ler o arquivo")
+      }
+      reader.readAsText(file)
+    } else {
+      toast.error("Por favor, selecione um arquivo CSV válido")
     }
   }, [])
 
@@ -141,12 +221,25 @@ export default function ImportarContatosPage() {
     }
   }
 
+  // Aplicar mapeamento aos dados CSV
+  const mappedData = useMemo(() => {
+    return csvData.map(row => {
+      const mapped: Record<string, string> = {}
+      Object.entries(mapeamento).forEach(([csvHeader, systemField]) => {
+        if (systemField && systemField !== 'ignore') {
+          mapped[systemField] = row[csvHeader] || ''
+        }
+      })
+      return mapped
+    })
+  }, [csvData, mapeamento])
+
   const camposObrigatoriosMapeados = mapeamento.nome && mapeamento.nome !== "ignore" && mapeamento.email && mapeamento.email !== "ignore"
 
   const { validos, erros } = useMemo(() => {
     const valid: Record<string, string>[] = []
     const errorList: { row: number; errors: string[] }[] = []
-    dadosMock.forEach((row, index) => {
+    mappedData.forEach((row, index) => {
       const rowErrors = validateRow(row)
       if (rowErrors.length === 0) {
         valid.push(row)
@@ -155,32 +248,87 @@ export default function ImportarContatosPage() {
       }
     })
     return { validos: valid, erros: errorList }
-  }, [dadosMock])
+  }, [mappedData])
 
-  useEffect(() => {
-    if (step === 4 && !importando) {
-      setImportando(true)
-      setProgresso(0)
-      const interval = setInterval(() => {
-        setProgresso((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval)
-            return 100
+  // Função para realizar a importação
+  const performImport = async () => {
+    if (validos.length === 0) return
+
+    setImportando(true)
+    setProgresso(0)
+
+    try {
+      // Simular progresso incremental
+      const progressInterval = setInterval(() => {
+        setProgresso(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
           }
           return prev + 10
         })
       }, 200)
-      return () => clearInterval(interval)
+
+      // Chamar API de importação
+      const response = await fetch('/api/contatos/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          organizationId: 'default_org_id', // Em produção, pegar do contexto
+          contacts: validos,
+        }),
+      })
+
+      clearInterval(progressInterval)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro na importação')
+      }
+
+      const result = await response.json()
+      setProgresso(100)
+      
+      setImportResult({
+        imported: result.data?.imported || 0,
+        errors: result.data?.errors?.length || 0,
+        duplicates: result.data?.duplicates?.length || 0,
+      })
+
+      if (result.data?.errors?.length > 0) {
+        toast.warning(`${result.data.errors.length} contatos não puderam ser importados`)
+      }
+      
+      if (result.data?.duplicates?.length > 0) {
+        toast.info(`${result.data.duplicates.length} contatos já existiam`)
+      }
+
+    } catch (error: any) {
+      setProgresso(0)
+      toast.error(`Erro na importação: ${error.message}`)
+      console.error('Erro na importação:', error)
+    } finally {
+      setImportando(false)
     }
-  }, [step, importando])
+  }
+
+  useEffect(() => {
+    if (step === 4 && !importando && importResult === null) {
+      performImport()
+    }
+  }, [step, importando, importResult])
 
   const resetWizard = () => {
     setStep(1)
     setArquivo(null)
-    setDadosMock([])
+    setCsvHeaders([])
+    setCsvData([])
     setMapeamento({})
     setProgresso(0)
     setImportando(false)
+    setImportResult(null)
   }
 
   return (
@@ -292,7 +440,7 @@ export default function ImportarContatosPage() {
                     <div>
                       <p className="font-medium">{arquivo.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {(arquivo.size / 1024).toFixed(2)} KB
+                        {(arquivo.size / 1024).toFixed(2)} KB • {csvData.length} registros
                       </p>
                     </div>
                   </div>
@@ -301,7 +449,7 @@ export default function ImportarContatosPage() {
                 <div className="flex justify-end">
                   <Button
                     onClick={() => setStep(2)}
-                    disabled={!arquivo}
+                    disabled={!arquivo || csvData.length === 0}
                     className="bg-[#46347F] hover:bg-[#46347F] text-white"
                   >
                     Próximo
@@ -317,7 +465,7 @@ export default function ImportarContatosPage() {
               <CardHeader>
                 <h3 className="text-lg font-semibold">Mapeie as colunas do arquivo</h3>
                 <p className="text-sm text-muted-foreground">
-                  Associe cada coluna do seu arquivo ao campo correspondente no sistema
+                  Associe cada coluna do seu arquivo ao campo correspondente no sistema ({csvHeaders.length} colunas encontradas)
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -331,7 +479,7 @@ export default function ImportarContatosPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {CSV_HEADERS.map((header) => (
+                      {csvHeaders.map((header) => (
                         <TableRow key={header}>
                           <TableCell>
                             <span className="inline-flex items-center rounded-sm bg-gray-100 px-2 py-1 text-xs font-medium">
@@ -360,8 +508,8 @@ export default function ImportarContatosPage() {
                               </SelectContent>
                             </Select>
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {dadosMock[0]?.[header] || "-"}
+                          <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                            {csvData[0]?.[header] || "-"}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -407,7 +555,7 @@ export default function ImportarContatosPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="rounded-lg bg-blue-50 p-4">
                     <p className="text-sm text-blue-600">Total de registros</p>
-                    <p className="text-2xl font-bold text-blue-700">{dadosMock.length}</p>
+                    <p className="text-2xl font-bold text-blue-700">{mappedData.length}</p>
                   </div>
                   <div className="rounded-lg bg-emerald-50 p-4">
                     <p className="text-sm text-emerald-600">Válidos</p>
@@ -420,7 +568,7 @@ export default function ImportarContatosPage() {
                 </div>
 
                 {/* Tabela de preview */}
-                <div className="rounded-sm border border-border">
+                <div className="rounded-sm border border-border max-h-[400px] overflow-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -433,7 +581,7 @@ export default function ImportarContatosPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dadosMock.map((row, index) => {
+                      {mappedData.slice(0, 10).map((row, index) => {
                         const rowErrors = validateRow(row)
                         return (
                           <TableRow
@@ -445,8 +593,8 @@ export default function ImportarContatosPage() {
                               {row.nome || "-"} {row.sobrenome}
                             </TableCell>
                             <TableCell>{row.email || "-"}</TableCell>
-                            <TableCell>{row.telefone}</TableCell>
-                            <TableCell>{row.status}</TableCell>
+                            <TableCell>{row.telefone || "-"}</TableCell>
+                            <TableCell>{row.status || "-"}</TableCell>
                             <TableCell>
                               {rowErrors.length > 0 && (
                                 <span className="inline-flex items-center rounded-sm bg-red-100 px-2 py-1 text-xs font-medium text-red-600">
@@ -457,6 +605,13 @@ export default function ImportarContatosPage() {
                           </TableRow>
                         )
                       })}
+                      {mappedData.length > 10 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
+                            ... e mais {mappedData.length - 10} registros
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -465,12 +620,15 @@ export default function ImportarContatosPage() {
                 {erros.length > 0 && (
                   <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                     <h4 className="mb-2 font-medium text-red-700">Erros encontrados:</h4>
-                    <ul className="space-y-1 text-sm text-red-600">
-                      {erros.map((e, i) => (
+                    <ul className="space-y-1 text-sm text-red-600 max-h-[150px] overflow-auto">
+                      {erros.slice(0, 5).map((e, i) => (
                         <li key={i}>
                           Linha {e.row}: {e.errors.join(", ")}
                         </li>
                       ))}
+                      {erros.length > 5 && (
+                        <li>... e mais {erros.length - 5} erros</li>
+                      )}
                     </ul>
                   </div>
                 )}
@@ -513,14 +671,21 @@ export default function ImportarContatosPage() {
                   <div className="flex flex-col items-center text-center">
                     <CheckCircle2 className="h-16 w-16 text-emerald-500 mb-4" />
                     <h3 className="text-2xl font-bold">Importação concluída!</h3>
-                    <p className="text-muted-foreground mt-2">
-                      {validos.length} contato(s) importado(s) com sucesso
-                    </p>
-                    {erros.length > 0 && (
-                      <p className="text-sm text-amber-600 mt-1">
-                        {erros.length} registro(s) ignorado(s) por erros de validação
+                    <div className="mt-4 space-y-2">
+                      <p className="text-emerald-600 font-medium">
+                        {importResult?.imported || 0} contato(s) importado(s) com sucesso
                       </p>
-                    )}
+                      {importResult && importResult.duplicates > 0 && (
+                        <p className="text-amber-600 text-sm">
+                          {importResult.duplicates} contato(s) ignorado(s) por já existirem
+                        </p>
+                      )}
+                      {importResult && importResult.errors > 0 && (
+                        <p className="text-red-600 text-sm">
+                          {importResult.errors} contato(s) com erro na importação
+                        </p>
+                      )}
+                    </div>
                     <div className="flex gap-3 mt-8">
                       <Button asChild variant="outline">
                         <Link href="/contatos">Ver Contatos</Link>

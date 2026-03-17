@@ -16,13 +16,9 @@ interface SidebarDropdownGroupProps {
 function SectionSeparator({ label }: { label: string }) {
   return (
     <div className="relative flex items-center gap-2 px-0 py-2 mt-2">
-      {/* Horizontal connector line from vertical line to label */}
-      <div className="w-3 h-px bg-white/30 flex-shrink-0" />
       <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
         {label}
       </span>
-      {/* Horizontal line extending to the right */}
-      <div className="flex-1 h-px bg-white/15 min-w-[20px]" />
     </div>
   )
 }
