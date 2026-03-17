@@ -22,22 +22,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { success: false, error: 'Organization ID is required' },
-        { status: 400 }
-      );
-    }
-
     // Busca organização válida
-    if (organizationId === 'default_org_id') {
-      const { data: existingOrg } = await supabaseServer
+    if (!organizationId || organizationId === 'default_org_id') {
+      console.log('[Contacts GET] Buscando organização existente...');
+      const { data: existingOrg, error: orgError } = await supabaseServer
         .from('organizations')
         .select('id')
         .limit(1)
         .single();
       
-      organizationId = existingOrg?.id || organizationId;
+      if (orgError) {
+        console.log('[Contacts GET] Erro ao buscar org:', orgError.message);
+      }
+      
+      if (existingOrg) {
+        organizationId = existingOrg.id;
+        console.log('[Contacts GET] Usando organização:', organizationId);
+      } else {
+        return NextResponse.json(
+          { success: false, error: 'Nenhuma organização encontrada' },
+          { status: 404 }
+        );
+      }
     }
 
     // Build query

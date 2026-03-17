@@ -124,6 +124,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { supabaseServer } from '@/lib/supabase-server';
 
 /**
  * GET /api/tags
@@ -132,16 +133,27 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organizationId');
+    let organizationId = searchParams.get('organizationId');
     const search = searchParams.get('search');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { success: false, error: 'Organization ID is required' },
-        { status: 400 }
-      );
+    // Resolve organizationId
+    if (!organizationId || organizationId === 'default_org_id') {
+      const { data: existingOrg } = await supabaseServer
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      if (existingOrg) {
+        organizationId = existingOrg.id;
+      } else {
+        return NextResponse.json(
+          { success: false, error: 'Nenhuma organização encontrada' },
+          { status: 404 }
+        );
+      }
     }
 
     const where: Record<string, unknown> = { 
