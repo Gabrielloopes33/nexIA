@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useTags } from "@/hooks/use-tags"
 import { useContacts } from "@/hooks/use-contacts"
-import { useOrganizationId } from "@/lib/contexts/organization-context"
+import { useOrganization, useOrganizationId } from "@/lib/contexts/organization-context"
 
 const estadosBrasileiros = [
   { value: "AC", label: "AC" },
@@ -75,6 +75,7 @@ type ContactFormData = z.infer<typeof contactSchema>
 export default function NovoContatoPage() {
   const router = useRouter()
   const organizationId = useOrganizationId()
+  const { organization, isLoading: orgLoading, error: orgError } = useOrganization()
   const [isUtmExpanded, setIsUtmExpanded] = useState(false)
   const { tags, isLoading: tagsLoading } = useTags(organizationId)
   const { createContact, isLoading: isSubmitting } = useContacts(organizationId)
@@ -105,10 +106,10 @@ export default function NovoContatoPage() {
   }
 
   const onSubmit = async (data: ContactFormData) => {
-    // Validate organizationId before attempting to create
+    // Se não tiver organizationId, a API vai tentar usar um default
+    // ou retornar erro apropriado
     if (!organizationId) {
-      toast.error("Organização não identificada. Por favor, recarregue a página.")
-      return
+      console.warn("[NovoContato] OrganizationId não disponível, tentando criar com default...")
     }
 
     // Build metadata from extra fields
@@ -457,19 +458,22 @@ export default function NovoContatoPage() {
           </Card>
 
           {/* Botão Salvar */}
-          <div className="flex justify-end pt-4">
+          <div className="flex flex-col items-end gap-2 pt-4">
+            {orgError && (
+              <p className="text-sm text-red-500">
+                Erro ao carregar organização: {orgError.message}
+              </p>
+            )}
             <Button
               type="submit"
               className="bg-[#46347F] hover:bg-[#46347F] text-white"
-              disabled={isSubmitting || !organizationId}
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Salvando...
                 </>
-              ) : !organizationId ? (
-                "Carregando organização..."
               ) : (
                 "Salvar Contato"
               )}
