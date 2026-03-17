@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { prisma } from '@/lib/prisma'
+import { supabaseServer } from '@/lib/supabase-server'
 
 export async function GET() {
   try {
     const cookieStore = await cookies()
 
+    // Identifica o usuário autenticado via Supabase auth
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,21 +27,34 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Busca organização do usuário via Prisma (bypassa RLS do Supabase)
-    const membership = await prisma.organizationMember.findFirst({
-      where: { userId: user.id, status: 'ACTIVE' },
-      include: {
-        organization: {
-          select: { id: true, name: true, slug: true, status: true },
-        },
-      },
-    })
+    // Usa service role (bypassa RLS) para buscar organization_id do usuário
+    const { data: userData, error: userError } = await supabaseServer
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
 
-    if (!membership?.organization) {
+    if (userError || !userData?.organization_id) {
       return NextResponse.json({ error: 'Organização não encontrada' }, { status: 404 })
     }
 
-    const org = membership.organization
+    // Usa service role para buscar detalhes da organização (bypassa RLS)
+    const { data: org, error: orgError } = await supabaseServer
+      .from('organizations')
+      .select('id, name, slug, status')
+      .eq('id', userData.organization_id)
+      .single()
+
+    if (orgError || !org) {
+      // Retorna pelo menos o id se não conseguir os detalhes
+      return NextResponse.json({
+        id: userData.organization_id,
+        name: '',
+        slug: '',
+        status: 'ACTIVE',
+      })
+    }
+
     return NextResponse.json({
       id: org.id,
       name: org.name,
