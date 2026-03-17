@@ -30,38 +30,18 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       setIsLoading(true)
       setError(null)
 
-      // 1. Pega o usuário logado
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      
-      if (authError || !user) {
-        throw new Error("Usuário não autenticado")
+      // Busca organização via API server-side (bypassa RLS do Supabase)
+      const response = await fetch("/api/organization/me")
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Usuário não autenticado")
+        }
+        throw new Error("Organização não encontrada")
       }
 
-      // 2. Busca a organização do usuário na tabela public.users
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("organization_id")
-        .eq("id", user.id)
-        .single()
-
-      if (userError || !userData?.organization_id) {
-        throw new Error("Organização não encontrada para o usuário")
-      }
-
-      // 3. Busca os dados da organização (pode falhar por RLS no client)
-      const { data: orgData } = await supabase
-        .from("organizations")
-        .select("id, name, slug, status")
-        .eq("id", userData.organization_id)
-        .single()
-
-      // Se RLS bloquear a query, usa o ID que já temos da tabela users
-      setOrganization(orgData || {
-        id: userData.organization_id,
-        name: "",
-        slug: "",
-        status: "ACTIVE",
-      })
+      const org = await response.json()
+      setOrganization(org)
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Erro desconhecido"))
       setOrganization(null)
@@ -73,9 +53,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     fetchOrganization()
 
-    // Atualiza quando o estado de auth mudar
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchOrganization()
+    // Atualiza quando o estado de auth mudar (apenas em eventos relevantes)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        fetchOrganization()
+      }
     })
 
     return () => subscription.unsubscribe()
