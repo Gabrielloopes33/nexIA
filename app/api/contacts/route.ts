@@ -109,48 +109,79 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       source,
     } = body;
 
-    console.log('[Contacts POST] Body:', body);
+    console.log('[Contacts POST] Iniciando criação:', { organizationId, name, phone });
 
     // Validate required fields
-    if (!organizationId || !phone) {
+    if (!phone) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields: organizationId, phone' },
+        { success: false, error: 'Telefone é obrigatório' },
         { status: 400 }
       );
     }
 
     // Busca organização válida
     let orgId = organizationId;
-    if (organizationId === 'default_org_id') {
-      const { data: existingOrg } = await supabaseServer
+    if (!organizationId || organizationId === 'default_org_id') {
+      console.log('[Contacts POST] Buscando organização existente...');
+      const { data: existingOrg, error: orgQueryError } = await supabaseServer
         .from('organizations')
         .select('id')
         .limit(1)
         .single();
       
+      if (orgQueryError) {
+        console.log('[Contacts POST] Erro ao buscar org (pode ser que não exista):', orgQueryError.message);
+      }
+      
       if (existingOrg) {
         orgId = existingOrg.id;
+        console.log('[Contacts POST] Organização encontrada:', orgId);
       } else {
-        // Cria organização default
+        console.log('[Contacts POST] Criando organização default...');
+        
+        // Busca um usuário para ser owner
+        const { data: firstUser } = await supabaseServer
+          .from('users')
+          .select('id')
+          .limit(1)
+          .single();
+        
+        if (!firstUser) {
+          return NextResponse.json(
+            { success: false, error: 'Nenhum usuário encontrado no sistema' },
+            { status: 500 }
+          );
+        }
+        
+        // Cria organização default com owner
         const { data: newOrg, error: orgError } = await supabaseServer
           .from('organizations')
           .insert({
             name: 'Default Organization',
-            slug: 'default',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            slug: `default-${Date.now()}`,
+            status: 'ACTIVE',
+            owner_id: firstUser.id,
           })
           .select('id')
           .single();
         
-        if (orgError || !newOrg) {
+        if (orgError) {
+          console.error('[Contacts POST] Erro ao criar organização:', orgError);
           return NextResponse.json(
-            { success: false, error: 'Failed to create organization', details: orgError?.message },
+            { success: false, error: 'Falha ao criar organização', details: orgError.message },
+            { status: 500 }
+          );
+        }
+        
+        if (!newOrg) {
+          return NextResponse.json(
+            { success: false, error: 'Organização não foi criada' },
             { status: 500 }
           );
         }
         
         orgId = newOrg.id;
+        console.log('[Contacts POST] Nova organização criada:', orgId);
       }
     }
 
