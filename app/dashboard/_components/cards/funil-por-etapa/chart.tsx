@@ -107,7 +107,7 @@ export function FunilPorEtapaChart({ data }: FunilPorEtapaChartProps) {
                         <span className="font-medium">Valor:</span> R$ {item.value.toLocaleString('pt-BR')}
                       </p>
                       <p className="text-slate-600">
-                        <span className="font-medium">Conversão:</span> {item.conversionRate.toFixed(1)}%
+                        <span className="font-medium">Conversão:</span> {(Number(item.conversionRate) || 0).toFixed(1)}%
                       </p>
                       {item.avgTime > 0 && (
                         <p className="text-slate-600">

@@ -62,9 +62,11 @@ function KpiSidebar() {
   const { kpis, isLoading } = useKPIs(organizationId ?? undefined)
 
   const fmt = (v: number | undefined | null) =>
-    `R$ ${(v ?? 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
-  const fmtPct = (v: number | undefined | null) =>
-    `${(v ?? 0) >= 0 ? '+' : ''}${(v ?? 0).toFixed(1)}%`
+    `R$ ${(Number(v) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+  const fmtPct = (v: number | undefined | null) => {
+    const n = Number(v) || 0
+    return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`
+  }
 
   return (
     <KpiVerticalList className="h-full">
@@ -84,14 +86,14 @@ function KpiSidebar() {
       />
       <KpiVerticalItem
         label="Taxa de Conversão"
-        value={kpis ? `${(kpis.conversionRate ?? 0).toFixed(1)}%` : '—'}
+        value={kpis ? `${(Number(kpis.conversionRate) || 0).toFixed(1)}%` : '—'}
         change={kpis ? fmtPct(kpis.conversionChange) : undefined}
         icon={Target}
         loading={isLoading}
       />
       <KpiVerticalItem
         label="Leads Esta Semana"
-        value={kpis ? kpis.leadsThisWeek.toString() : '—'}
+        value={kpis ? (Number(kpis.leadsThisWeek) || 0).toString() : '—'}
         change={kpis ? fmtPct(kpis.leadsGrowth) : undefined}
         icon={Users}
         loading={isLoading}

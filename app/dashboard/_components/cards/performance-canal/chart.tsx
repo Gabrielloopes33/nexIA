@@ -58,7 +58,7 @@ export function PerformanceCanalChart({ channels }: PerformanceCanalChartProps) 
     name: CHANNEL_LABELS[channel.channel] || channel.channel,
     leads: channel.leadsGenerated,
     deals: channel.dealsWon,
-    conversionRate: Number((channel.conversionRate ?? 0).toFixed(1)),
+    conversionRate: Number((Number(channel.conversionRate) || 0).toFixed(1)),
   }))
 
   return (
