@@ -1,12 +1,21 @@
 /**
- * Contact API Route
+ * Contact API Route (Refatorado - Fase 3: RBAC)
  * GET: Get a specific contact
  * PATCH: Update a contact
- * DELETE: Soft delete a contact
+ * DELETE: Soft delete a contact (ADMIN+)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { 
+  getOrganizationId, 
+  AuthError, 
+  createAuthErrorResponse 
+} from '@/lib/auth/helpers';
+import { 
+  withPermission,
+  permissionDeniedResponse 
+} from '@/lib/auth/permissions';
 
 interface RouteParams {
   params: Promise<{
@@ -23,6 +32,7 @@ export async function GET(
   { params }: RouteParams
 ): Promise<NextResponse> {
   try {
+    const organizationId = await getOrganizationId();
     const { id } = await params;
 
     const contact = await prisma.contact.findUnique({
@@ -52,12 +62,25 @@ export async function GET(
       );
     }
 
+    // Verifica se o contato pertence à organização do usuário
+    if (contact.organizationId !== organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'Access denied' },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       data: contact,
     });
   } catch (error) {
     console.error('Error fetching contact:', error);
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error);
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Failed to fetch contact' },
       { status: 500 }
@@ -74,6 +97,7 @@ export async function PATCH(
   { params }: RouteParams
 ): Promise<NextResponse> {
   try {
+    const organizationId = await getOrganizationId();
     const { id } = await params;
     const body = await request.json();
     const { name, phone, avatarUrl, metadata, tags, status, leadScore } = body;
@@ -89,13 +113,21 @@ export async function PATCH(
       );
     }
 
+    // Verifica se o contato pertence à organização do usuário
+    if (existingContact.organizationId !== organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'Access denied' },
+        { status: 403 }
+      );
+    }
+
     // Check if phone is being changed and if new phone already exists
     if (phone && phone !== existingContact.phone) {
       const normalizedPhone = phone.replace(/\D/g, '');
       const phoneExists = await prisma.contact.findUnique({
         where: {
           organizationId_phone: {
-            organizationId: existingContact.organizationId,
+            organizationId,
             phone: normalizedPhone,
           },
         },
@@ -128,6 +160,11 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating contact:', error);
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error);
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Failed to update contact' },
       { status: 500 }
@@ -137,44 +174,50 @@ export async function PATCH(
 
 /**
  * DELETE /api/contacts/[id]
- * Soft delete a contact
+ * Soft delete a contact (requer permissão contacts:delete - ADMIN+)
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
-): Promise<NextResponse> {
-  try {
-    const { id } = await params;
+export const DELETE = withPermission(
+  'contacts:delete',
+  async (request: NextRequest, member, { params }: RouteParams) => {
+    try {
+      const { id } = await params;
 
-    const existingContact = await prisma.contact.findUnique({
-      where: { id },
-    });
+      const existingContact = await prisma.contact.findUnique({
+        where: { id },
+      });
 
-    if (!existingContact) {
+      if (!existingContact) {
+        return NextResponse.json(
+          { success: false, error: 'Contact not found' },
+          { status: 404 }
+        );
+      }
+
+      // Verifica se o contato pertence à organização do usuário (RLS já faz isso, mas double-check)
+      if (existingContact.organizationId !== member.organizationId) {
+        return permissionDeniedResponse('Acesso negado a este contato');
+      }
+
+      // Soft delete by setting deletedAt
+      await prisma.contact.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          status: 'INACTIVE',
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Contact moved to trash successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      
       return NextResponse.json(
-        { success: false, error: 'Contact not found' },
-        { status: 404 }
+        { success: false, error: 'Failed to delete contact' },
+        { status: 500 }
       );
     }
-
-    // Soft delete by setting deletedAt
-    await prisma.contact.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        status: 'INACTIVE',
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Contact moved to trash successfully',
-    });
-  } catch (error) {
-    console.error('Error deleting contact:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to delete contact' },
-      { status: 500 }
-    );
   }
-}
+);

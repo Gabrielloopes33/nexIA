@@ -1,0 +1,645 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model charges {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String       @db.Uuid
+  invoice_id      String?      @db.Uuid
+  amount          Decimal      @db.Decimal(10, 2)
+  status          ChargeStatus @default(PENDING)
+  type            ChargeType   @default(RECURRING)
+  description     String?
+  due_date        DateTime
+  paid_at         DateTime?
+  metadata        Json?
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @default(now())
+}
+
+model contact_tags {
+  contact_id  String   @db.Uuid
+  tag_id      String   @db.Uuid
+  assigned_at DateTime @default(now())
+  assigned_by String?  @db.Uuid
+
+  @@id([contact_id, tag_id])
+}
+
+model contacts {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id     String        @db.Uuid
+  phone               String        @db.VarChar(50)
+  name                String?       @db.VarChar(255)
+  avatar_url          String?
+  metadata            Json?
+  tags                String[]
+  lead_score          Int           @default(0)
+  status              ContactStatus @default(ACTIVE)
+  last_interaction_at DateTime?
+  deleted_at          DateTime?
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @default(now())
+
+  @@unique([organization_id, phone])
+  @@index([organization_id])
+  @@index([status])
+}
+
+model conversations {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  contact_id      String   @db.Uuid
+  status          String   @default("active") @db.VarChar(50)
+  unread_count    Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+}
+
+model dashboard_metric_cache {
+  id              String   @id
+  organization_id String
+  metric_type     String
+  period          String
+  data            Json
+  calculated_at   DateTime @default(now())
+  expires_at      DateTime
+
+  @@unique([organization_id, metric_type, period], map: "dashboard_metric_cache_org_type_period_key")
+  @@index([expires_at])
+  @@index([organization_id, metric_type], map: "dashboard_metric_cache_org_type_idx")
+}
+
+model dashboard_metric_caches {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String    @db.Uuid
+  metric_type     String    @db.VarChar(100)
+  period          String    @db.VarChar(50)
+  data            Json
+  calculated_at   DateTime  @default(now())
+  expires_at      DateTime?
+}
+
+model deal_activities {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deal_id     String       @db.Uuid
+  user_id     String       @db.Uuid
+  type        ActivityType
+  description String?
+  metadata    Json?
+  created_at  DateTime     @default(now())
+
+  @@index([deal_id])
+}
+
+model deals {
+  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id        String                   @db.Uuid
+  contact_id             String                   @db.Uuid
+  stage_id               String                   @db.Uuid
+  title                  String                   @db.VarChar(255)
+  description            String?
+  value                  Decimal                  @default(0) @db.Decimal(12, 2)
+  probability            Int                      @default(0)
+  expected_close_date    DateTime?
+  actual_close_date      DateTime?
+  status                 DealStatus
+  lost_reason            String?
+  metadata               Json?
+  assigned_to            String?                  @db.Uuid
+  created_by             String                   @db.Uuid
+  created_at             DateTime                 @default(now())
+  updated_at             DateTime                 @default(now())
+  unit_id                String?                  @db.Uuid
+  amount                 Decimal?                 @db.Decimal(15, 2)
+  channel                ChannelType?             @default(OTHER)
+  estimated_value        Float?                   @default(0)
+  qualified_at           DateTime?                @db.Timestamp(6)
+  proposal_sent_at       DateTime?                @db.Timestamp(6)
+  negotiation_at         DateTime?                @db.Timestamp(6)
+  utm_source             String?                  @db.VarChar(255)
+  currency               String?                  @default("BRL") @db.VarChar(3)
+  closed_won_at          DateTime?                @db.Timestamp(6)
+  lead_score             Int?                     @default(0)
+  lost_at                DateTime?                @db.Timestamp(6)
+  priority               String?                  @default("MEDIUM") @db.VarChar(20)
+  source                 String?                  @db.VarChar(100)
+  source_id              String?                  @db.VarChar(100)
+  tags                   String[]                 @default([])
+  closed_lost_at         DateTime?                @db.Timestamp(6)
+  pipeline_stage_history pipeline_stage_history[]
+
+  @@index([channel, created_at])
+  @@index([lead_score])
+  @@index([lost_reason, closed_lost_at])
+  @@index([organization_id])
+  @@index([proposal_sent_at])
+  @@index([qualified_at])
+  @@index([status])
+}
+
+model invoices {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String    @db.Uuid
+  subscription_id String?   @db.Uuid
+  amount          Decimal   @db.Decimal(10, 2)
+  currency        String    @default("BRL") @db.VarChar(3)
+  status          String    @default("PENDING") @db.VarChar(50)
+  due_date        DateTime
+  paid_at         DateTime?
+  metadata        Json?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+}
+
+model list_contacts {
+  list_id    String   @db.Uuid
+  contact_id String   @db.Uuid
+  added_at   DateTime @default(now())
+  added_by   String?  @db.Uuid
+
+  @@id([list_id, contact_id])
+}
+
+model lists {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  name            String   @db.VarChar(200)
+  description     String?
+  filters         Json     @default("{}")
+  is_dynamic      Boolean  @default(false)
+  contact_count   Int      @default(0)
+  created_by      String?  @db.Uuid
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+}
+
+model messages {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversation_id String   @db.Uuid
+  contact_id      String   @db.Uuid
+  content         String?
+  status          String   @default("sent") @db.VarChar(50)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+}
+
+model monthly_goals {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  month           Int
+  year            Int
+  revenue_goal    Decimal  @default(0) @db.Decimal(12, 2)
+  deals_goal      Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+  target_revenue  Decimal? @default(0) @db.Decimal(15, 2)
+  target_deals    Int?     @default(0)
+  leads_goal      Int?     @default(0)
+  conversion_goal Decimal? @default(0) @db.Decimal(5, 2)
+  active          Boolean? @default(true)
+
+  @@unique([organization_id, month], map: "idx_monthly_goals_org_month")
+  @@unique([organization_id, year, month], map: "monthly_goals_org_year_month_key")
+  @@unique([organization_id, month, year])
+  @@index([month])
+  @@index([organization_id], map: "monthly_goals_org_idx")
+  @@index([year])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model organization_members {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String?        @db.Uuid
+  user_id         String?        @db.Uuid
+  role            String         @default("MEMBER")
+  status          String?        @default("ACTIVE")
+  joined_at       DateTime?      @default(now()) @db.Timestamptz(6)
+  created_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  organizations   organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users?         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([organization_id, user_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model organizations {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String
+  slug                 String                 @unique
+  owner_id             String?                @db.Uuid
+  status               String?                @default("ACTIVE")
+  settings             Json?                  @default("{}")
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  organization_members organization_members[]
+  users                users?                 @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pipeline_stages      pipeline_stages[]
+}
+
+model pipeline_stage_histories {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deal_id       String   @db.Uuid
+  from_stage_id String?  @db.Uuid
+  to_stage_id   String   @db.Uuid
+  moved_by      String   @db.Uuid
+  moved_at      DateTime @default(now())
+  created_at    DateTime @default(now())
+
+  @@index([deal_id])
+}
+
+model pipeline_stage_history {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deal_id    String    @db.Uuid
+  stage      String    @db.VarChar(255)
+  entered_at DateTime? @default(now()) @db.Timestamp(6)
+  exited_at  DateTime? @db.Timestamp(6)
+  duration   Int?
+  deals      deals     @relation(fields: [deal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([deal_id])
+  @@index([exited_at])
+  @@index([stage, entered_at])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pipeline_stages {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String?        @db.Uuid
+  name            String
+  position        Int
+  color           String?
+  probability     Int?           @default(0)
+  is_default      Boolean?       @default(false)
+  is_closed       Boolean?       @default(false)
+  created_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?      @default(now()) @db.Timestamptz(6)
+  organizations   organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model plans {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  interval    String   @default("month") @db.VarChar(50)
+  features    Json?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+}
+
+model schedules {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String         @db.Uuid
+  type            ScheduleType
+  title           String
+  description     String?
+  contact_id      String?        @db.Uuid
+  deal_id         String?        @db.Uuid
+  assigned_to     String?        @db.Uuid
+  start_time      DateTime
+  end_time        DateTime
+  completed_at    DateTime?
+  status          ScheduleStatus @default(pending)
+  location        String?
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @default(now())
+
+  @@index([organization_id])
+}
+
+model segments {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id    String    @db.Uuid
+  name               String    @db.VarChar(200)
+  description        String?
+  rules              Json      @default("[]")
+  contact_count      Int       @default(0)
+  last_calculated_at DateTime?
+  created_by         String?   @db.Uuid
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @default(now())
+}
+
+model subscriptions {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id      String             @db.Uuid
+  plan_id              String             @db.Uuid
+  status               SubscriptionStatus @default(TRIALING)
+  current_period_start DateTime
+  current_period_end   DateTime
+  trial_ends_at        DateTime?
+  cancelled_at         DateTime?
+  created_at           DateTime           @default(now())
+  updated_at           DateTime           @default(now())
+}
+
+model tags {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  name            String   @db.VarChar(100)
+  color           String   @default("#6366f1") @db.VarChar(20)
+  description     String?
+  source          String   @default("manual") @db.VarChar(50)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+
+  @@unique([organization_id, name])
+  @@index([organization_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id                   String                 @id @db.Uuid
+  email                String
+  name                 String?
+  avatar_url           String?
+  phone                String?
+  status               String?                @default("ACTIVE")
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  organization_id      String?                @db.Uuid
+  organization_members organization_members[]
+  organizations        organizations[]
+}
+
+model whatsapp_cloud_instances {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  name            String   @db.VarChar(255)
+  phone_number    String   @db.VarChar(50)
+  status          String   @default("DISCONNECTED") @db.VarChar(50)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  EMAIL
+  TASK
+  NOTE
+  WHATSAPP
+  STAGE_CHANGE
+  DEAL_CREATED
+  DEAL_CLOSED
+}
+
+enum AiInsightStatus {
+  ACTIVE
+  DISMISSED
+  ARCHIVED
+}
+
+enum AiInsightType {
+  PREDICTION
+  ALERT
+  RECOMMENDATION
+  DISCOVERY
+}
+
+enum ChannelType {
+  WHATSAPP_OFFICIAL
+  WHATSAPP_UNOFFICIAL
+  INSTAGRAM
+  FACEBOOK
+  EMAIL
+  PHONE
+  FORM
+  OTHER
+  WEBSITE
+  LANDING_PAGE
+  MANUAL
+  API
+  CHATBOT
+}
+
+enum ChargeStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum ChargeType {
+  RECURRING
+  ONE_TIME
+  SETUP
+}
+
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum ConversationStatus {
+  ACTIVE
+  EXPIRED
+  CLOSED
+}
+
+enum ConversationType {
+  USER_INITIATED
+  BUSINESS_INITIATED
+  REFERRAL_INITIATED
+}
+
+enum DealPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DealStatus {
+  OPEN
+  WON
+  LOST
+  PAUSED
+}
+
+enum InstagramInstanceStatus {
+  DISCONNECTED
+  CONNECTING
+  CONNECTED
+  ERROR
+  SUSPENDED
+}
+
+enum IntegrationActivityStatus {
+  SUCCESS
+  PENDING
+  FAILED
+  WARNING
+}
+
+enum IntegrationActivityType {
+  AUTH_CONNECTED
+  AUTH_DISCONNECTED
+  AUTH_REFRESHED
+  AUTH_FAILED
+  WEBHOOK_RECEIVED
+  WEBHOOK_SENT
+  MESSAGE_SENT
+  MESSAGE_RECEIVED
+  SYNC_STARTED
+  SYNC_COMPLETED
+  SYNC_FAILED
+  TEMPLATE_SENT
+  ERROR
+  CONFIG_UPDATED
+}
+
+enum IntegrationType {
+  WHATSAPP
+  INSTAGRAM
+  N8N
+  MAKE
+  ZAPIER
+  WEBHOOK
+  API
+}
+
+enum LostReason {
+  NO_BUDGET
+  NO_INTEREST
+  COMPETITOR
+  NO_RESPONSE
+  TIMING
+  OTHER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  LOCATION
+  CONTACT
+  TEMPLATE
+  INTERACTIVE
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PendingFormDeliveryStatus {
+  WAITING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum QualityRating {
+  GREEN
+  YELLOW
+  RED
+  UNKNOWN
+}
+
+enum ScheduleStatus {
+  pending
+  completed
+  cancelled
+}
+
+enum ScheduleType {
+  meeting
+  task
+  call
+  deadline
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  UNPAID
+  TRIALING
+}
+
+enum TemplateCategory {
+  AUTHENTICATION
+  MARKETING
+  UTILITY
+}
+
+enum TemplateStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+  DISABLED
+}
+
+enum TranscriptionSource {
+  WHATSAPP_CALL
+  WHATSAPP_AUDIO
+  PHONE_CALL
+  MEETING
+  UPLOAD
+}
+
+enum TranscriptionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum WhatsAppInstanceStatus {
+  DISCONNECTED
+  CONNECTING
+  CONNECTED
+  ERROR
+  SUSPENDED
+  PENDING_SETUP
+}
+
+enum dealstatus {
+  OPEN
+  WON
+  LOST
+}

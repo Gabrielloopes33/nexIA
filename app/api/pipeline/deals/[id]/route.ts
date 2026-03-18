@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DealPriority, DealStatus, ActivityType } from "@prisma/client";
+import { 
+  getOrganizationId, 
+  AuthError, 
+  createAuthErrorResponse 
+} from '@/lib/auth/helpers';
+import { 
+  withPermission,
+  permissionDeniedResponse,
+  checkPermission,
+  getCurrentMemberWithRole
+} from '@/lib/auth/permissions';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -12,6 +23,7 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    const organizationId = await getOrganizationId();
     const { id } = await params;
 
     const deal = await prisma.deal.findUnique({
@@ -46,12 +58,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Verifica se o deal pertence à organização
+    if (deal.organizationId !== organizationId) {
+      return NextResponse.json(
+        { success: false, error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       data: deal,
     });
   } catch (error) {
     console.error("[Pipeline Deal] Error:", error);
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error);
+    }
+    
     return NextResponse.json(
       { 
         success: false, 
@@ -69,6 +94,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
+    const organizationId = await getOrganizationId();
     const { id } = await params;
     const body = await request.json();
     const { stageId, status, title, description, value, priority, expectedCloseDate, metadata } = body;
@@ -83,6 +109,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         { success: false, error: "Deal not found" },
         { status: 404 }
+      );
+    }
+
+    // Verifica se o deal pertence à organização
+    if (currentDeal.organizationId !== organizationId) {
+      return NextResponse.json(
+        { success: false, error: "Access denied" },
+        { status: 403 }
       );
     }
 
@@ -176,6 +210,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("[Pipeline Deal] Error updating deal:", error);
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error);
+    }
+    
     return NextResponse.json(
       { 
         success: false, 
@@ -189,29 +228,49 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 /**
  * DELETE /api/pipeline/deals/[id]
- * Remove um deal
+ * Remove um deal (requer permissão deals:delete - ADMIN+)
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params;
+export const DELETE = withPermission(
+  'deals:delete',
+  async (request: NextRequest, member, { params }: RouteParams) => {
+    try {
+      const { id } = await params;
 
-    await prisma.deal.delete({
-      where: { id },
-    });
+      const deal = await prisma.deal.findUnique({
+        where: { id },
+      });
 
-    return NextResponse.json({
-      success: true,
-      message: "Deal deleted successfully",
-    });
-  } catch (error) {
-    console.error("[Pipeline Deal] Error deleting deal:", error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: "Failed to delete deal",
-        details: error instanceof Error ? error.message : "Unknown error"
-      },
-      { status: 500 }
-    );
+      if (!deal) {
+        return NextResponse.json(
+          { success: false, error: "Deal not found" },
+          { status: 404 }
+        );
+      }
+
+      // Verifica se o deal pertence à organização do usuário
+      if (deal.organizationId !== member.organizationId) {
+        return permissionDeniedResponse('Acesso negado a este deal');
+      }
+
+      await prisma.deal.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Deal deleted successfully",
+      });
+    } catch (error) {
+      console.error("[Pipeline Deal] Error deleting deal:", error);
+      
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Failed to delete deal",
+          details: error instanceof Error ? error.message : "Unknown error"
+        },
+        { status: 500 }
+      );
+    }
   }
-}
+);

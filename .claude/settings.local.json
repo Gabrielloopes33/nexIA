@@ -12,7 +12,9 @@
       "Bash(npx tsc:*)",
       "Bash(npm install:*)",
       "Bash(pnpm add:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(npm run:*)",
+      "Bash(ls:*)"
     ]
   }
 }

@@ -35,6 +35,7 @@ model Organization {
   members                OrganizationMember[]
   units                  OrganizationUnit[]
   owner                  User                     @relation("OwnedOrganizations", fields: [ownerId], references: [id])
+  legacyUsers            User[]                   @relation("LegacyUserOrganization")
   pendingFormDeliveries  PendingFormDelivery[]
   pipelineStages         PipelineStage[]
   schedules              Schedule[]
@@ -96,6 +97,8 @@ model User {
   name               String?
   avatarUrl          String?              @map("avatar_url")
   passwordHash       String?              @map("password_hash")
+  /// Legado: campo usado na migração do Supabase Cloud. Preferir usar memberships.
+  organizationId     String?              @map("organization_id") @db.Uuid
   createdAt          DateTime             @default(now()) @map("created_at")
   updatedAt          DateTime             @updatedAt @map("updated_at")
   activities         DealActivity[]       @relation("PerformedActivities")
@@ -103,7 +106,10 @@ model User {
   memberships        OrganizationMember[]
   ownedOrganizations Organization[]       @relation("OwnedOrganizations")
   assignedSchedules  Schedule[]           @relation("AssignedSchedules")
+  /// Relação legada com organização (via organization_id)
+  legacyOrganization Organization?        @relation("LegacyUserOrganization", fields: [organizationId], references: [id])
 
+  @@index([organizationId])
   @@map("users")
 }
 
