@@ -1,15 +1,19 @@
 /**
- * Contacts API Route (Refatorado - Fase 1.B)
+ * Contacts API Route (REFATORADO - Exemplo Fase 1)
+ * 
+ * Este é um exemplo de como o endpoint deve ficar após a refatoração.
+ * Ele usa os novos helpers de autenticação e não aceita organizationId do cliente.
+ * 
  * GET: List all contacts for the authenticated user's organization
  * POST: Create a new contact in the authenticated user's organization
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withRLS } from '@/lib/db/rls';
 import { 
   getOrganizationId, 
   getAuthenticatedUser,
+  requireOrganizationMembership,
   AuthError, 
   createAuthErrorResponse 
 } from '@/lib/auth/helpers';
@@ -22,6 +26,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // Obtém organizationId do token JWT (não aceita do cliente!)
     const organizationId = await getOrganizationId();
+    
+    // Opcional: valida se usuário é membro ativo da organização
+    await requireOrganizationMembership(organizationId);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as 'ACTIVE' | 'INACTIVE' | 'BLOCKED' | null;
@@ -32,41 +39,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Build query com Prisma
-    const where: any = {
+    const where = {
       organizationId,
+      ...(includeDeleted ? {} : { deletedAt: null }),
+      ...(status && { status }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { phone: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }),
+      ...(tags?.length && { tags: { hasSome: tags } }),
     };
 
-    if (!includeDeleted) {
-      where.deletedAt = null;
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (tags?.length) {
-      where.tags = { hasSome: tags };
-    }
-
-    // Executa com contexto RLS para isolamento multi-tenant
-    const [contacts, total] = await withRLS(prisma, organizationId, async (tx) => {
-      return Promise.all([
-        tx.contact.findMany({
-          where,
-          orderBy: { lastInteractionAt: 'desc' },
-          take: limit,
-          skip: offset,
-        }),
-        tx.contact.count({ where }),
-      ]);
-    });
+    const [contacts, total] = await Promise.all([
+      prisma.contact.findMany({
+        where,
+        orderBy: { lastInteractionAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.contact.count({ where }),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -110,6 +104,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const organizationId = user.organizationId;
 
+    // Valida membership
+    await requireOrganizationMembership(organizationId);
+
     // Parse body (sem organizationId!)
     const body = await request.json();
     const { 
@@ -137,37 +134,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Normaliza telefone
     const normalizedPhone = phone.replace(/\D/g, '');
 
-    // Busca contato pelo telefone (ativo ou soft-deleted) - com RLS
-    const existingContact = await withRLS(prisma, organizationId, async (tx) => {
-      return tx.contact.findFirst({
-        where: {
-          organizationId,
-          phone: normalizedPhone,
-        },
-      });
+    // Verifica se já existe contato com este telefone
+    const existingContact = await prisma.contact.findFirst({
+      where: {
+        organizationId,
+        phone: normalizedPhone,
+      },
     });
 
     // Monta metadata
-    const contactMetadata: Record<string, any> = metadata || {};
+    const contactMetadata: Record<string, unknown> = metadata || {};
     if (email) contactMetadata.email = email;
     if (notes) contactMetadata.notes = notes;
     if (source) contactMetadata.source = source;
 
-    // Se existir e estiver deletado, restaura - com RLS
+    // Se existir e estiver deletado, restaura
     if (existingContact?.deletedAt) {
-      const restored = await withRLS(prisma, organizationId, async (tx) => {
-        return tx.contact.update({
-          where: { id: existingContact.id },
-          data: {
-            name: name || existingContact.name,
-            avatarUrl: avatarUrl || null,
-            metadata: contactMetadata,
-            tags: tags || [],
-            status: status || 'ACTIVE',
-            deletedAt: null,
-            lastInteractionAt: new Date(),
-          },
-        });
+      const restored = await prisma.contact.update({
+        where: { id: existingContact.id },
+        data: {
+          name: name || existingContact.name,
+          avatarUrl: avatarUrl || null,
+          metadata: contactMetadata,
+          tags: tags || [],
+          status: status || 'ACTIVE',
+          deletedAt: null,
+          lastInteractionAt: new Date(),
+        },
       });
 
       return NextResponse.json({ success: true, data: restored }, { status: 201 });
@@ -184,21 +177,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Cria novo contato - com RLS
-    const contact = await withRLS(prisma, organizationId, async (tx) => {
-      return tx.contact.create({
-        data: {
-          organizationId,
-          phone: normalizedPhone,
-          name: name || null,
-          avatarUrl: avatarUrl || null,
-          metadata: contactMetadata,
-          tags: tags || [],
-          status: status || 'ACTIVE',
-          leadScore: 0,
-          lastInteractionAt: new Date(),
-        },
-      });
+    // Cria novo contato
+    const contact = await prisma.contact.create({
+      data: {
+        organizationId,
+        phone: normalizedPhone,
+        name: name || null,
+        avatarUrl: avatarUrl || null,
+        metadata: contactMetadata,
+        tags: tags || [],
+        status: status || 'ACTIVE',
+        leadScore: 0,
+        lastInteractionAt: new Date(),
+      },
     });
 
     return NextResponse.json({

@@ -1,160 +1,32 @@
 /**
- * @swagger
- * /api/tags:
- *   get:
- *     summary: Lista todas as tags da organização
- *     tags: [Tags]
- *     parameters:
- *       - in: query
- *         name: organizationId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: ID da organização
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Termo de busca
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 50
- *         description: Limite de resultados
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
- *         description: Offset para paginação
- *     responses:
- *       200:
- *         description: Lista de tags
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Tag'
- *                 pagination:
- *                   $ref: '#/components/schemas/PaginationResponse'
- *       400:
- *         description: Parâmetros inválidos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erro interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *   post:
- *     summary: Cria uma nova tag
- *     tags: [Tags]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - organizationId
- *               - name
- *             properties:
- *               organizationId:
- *                 type: string
- *                 format: uuid
- *               name:
- *                 type: string
- *               color:
- *                 type: string
- *                 default: '#6366f1'
- *               description:
- *                 type: string
- *               source:
- *                 type: string
- *                 enum: [manual, automation, utm]
- *                 default: manual
- *     responses:
- *       201:
- *         description: Tag criada com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/Tag'
- *       400:
- *         description: Dados inválidos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       409:
- *         description: Tag com este nome já existe
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Erro interno
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
-/**
- * Tags API Route
- * GET: List all tags for an organization
- * POST: Create a new tag
+ * Tags API Route (Refatorado - Fase 3: RBAC)
+ * GET: List all tags for the authenticated user's organization
+ * POST: Create a new tag (MANAGER+)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { supabaseServer } from '@/lib/supabase-server';
+import { 
+  getOrganizationId, 
+  AuthError, 
+  createAuthErrorResponse 
+} from '@/lib/auth/helpers';
+import { 
+  withPermission
+} from '@/lib/auth/permissions';
 
 /**
  * GET /api/tags
- * List all tags for an organization
+ * List all tags for the authenticated user's organization
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
+    const organizationId = await getOrganizationId();
+
     const { searchParams } = new URL(request.url);
-    let organizationId = searchParams.get('organizationId');
     const search = searchParams.get('search');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
-
-    // Resolve organizationId
-    if (!organizationId || organizationId === 'default_org_id') {
-      const { data: existingOrg } = await supabaseServer
-        .from('organizations')
-        .select('id')
-        .limit(1)
-        .single();
-      
-      if (existingOrg) {
-        organizationId = existingOrg.id;
-      } else {
-        return NextResponse.json(
-          { success: false, error: 'Nenhuma organização encontrada' },
-          { status: 404 }
-        );
-      }
-    }
 
     const where: Record<string, unknown> = { 
       organizationId,
@@ -192,7 +64,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     });
   } catch (error) {
-    console.error('Error fetching tags:', error);
+    console.error('[Tags GET] Error:', error);
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error);
+    }
+
     return NextResponse.json(
       { success: false, error: 'Failed to fetch tags' },
       { status: 500 }
@@ -202,63 +79,66 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /**
  * POST /api/tags
- * Create a new tag
+ * Create a new tag (requer permissão tags:manage - MANAGER+)
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  try {
-    const body = await request.json();
-    const { 
-      organizationId, 
-      name, 
-      color,
-      description,
-      source,
-    } = body;
+export const POST = withPermission(
+  'tags:manage',
+  async (request: NextRequest, member) => {
+    try {
+      const body = await request.json();
+      const { 
+        name, 
+        color,
+        description,
+        source,
+      } = body;
 
-    // Validate required fields
-    if (!organizationId || !name) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields: organizationId, name' },
-        { status: 400 }
-      );
-    }
+      // Validate required fields
+      if (!name) {
+        return NextResponse.json(
+          { success: false, error: 'Missing required field: name' },
+          { status: 400 }
+        );
+      }
 
-    // Check if tag already exists for this organization
-    const existingTag = await prisma.tag.findUnique({
-      where: {
-        organizationId_name: {
-          organizationId,
-          name: name.trim(),
+      // Check if tag already exists for this organization
+      const existingTag = await prisma.tag.findUnique({
+        where: {
+          organizationId_name: {
+            organizationId: member.organizationId,
+            name: name.trim(),
+          },
         },
-      },
-    });
+      });
 
-    if (existingTag) {
+      if (existingTag) {
+        return NextResponse.json(
+          { success: false, error: 'Tag with this name already exists' },
+          { status: 409 }
+        );
+      }
+
+      const tag = await prisma.tag.create({
+        data: {
+          organizationId: member.organizationId,
+          name: name.trim(),
+          color: color || '#6366f1',
+          description: description || null,
+          source: source || 'manual',
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: tag,
+      }, { status: 201 });
+    } catch (error) {
+      console.error('[Tags POST] Error:', error);
+
       return NextResponse.json(
-        { success: false, error: 'Tag with this name already exists' },
-        { status: 409 }
+        { success: false, error: 'Failed to create tag' },
+        { status: 500 }
       );
     }
-
-    const tag = await prisma.tag.create({
-      data: {
-        organizationId,
-        name: name.trim(),
-        color: color || '#6366f1',
-        description: description || null,
-        source: source || 'manual',
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: tag,
-    }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating tag:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to create tag' },
-      { status: 500 }
-    );
   }
-}
+);

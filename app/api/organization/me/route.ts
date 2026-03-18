@@ -1,54 +1,41 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { supabaseServer } from '@/lib/supabase-server'
+import { prisma } from '@/lib/prisma'
+import { getAuthenticatedUser, AuthError, createAuthErrorResponse } from '@/lib/auth/helpers'
 
+/**
+ * GET /api/organization/me
+ * 
+ * Retorna os detalhes da organização atual do usuário autenticado.
+ * Requer autenticação via cookie 'nexia_session'.
+ */
 export async function GET() {
   try {
-    const cookieStore = await cookies()
+    // Obtém usuário autenticado (valida JWT no cookie)
+    const user = await getAuthenticatedUser()
 
-    // Identifica o usuário autenticado via Supabase auth
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll() {},
-        },
-      }
-    )
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    // Verifica se o usuário tem organização
+    if (!user.organizationId) {
+      return NextResponse.json(
+        { error: 'Usuário não possui organização' },
+        { status: 404 }
+      )
     }
 
-    // Usa service role (bypassa RLS) para buscar organization_id do usuário
-    const { data: userData, error: userError } = await supabaseServer
-      .from('users')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single()
+    // Busca detalhes da organização via Prisma
+    const org = await prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+      },
+    })
 
-    if (userError || !userData?.organization_id) {
-      return NextResponse.json({ error: 'Organização não encontrada' }, { status: 404 })
-    }
-
-    // Usa service role para buscar detalhes da organização (bypassa RLS)
-    const { data: org, error: orgError } = await supabaseServer
-      .from('organizations')
-      .select('id, name, slug, status')
-      .eq('id', userData.organization_id)
-      .single()
-
-    if (orgError || !org) {
+    if (!org) {
       // Retorna pelo menos o id se não conseguir os detalhes
       return NextResponse.json({
-        id: userData.organization_id,
+        id: user.organizationId,
         name: '',
         slug: '',
         status: 'ACTIVE',
@@ -63,6 +50,14 @@ export async function GET() {
     })
   } catch (error) {
     console.error('[API] Erro ao buscar organização:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error)
+    }
+
+    return NextResponse.json(
+      { error: 'Erro interno ao carregar organização' },
+      { status: 500 }
+    )
   }
 }

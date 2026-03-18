@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase-server";
+import { prisma } from "@/lib/prisma";
+import { withRLS } from "@/lib/db/rls";
+import { 
+  getOrganizationId, 
+  AuthError, 
+  createAuthErrorResponse 
+} from "@/lib/auth/helpers";
+
 type DealStatus = 'OPEN' | 'WON' | 'LOST' | 'CANCELLED';
 
 /**
@@ -8,68 +15,41 @@ type DealStatus = 'OPEN' | 'WON' | 'LOST' | 'CANCELLED';
  */
 export async function GET(request: NextRequest) {
   try {
+    const organizationId = await getOrganizationId();
+    
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get("organizationId") || "default_org_id";
     const stageId = searchParams.get("stageId");
     const status = searchParams.get("status") as DealStatus | null;
     const contactId = searchParams.get("contactId");
 
     console.log('[Pipeline Deals GET] Params:', { organizationId, stageId, status, contactId });
 
-    // Busca uma organização válida
-    let orgId = organizationId;
-    
-    if (organizationId === 'default_org_id') {
-      const { data: existingOrg } = await supabaseServer
-        .from('organizations')
-        .select('id')
-        .limit(1)
-        .single();
-      
-      orgId = existingOrg?.id || organizationId;
-    }
+    const where: any = { organizationId };
+    if (stageId) where.stageId = stageId;
+    if (status) where.status = status;
+    if (contactId) where.contactId = contactId;
 
-    // Build query (sem relacionamentos complexos)
-    let query = supabaseServer
-      .from('deals')
-      .select('*')
-      .eq('organization_id', orgId)
-      .order('updated_at', { ascending: false });
-
-    if (stageId) query = query.eq('stage_id', stageId);
-    if (status) query = query.eq('status', status);
-    if (contactId) query = query.eq('contact_id', contactId);
-
-    const { data: deals, error } = await query;
-
-    if (error) {
-      console.error('[Pipeline Deals GET] Supabase error:', error);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "Failed to fetch deals",
-          details: error.message
+    // Executa com contexto RLS para isolamento multi-tenant
+    const deals = await withRLS(prisma, organizationId, async (tx) => {
+      return tx.deal.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          contact: { select: { id: true, name: true, phone: true, avatarUrl: true } },
+          stage: { select: { id: true, name: true, color: true, probability: true } },
         },
-        { status: 500 }
-      );
-    }
-
-    // Busca estágios para calcular score
-    const { data: stages } = await supabaseServer
-      .from('pipeline_stages')
-      .select('id, probability')
-      .eq('organization_id', orgId);
-
-    const stagesMap = new Map(stages?.map(s => [s.id, s.probability]) || []);
+      });
+    });
 
     // Transform data to match expected format
-    const dealsWithScore = (deals || []).map((deal) => ({
+    const dealsWithScore = deals.map((deal) => ({
       ...deal,
       leadScore: calculateLeadScore({
         ...deal,
-        stage: { probability: stagesMap.get(deal.stage_id) || 0 }
+        created_at: deal.createdAt.toISOString(),
+        stage: deal.stage,
       }),
-      activitiesCount: 0, // Simplificado por enquanto
+      activitiesCount: 0,
     }));
 
     return NextResponse.json({
@@ -77,7 +57,12 @@ export async function GET(request: NextRequest) {
       data: dealsWithScore,
     });
   } catch (error) {
-    console.error("[Pipeline Deals] Error:", error);
+    console.error("[Pipeline Deals GET] Error:", error);
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error);
+    }
+
     return NextResponse.json(
       { 
         success: false, 
@@ -95,9 +80,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const organizationId = await getOrganizationId();
+    
     const body = await request.json();
     const {
-      organizationId = "default_org_id",
       stageId,
       contactId,
       title,
@@ -120,71 +106,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create deal
-    const { data: deal, error: dealError } = await supabaseServer
-      .from('deals')
-      .insert({
-        organization_id: organizationId,
-        stage_id: stageId,
-        contact_id: contactId,
-        title,
-        description,
-        amount: value ?? 0,
-        currency,
-        priority: priority,
-        expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : null,
-        source,
-        tags: tags ?? [],
-        metadata: metadata ?? {},
-        status: 'OPEN',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select(`
-        *,
-        contact:contacts(id, name, phone, avatar_url),
-        stage:pipeline_stages(id, name, color, probability)
-      `)
-      .single();
-
-    if (dealError) {
-      console.error('[Pipeline Deals POST] Error creating deal:', dealError);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "Failed to create deal",
-          details: dealError.message
+    // Create deal - com contexto RLS
+    const deal = await withRLS(prisma, organizationId, async (tx) => {
+      const newDeal = await tx.deal.create({
+        data: {
+          organizationId,
+          stageId,
+          contactId,
+          title,
+          description,
+          amount: value ?? 0,
+          currency,
+          priority,
+          expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
+          source,
+          tags: tags ?? [],
+          metadata: metadata ?? {},
+          status: 'OPEN',
         },
-        { status: 500 }
-      );
-    }
-
-    // Create initial activity
-    const { error: activityError } = await supabaseServer
-      .from('deal_activities')
-      .insert({
-        deal_id: deal.id,
-        type: "NOTE",
-        title: "Deal criado",
-        content: "Deal criado manualmente no sistema",
-        metadata: { source: "manual" },
-        created_at: new Date().toISOString(),
+        include: {
+          contact: { select: { id: true, name: true, phone: true, avatarUrl: true } },
+          stage: { select: { id: true, name: true, color: true, probability: true } },
+        },
       });
 
-    if (activityError) {
-      console.error('[Pipeline Deals POST] Error creating activity:', activityError);
-      // Don't fail the request if activity creation fails
-    }
+      // Create initial activity
+      try {
+        await tx.dealActivity.create({
+          data: {
+            dealId: newDeal.id,
+            type: "NOTE",
+            title: "Deal criado",
+            content: "Deal criado manualmente no sistema",
+            metadata: { source: "manual" },
+          },
+        });
+      } catch (activityError) {
+        console.error('[Pipeline Deals POST] Error creating activity:', activityError);
+        // Don't fail the request if activity creation fails
+      }
+
+      return newDeal;
+    });
 
     return NextResponse.json({
       success: true,
       data: {
         ...deal,
-        leadScore: calculateLeadScore(deal),
+        leadScore: calculateLeadScore({
+          ...deal,
+          created_at: deal.createdAt.toISOString(),
+          stage: deal.stage,
+        }),
       },
     });
   } catch (error) {
-    console.error("[Pipeline Deals] Error creating deal:", error);
+    console.error("[Pipeline Deals POST] Error:", error);
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error);
+    }
+
     return NextResponse.json(
       { 
         success: false, 
@@ -198,11 +180,12 @@ export async function POST(request: NextRequest) {
 
 interface DealWithRelations {
   id: string;
-  created_at: string;
+  createdAt: Date;
+  created_at?: string;
   amount: number;
   priority: string;
   stage: { probability: number };
-  activities?: { created_at: string }[];
+  activities?: { createdAt: Date }[];
 }
 
 /**
@@ -211,9 +194,13 @@ interface DealWithRelations {
 function calculateLeadScore(deal: DealWithRelations): number {
   let score = 0;
 
+  const createdAt = deal.created_at 
+    ? new Date(deal.created_at) 
+    : deal.createdAt;
+
   // 1. Age of deal (newer = hotter)
   const daysSinceCreated = Math.floor(
-    (Date.now() - new Date(deal.created_at).getTime()) / (1000 * 60 * 60 * 24)
+    (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
   );
   if (daysSinceCreated <= 7) score += 20;
   else if (daysSinceCreated <= 30) score += 10;
@@ -245,8 +232,11 @@ function calculateLeadScore(deal: DealWithRelations): number {
   // 5. Recent activity (if available)
   if (deal.activities && deal.activities.length > 0) {
     const lastActivity = deal.activities[0];
+    const activityDate = 'createdAt' in lastActivity 
+      ? lastActivity.createdAt 
+      : new Date((lastActivity as any).created_at);
     const daysSinceActivity = Math.floor(
-      (Date.now() - new Date(lastActivity.created_at).getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - activityDate.getTime()) / (1000 * 60 * 60 * 24)
     );
     if (daysSinceActivity <= 3) score += 20;
     else if (daysSinceActivity <= 7) score += 10;

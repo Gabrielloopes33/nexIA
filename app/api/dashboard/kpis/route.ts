@@ -53,7 +53,22 @@ export async function GET(request: NextRequest) {
       period: searchParams.get('period') || '30d',
     })
 
-    const data = await getKPIs(userData.organization_id, period)
+    const raw = await getKPIs(userData.organization_id, period)
+
+    // Transforma estrutura aninhada { leads: { value, change } }
+    // para estrutura plana esperada pelo frontend (KPIs interface)
+    const data = {
+      leadsThisWeek: raw.leads.value,
+      leadsGrowth: raw.leads.change,
+      closedRevenue: raw.revenue.value,
+      revenueGrowth: raw.revenue.change,
+      conversionRate: raw.conversionRate.value,
+      conversionChange: raw.conversionRate.change,
+      pipelineValue: raw.pipelineValue.value,
+      pipelineChange: raw.pipelineValue.change,
+      avgDealTime: raw.avgDealTime.value,
+      avgDealTimeChange: raw.avgDealTime.change,
+    }
 
     return NextResponse.json({
       success: true,
