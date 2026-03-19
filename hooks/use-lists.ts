@@ -9,6 +9,7 @@ export interface List {
   organizationId: string
   name: string
   description?: string | null
+  color: string
   filters: Record<string, unknown>
   isDynamic: boolean
   contactCount: number

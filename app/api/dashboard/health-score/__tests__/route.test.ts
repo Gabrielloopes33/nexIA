@@ -1,44 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from '../route'
 
-// Mock das dependências
-const mockGetUser = vi.fn()
-const mockFrom = vi.fn()
-const mockSingle = vi.fn()
-const mockEq = vi.fn()
-const mockSelect = vi.fn()
-
-vi.mock('@supabase/ssr', () => ({
-  createServerClient: vi.fn(() => ({
-    auth: { getUser: mockGetUser },
-    from: mockFrom,
-  })),
-}))
+vi.mock('@/lib/auth/helpers', () => {
+  class AuthError extends Error {
+    statusCode: number
+    constructor(message: string, statusCode = 401) {
+      super(message)
+      this.name = 'AuthError'
+      this.statusCode = statusCode
+    }
+  }
+  return {
+    getAuthenticatedUser: vi.fn(),
+    AuthError,
+  }
+})
 
 vi.mock('@/lib/db/dashboard-queries', () => ({
   getHealthScoreData: vi.fn(),
 }))
 
-vi.mock('next/headers', () => ({
-  cookies: vi.fn(() => ({
-    getAll: vi.fn(() => []),
-  })),
-}))
-
 // Import after mocks
+const { getAuthenticatedUser } = await import('@/lib/auth/helpers')
 const { getHealthScoreData } = await import('@/lib/db/dashboard-queries')
 
 describe('GET /api/dashboard/health-score', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Setup chain mocks
-    mockFrom.mockReturnValue({ select: mockSelect })
-    mockSelect.mockReturnValue({ eq: mockEq })
-    mockEq.mockReturnValue({ single: mockSingle })
   })
 
   it('should return 401 when user is not authenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } })
+    const { AuthError } = await import('@/lib/auth/helpers')
+    vi.mocked(getAuthenticatedUser).mockRejectedValue(new AuthError('Unauthorized'))
 
     const request = new Request('http://localhost/api/dashboard/health-score?period=30d')
     const response = await GET(request)
@@ -50,8 +43,7 @@ describe('GET /api/dashboard/health-score', () => {
   })
 
   it('should return 400 when organization is not found', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: null })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: null })
 
     const request = new Request('http://localhost/api/dashboard/health-score?period=30d')
     const response = await GET(request)
@@ -63,8 +55,7 @@ describe('GET /api/dashboard/health-score', () => {
   })
 
   it('should return health score data successfully', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
 
     const mockData = {
       score: 85,
@@ -90,8 +81,7 @@ describe('GET /api/dashboard/health-score', () => {
   })
 
   it('should return 400 for invalid period', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
 
     const request = new Request('http://localhost/api/dashboard/health-score?period=invalid')
     const response = await GET(request)
@@ -103,8 +93,7 @@ describe('GET /api/dashboard/health-score', () => {
   })
 
   it('should return 500 on database error', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
     vi.mocked(getHealthScoreData).mockRejectedValue(new Error('DB Error'))
 
     const request = new Request('http://localhost/api/dashboard/health-score?period=30d')
@@ -117,8 +106,7 @@ describe('GET /api/dashboard/health-score', () => {
   })
 
   it('should use default period when not provided', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
 
     const mockData = {
       score: 75,
@@ -140,18 +128,11 @@ describe('GET /api/dashboard/health-score', () => {
   })
 
   it('should handle all health status values', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
-
     const statuses = ['SAUDÁVEL', 'OK', 'ATENÇÃO', 'CRÍTICO'] as const
 
     for (const status of statuses) {
       vi.clearAllMocks()
-      mockFrom.mockReturnValue({ select: mockSelect })
-      mockSelect.mockReturnValue({ eq: mockEq })
-      mockEq.mockReturnValue({ single: mockSingle })
-      mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-      mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+      vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
 
       vi.mocked(getHealthScoreData).mockResolvedValue({
         score: 50,

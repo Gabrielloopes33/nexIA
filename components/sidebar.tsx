@@ -2,9 +2,9 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User } from "lucide-react"
+import { User, LogOut } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useMainSidebar } from "@/hooks/use-main-sidebar"
@@ -50,9 +50,19 @@ function SimpleNavLink({
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { isReady } = useMainSidebar()
   const [mounted, setMounted] = useState(false)
   const { openGroups, toggleGroup, isGroupOpen } = useSidebarDropdowns(navItems)
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      router.push('/login')
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error)
+    }
+  }
 
   // Mark as mounted for hydration safety
   useEffect(() => {
@@ -146,6 +156,16 @@ export function Sidebar() {
               </Link>
             )
           })}
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center rounded-sm h-9 gap-3 transition-all duration-200 relative text-white hover:bg-white/15 px-3 mt-1"
+          >
+            <LogOut className="h-4 w-4 text-white shrink-0" />
+            <span className="text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
+              Sair
+            </span>
+          </button>
         </div>
       </div>
 

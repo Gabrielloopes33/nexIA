@@ -178,6 +178,27 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
   // Get real tags from hook
   const { tags: availableTags } = useTags(contact?.organizationId)
 
+  // Helper functions - precisam estar antes de serem usadas
+  const getDisplayName = (contact: Contact): string => {
+    return contact.name || contact.phone || 'Sem nome'
+  }
+
+  const getInitials = (contact: Contact): string => {
+    const name = contact.name || contact.phone || ''
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  }
+
+  const formatDateSafe = (dateValue: string | undefined, formatStr: string = "dd/MM/yyyy"): string => {
+    if (!dateValue) return 'Data não disponível'
+    try {
+      const date = new Date(dateValue)
+      if (isNaN(date.getTime())) return 'Data inválida'
+      return format(date, formatStr, { locale: ptBR })
+    } catch {
+      return 'Data inválida'
+    }
+  }
+
   // Sync contact tags when contact changes
   useEffect(() => {
     if (contact) {
@@ -293,27 +314,6 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
 
   if (!isOpen || !contact) {
     return null
-  }
-
-  // Helper functions
-  const getInitials = (contact: Contact): string => {
-    const name = contact.name || contact.phone || ''
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  }
-
-  const getDisplayName = (contact: Contact): string => {
-    return contact.name || contact.phone || 'Sem nome'
-  }
-
-  const formatDateSafe = (dateValue: string | undefined, formatStr: string = "dd/MM/yyyy"): string => {
-    if (!dateValue) return 'Data não disponível'
-    try {
-      const date = new Date(dateValue)
-      if (isNaN(date.getTime())) return 'Data inválida'
-      return format(date, formatStr, { locale: ptBR })
-    } catch {
-      return 'Data inválida'
-    }
   }
 
   const completedTasks = tasks.filter(t => t.completed).length

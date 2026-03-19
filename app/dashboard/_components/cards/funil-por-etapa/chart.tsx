@@ -129,7 +129,7 @@ export function FunilPorEtapaChart({ data }: FunilPorEtapaChartProps) {
             minPointSize={2}
           >
             {chartData.map((entry, index) => (
-              <Cell key={`cell-${entry.name}-${index}`} fill={entry.fill} />
+              <Cell key={`cell-${entry.name}-${index}-${entry.count}`} fill={entry.fill} />
             ))}
           </Bar>
         </BarChart>

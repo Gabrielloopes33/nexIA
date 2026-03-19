@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { LostReason, ChannelType, Prisma } from '@prisma/client'
+import { ChannelType, Prisma } from '@prisma/client'
 
 // Tipos de retorno
 export interface FunnelStage {
@@ -90,7 +90,7 @@ export interface RecoverableDeal {
   contactName: string
   value: number
   lostAt: Date
-  lostReason: LostReason
+  lostReason: string
   daysSinceLost: number
   recoveryScore: number // 0-100
   lastActivity: Date
@@ -109,13 +109,6 @@ export async function getLostDealsWithRecoveryPotential(
       organizationId,
       status: 'LOST',
       closedLostAt: { gte: startDate },
-    },
-    include: {
-      contact: true,
-      activities: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-      },
     },
     orderBy: { amount: 'desc' },
     take: limit * 2, // Pegar mais para filtrar
@@ -137,13 +130,13 @@ export async function getLostDealsWithRecoveryPotential(
     return {
       id: deal.id,
       title: deal.title,
-      contactName: deal.contact?.name || 'Sem contato',
+      contactName: 'Sem contato',
       value: Number(deal.amount) || deal.estimatedValue || 0,
       lostAt: deal.closedLostAt!,
       lostReason: deal.lostReason || 'OTHER',
       daysSinceLost,
       recoveryScore,
-      lastActivity: deal.activities[0]?.createdAt || deal.closedLostAt!,
+      lastActivity: deal.closedLostAt!,
     }
   }).filter(d => d.recoveryScore > 30).slice(0, limit)
 }
@@ -214,7 +207,7 @@ export async function getChannelPerformance(
 
 // 4. Motivos de Perda
 export interface LossReasonStat {
-  reason: LostReason
+  reason: string
   count: number
   percentage: number
   trend: number // vs período anterior
@@ -419,7 +412,7 @@ export async function getHealthScoreData(
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   
   // Buscar dados necessários
-  const [deals, goals, stagnantCount, activities] = await Promise.all([
+  const [deals, goals, stagnantCount] = await Promise.all([
     prisma.deal.findMany({
       where: {
         organizationId,
@@ -444,13 +437,15 @@ export async function getHealthScoreData(
         updatedAt: { lt: oneWeekAgo },
       },
     }),
-    prisma.dealActivity.count({
-      where: {
-        deal: { organizationId },
-        createdAt: { gte: oneWeekAgo },
-      },
-    }),
   ])
+
+  const dealIds = deals.map(d => d.id)
+  const activities = await prisma.dealActivity.count({
+    where: {
+      dealId: { in: dealIds },
+      createdAt: { gte: oneWeekAgo },
+    },
+  })
   
   // Calcular fatores
   const wonDeals = deals.filter(d => d.status === 'WON').length
@@ -663,12 +658,12 @@ export async function getAllDashboardMetrics(organizationId: string) {
     healthScore,
   ] = await Promise.all([
     getFunnelMetrics(organizationId, '30d'),
-    getLostDealsWithRecoveryPotential(organizationId, { limit: 5 }),
+    getLostDealsWithRecoveryPotential(organizationId, '30d', 5),
     getChannelPerformance(organizationId, '30d'),
     getLostReasonsStats(organizationId, '30d'),
     getWeeklyRevenue(organizationId, 12),
     getKPIs(organizationId, '30d'),
-    getHealthScoreData(organizationId),
+    getHealthScoreData(organizationId, '30d'),
   ])
 
   return {

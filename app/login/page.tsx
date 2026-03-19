@@ -2,7 +2,6 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
@@ -49,33 +48,36 @@ function AuthCard() {
   const [loading, setLoading] = useState(false)
   // Google OAuth desabilitado - adicionar quando tiver credenciais configuradas no Supabase
 
-  // Função para traduzir erros do Supabase
-  function getErrorMessage(error: any): string {
-    const message = error?.message || error?.error_description || ''
+  // Função para traduzir erros da API
+  function getErrorMessage(error: any, status?: number): string {
+    console.log('[Login] Processando erro:', { error, status, type: typeof error })
     
-    // Mapeamento de erros comuns do Supabase
-    if (message.includes('User already registered')) {
-      return 'Este email já está cadastrado. Tente fazer login.'
+    // Se for string, retorna direto
+    if (typeof error === 'string') return error
+    
+    // Se for objeto vazio ou null
+    if (!error || Object.keys(error).length === 0) {
+      if (status === 401) return 'Email ou senha incorretos'
+      if (status === 500) return 'Erro no servidor. Tente novamente.'
+      return 'Erro ao processar solicitação. Tente novamente.'
     }
-    if (message.includes('Password should be at least 6 characters')) {
-      return 'A senha deve ter pelo menos 6 caracteres'
-    }
-    if (message.includes('Unable to validate email address')) {
-      return 'Email inválido. Verifique o formato do email.'
-    }
-    if (message.includes('Invalid login credentials')) {
+    
+    const message = error?.error || error?.message || ''
+    
+    // Mapeamento de erros comuns
+    if (message.includes('Credenciais inválidas') || message.includes('Invalid credentials')) {
       return 'Email ou senha incorretos'
     }
-    if (message.includes('Email not confirmed')) {
-      return 'Email não confirmado. Verifique sua caixa de entrada.'
+    if (message.includes('Email já cadastrado') || message.includes('already registered')) {
+      return 'Este email já está cadastrado. Tente fazer login.'
     }
-    if (message.includes('rate limit') || error?.status === 429 || error?.statusCode === 429) {
-      return 'Limite de tentativas atingido. Tente usar outro email ou aguarde algumas horas. Se persistir, contate o suporte.'
+    if (message.includes('rate limit') || status === 429) {
+      return 'Limite de tentativas atingido. Tente novamente mais tarde.'
     }
     
     // Log para debug
-    console.error('Supabase auth error:', error)
-    return `Erro: ${message || 'Erro ao processar solicitação. Tente novamente.'}`
+    console.error('[Login] Auth error:', error)
+    return message || 'Erro ao processar solicitação. Tente novamente.'
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -96,62 +98,68 @@ function AuthCard() {
       return
     }
 
-    const supabase = createClient()
-
     if (mode === 'signup') {
-      // Criar conta
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
-      })
+      // Criar conta via API
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name: email.split('@')[0] }),
+        })
 
-      if (error) {
-        setError(getErrorMessage(error))
+        const data = await response.json()
+
+        if (!response.ok) {
+          setError(getErrorMessage(data, response.status))
+          setLoading(false)
+          return
+        }
+
+        // Login automático após signup
+        const loginResponse = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        })
+
+        if (!loginResponse.ok) {
+          const loginData = await loginResponse.json().catch(() => ({}))
+          console.log('[Login] Erro no login automático:', loginResponse.status, loginData)
+          setError('Conta criada! Faça login para continuar.')
+          setMode('login')
+          setLoading(false)
+          return
+        }
+
+        router.push(from)
+        router.refresh()
+      } catch (error) {
+        setError('Erro de conexão. Verifique sua internet.')
         setLoading(false)
-        return
       }
-
-      // Se o signup retornou user mas não session, pode precisar de confirmação de email
-      if (data.user && !data.session) {
-        setError('Conta criada! Verifique seu email para confirmar o cadastro.')
-        setMode('login')
-        setLoading(false)
-        return
-      }
-
-      // Login automático após signup (se não precisar de confirmação)
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (loginError) {
-        setError('Conta criada! Faça login para continuar.')
-        setMode('login')
-        setLoading(false)
-        return
-      }
-
-      router.push(from)
-      router.refresh()
     } else {
-      // Login
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      // Login via API
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        })
 
-      if (error) {
-        setError(getErrorMessage(error))
+        const data = await response.json()
+
+        if (!response.ok) {
+          setError(getErrorMessage(data, response.status))
+          setLoading(false)
+          return
+        }
+
+        router.push(from)
+        router.refresh()
+      } catch (error) {
+        setError('Erro de conexão. Verifique sua internet.')
         setLoading(false)
-        return
       }
-
-      router.push(from)
-      router.refresh()
     }
   }
 

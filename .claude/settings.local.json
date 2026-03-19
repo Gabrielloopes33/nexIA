@@ -14,7 +14,10 @@
       "Bash(pnpm add:*)",
       "Bash(cd:*)",
       "Bash(npm run:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm run:*)"
     ]
   }
 }

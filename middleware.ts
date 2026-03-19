@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 
+const COOKIE_NAME = 'nexia_session'
 const PUBLIC_PATHS = [
   '/',
   '/login',
+  '/setup-password',
+  '/api/auth/login',
   '/api/auth/logout',
+  '/api/auth/register',
+  '/api/auth/setup-password',
+  '/api/auth/test-login',
   '/api/whatsapp/webhooks',
   '/api/instagram/webhooks',
   '/api/stripe/webhook',
@@ -12,9 +17,45 @@ const PUBLIC_PATHS = [
 
 const PUBLIC_PREFIXES = ['/_next/', '/images/', '/fonts/', '/favicon']
 
+interface SessionPayload {
+  userId: string
+  email: string
+  name: string | null
+  organizationId: string | null
+  expiresAt: number
+}
+
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true
   return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
+}
+
+/**
+ * Decodifica o token JWT (apenas payload, sem verificar assinatura no middleware)
+ * A verificação completa é feita nas API routes
+ */
+function decodeToken(token: string): SessionPayload | null {
+  try {
+    const [encoded] = token.split('.')
+    if (!encoded) return null
+
+    const payload: SessionPayload = JSON.parse(
+      Buffer.from(encoded, 'base64url').toString()
+    )
+
+    // Verifica expiração
+    if (payload.expiresAt < Date.now()) return null
+
+    return payload
+  } catch {
+    return null
+  }
+}
+
+function getSessionFromRequest(req: NextRequest): SessionPayload | null {
+  const token = req.cookies.get(COOKIE_NAME)?.value
+  if (!token) return null
+  return decodeToken(token)
 }
 
 export async function middleware(req: NextRequest) {
@@ -22,36 +63,16 @@ export async function middleware(req: NextRequest) {
 
   if (isPublic(pathname)) return NextResponse.next()
 
-  let res = NextResponse.next({ request: req })
+  // Verifica se o usuário está autenticado via cookie 'nexia_session'
+  const session = getSessionFromRequest(req)
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value))
-          res = NextResponse.next({ request: req })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            res.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!session) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('from', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  return res
+  return NextResponse.next()
 }
 
 export const config = {

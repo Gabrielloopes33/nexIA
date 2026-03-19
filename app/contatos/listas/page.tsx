@@ -2,19 +2,24 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { List, Plus, Search, TrendingUp, Users, MoreVertical, Pencil, Trash2, Eye, Loader2 } from "lucide-react"
+import { List, Plus, Search, TrendingUp, Users, MoreVertical, Pencil, Trash2, Eye, Loader2, ArrowLeft, UserPlus } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useLists, type List as ListType } from "@/hooks/use-lists"
 import { useOrganizationId } from "@/lib/contexts/organization-context"
+import { ContactsTable } from "@/components/contacts/contacts-table"
+import { ContactFilters } from "@/components/contacts/contact-filters"
+import { ContactDetailPanel } from "@/components/contact-detail-panel"
+import type { Contact } from "@/hooks/use-contacts"
+import { toast } from "sonner"
 
 // Hardcoded colors for lists
 const LIST_COLORS = [
@@ -42,8 +47,8 @@ function formatDate(dateString: string): string {
 }
 
 export default function ListasPage() {
-  const organizationId = useOrganizationId() ?? ''
-  const { lists, isLoading, createList, updateList, deleteList } = useLists(organizationId)
+  const organizationId = useOrganizationId()
+  const { lists, isLoading, error: listsError, createList, updateList, deleteList, getListContacts } = useLists(organizationId ?? undefined)
   const [search, setSearch] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingList, setEditingList] = useState<ListType | null>(null)
@@ -54,6 +59,18 @@ export default function ListasPage() {
     description: "",
     color: LIST_COLORS[0],
   })
+
+  // Estados para visualização de contatos da lista
+  const [isContactsDialogOpen, setIsContactsDialogOpen] = useState(false)
+  const [selectedList, setSelectedList] = useState<ListType | null>(null)
+  const [listContacts, setListContacts] = useState<Contact[]>([])
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false)
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
 
   const filteredLists = useMemo(() => {
     return lists.filter(
@@ -98,22 +115,39 @@ export default function ListasPage() {
   }
 
   const handleSave = async () => {
-    if (!formData.name.trim()) return
-
-    if (editingList) {
-      await updateList(editingList.id, {
-        name: formData.name,
-        description: formData.description,
-        color: formData.color,
-      })
-    } else {
-      await createList({
-        name: formData.name,
-        description: formData.description,
-        color: formData.color,
-      })
+    if (!formData.name.trim()) {
+      toast.error("Nome da lista é obrigatório")
+      return
     }
-    setIsDialogOpen(false)
+
+    if (!organizationId) {
+      toast.error("Erro: Organização não identificada")
+      return
+    }
+
+    let success = false
+    if (editingList) {
+      const result = await updateList(editingList.id, {
+        name: formData.name,
+        description: formData.description,
+        color: formData.color,
+      })
+      success = !!result
+    } else {
+      const result = await createList({
+        name: formData.name,
+        description: formData.description,
+        color: formData.color,
+      })
+      success = !!result
+    }
+
+    if (success) {
+      toast.success(editingList ? "Lista atualizada!" : "Lista criada!")
+      setIsDialogOpen(false)
+    } else {
+      toast.error("Erro ao salvar lista. Tente novamente.")
+    }
   }
 
   const handleConfirmDelete = async () => {
@@ -123,6 +157,109 @@ export default function ListasPage() {
       setListToDelete(null)
     }
   }
+
+  // Handlers para visualização de contatos da lista
+  const handleViewContacts = async (list: ListType) => {
+    setSelectedList(list)
+    setIsContactsDialogOpen(true)
+    setIsLoadingContacts(true)
+    setSelectedContacts([])
+    setSearchQuery("")
+    setSelectedTags([])
+    setSelectedStatuses([])
+
+    try {
+      const contacts = await getListContacts(list.id)
+      // Transformar os contatos para o formato esperado pelo ContactsTable
+      const formattedContacts: Contact[] = contacts.map((lc: any) => ({
+        ...lc.contact,
+        tags: lc.contact.tags?.map((t: any) => t.tagId) || [],
+      }))
+      setListContacts(formattedContacts)
+    } catch (error) {
+      toast.error("Erro ao carregar contatos da lista")
+    } finally {
+      setIsLoadingContacts(false)
+    }
+  }
+
+  const handleCloseContactsDialog = () => {
+    setIsContactsDialogOpen(false)
+    setSelectedList(null)
+    setListContacts([])
+    setSelectedContacts([])
+  }
+
+  const handleSelectContact = (id: string, selected: boolean) => {
+    if (selected) {
+      setSelectedContacts([...selectedContacts, id])
+    } else {
+      setSelectedContacts(selectedContacts.filter((c) => c !== id))
+    }
+  }
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedContacts(filteredListContacts.map((c) => c.id))
+    } else {
+      setSelectedContacts([])
+    }
+  }
+
+  const handleViewContact = (contact: Contact) => {
+    setSelectedContact(contact)
+    setIsPanelOpen(true)
+  }
+
+  const handleEditContact = (contact: Contact) => {
+    setSelectedContact(contact)
+    setIsPanelOpen(true)
+  }
+
+  const handleDeleteContact = async (contact: Contact) => {
+    if (confirm("Tem certeza que deseja excluir este contato?")) {
+      try {
+        const response = await fetch(`/api/contacts/${contact.id}`, { method: "DELETE" })
+        const data = await response.json()
+        if (data.success) {
+          toast.success("Contato excluído")
+          setSelectedContacts(selectedContacts.filter((id) => id !== contact.id))
+          // Recarregar contatos da lista
+          if (selectedList) {
+            const contacts = await getListContacts(selectedList.id)
+            const formattedContacts: Contact[] = contacts.map((lc: any) => ({
+              ...lc.contact,
+              tags: lc.contact.tags?.map((t: any) => t.tagId) || [],
+            }))
+            setListContacts(formattedContacts)
+          }
+        } else {
+          toast.error(data.error || "Erro ao excluir")
+        }
+      } catch (error) {
+        toast.error("Erro ao excluir contato")
+      }
+    }
+  }
+
+  // Filtrar contatos da lista
+  const filteredListContacts = useMemo(() => {
+    return listContacts.filter((contact) => {
+      const matchesSearch =
+        !searchQuery ||
+        contact.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        contact.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (contact.metadata?.email as string)?.toLowerCase().includes(searchQuery.toLowerCase())
+
+      const matchesTags =
+        selectedTags.length === 0 || selectedTags.some((tag) => contact.tags?.includes(tag))
+
+      const matchesStatus =
+        selectedStatuses.length === 0 || selectedStatuses.includes(contact.status)
+
+      return matchesSearch && matchesTags && matchesStatus
+    })
+  }, [listContacts, searchQuery, selectedTags, selectedStatuses])
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -210,8 +347,35 @@ export default function ListasPage() {
           </div>
         )}
 
+        {/* Error State */}
+        {!isLoading && listsError && (
+          <Card className="rounded-sm border border-red-200 bg-red-50 py-8">
+            <CardContent className="flex flex-col items-center justify-center p-0">
+              <p className="text-lg font-medium text-red-600">Erro ao carregar listas</p>
+              <p className="text-sm text-red-500 mb-4">{listsError}</p>
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                className="border-red-300 text-red-600"
+              >
+                Tentar novamente
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No Organization State */}
+        {!isLoading && !organizationId && (
+          <Card className="rounded-sm border border-amber-200 bg-amber-50 py-8">
+            <CardContent className="flex flex-col items-center justify-center p-0">
+              <p className="text-lg font-medium text-amber-600">Organização não identificada</p>
+              <p className="text-sm text-amber-500 mb-4">Faça login novamente para acessar suas listas.</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Table or Empty State */}
-        {!isLoading && (filteredLists.length === 0 ? (
+        {!isLoading && !listsError && organizationId && (filteredLists.length === 0 ? (
           <Card className="rounded-sm border border-border bg-white py-12">
             <CardContent className="flex flex-col items-center justify-center p-0">
               <List className="h-12 w-12 text-muted-foreground mb-4" />
@@ -275,11 +439,9 @@ export default function ListasPage() {
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/contatos?list=${list.id}`}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Ver Contatos
-                            </Link>
+                          <DropdownMenuItem onClick={() => handleViewContacts(list)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver Contatos
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDeleteClick(list)}
@@ -393,6 +555,101 @@ export default function ListasPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Contacts Dialog - Visualização de contatos da lista */}
+        <Dialog open={isContactsDialogOpen} onOpenChange={handleCloseContactsDialog}>
+          <DialogContent className="max-w-[95vw] w-[1200px] h-[90vh] p-0 overflow-hidden">
+            <DialogHeader className="px-6 py-4 border-b">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCloseContactsDialog}
+                  className="h-8 w-8"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <DialogTitle className="flex items-center gap-2">
+                    <span
+                      className="inline-flex items-center rounded-sm px-2 py-1 text-xs font-medium"
+                      style={{
+                        backgroundColor: selectedList ? `${selectedList.color}20` : undefined,
+                        color: selectedList?.color,
+                      }}
+                    >
+                      {selectedList?.name}
+                    </span>
+                    <span>Contatos</span>
+                  </DialogTitle>
+                  <DialogDescription>
+                    {filteredListContacts.length} contatos na lista
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="flex flex-col h-[calc(90vh-80px)]">
+              {/* Filters */}
+              <div className="px-6 py-4 border-b">
+                <ContactFilters
+                  organizationId={organizationId}
+                  onSearch={setSearchQuery}
+                  onFilterTags={setSelectedTags}
+                  onFilterStatus={setSelectedStatuses}
+                  selectedTags={selectedTags}
+                  selectedStatuses={selectedStatuses}
+                />
+              </div>
+
+              {/* Selected Actions */}
+              {selectedContacts.length > 0 && (
+                <div className="mx-6 mt-4 flex items-center gap-2 rounded-md bg-[#46347F]/10 p-2">
+                  <span className="text-sm font-medium text-[#46347F]">
+                    {selectedContacts.length} contatos selecionados
+                  </span>
+                  <Button variant="ghost" size="sm" className="h-7 text-[#46347F]">
+                    Exportar
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-red-600">
+                    Excluir
+                  </Button>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {isLoadingContacts && (
+                <div className="flex flex-1 items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+                </div>
+              )}
+
+              {/* Table */}
+              {!isLoadingContacts && (
+                <div className="flex-1 min-h-0 overflow-auto p-6">
+                  <ContactsTable
+                    contacts={filteredListContacts}
+                    selectedContacts={selectedContacts}
+                    onSelectContact={handleSelectContact}
+                    onSelectAll={handleSelectAll}
+                    onViewContact={handleViewContact}
+                    onEditContact={handleEditContact}
+                    onDeleteContact={handleDeleteContact}
+                  />
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Contact Detail Panel */}
+        {isPanelOpen && selectedContact && (
+          <ContactDetailPanel
+            contact={selectedContact}
+            isOpen={isPanelOpen}
+            onClose={() => setIsPanelOpen(false)}
+          />
+        )}
       </main>
     </div>
   )

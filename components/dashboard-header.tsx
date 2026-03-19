@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useDashboard, DATE_RANGES } from "@/hooks/use-dashboard-context"
 import { useFilteredData } from "@/hooks/use-filtered-data"
 import { toast } from "sonner"
-import { createClient } from "@/lib/supabase/client"
+
 import {
   Popover,
   PopoverContent,
@@ -31,15 +31,11 @@ export function DashboardHeader() {
   // Buscar nome do usuário logado
   useEffect(() => {
     const getUser = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user?.email) {
-        // Extrai nome do email (parte antes do @)
-        const nameFromEmail = user.email.split('@')[0]
-        // Capitaliza primeira letra
-        const capitalizedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1)
-        setUserName(capitalizedName)
-      }
+      const res = await fetch('/api/auth/me')
+      if (!res.ok) return
+      const data = await res.json()
+      const displayName = data.name || data.email?.split('@')[0] || 'John'
+      setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1))
     }
     getUser()
   }, [])
