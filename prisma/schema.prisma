@@ -10,427 +10,202 @@ datasource db {
 /// Organization - Tenant principal do sistema
 /// Cada organização pode ter múltiplos usuários com diferentes roles
 model Organization {
-  id                     String                   @id @default(uuid())
-  name                   String
-  slug                   String                   @unique
-  ownerId                String                   @map("owner_id")
-  logoUrl                String?                  @map("logo_url")
-  featureFlags           Json?                    @map("feature_flags")
-  settings               Json?
-  status                 OrganizationStatus       @default(ACTIVE)
-  createdAt              DateTime                 @default(now()) @map("created_at")
-  updatedAt              DateTime                 @updatedAt @map("updated_at")
-  aiInsights             AiInsight[]
-  charges                Charge[]
-  contacts               Contact[]
-  conversations          Conversation[]
-  customFieldDefinitions CustomFieldDefinition[]
-  deals                  Deal[]
-  instagramInstances     InstagramInstance[]
-  integrationLogs        IntegrationActivityLog[]
-  integrations           Integration[]
-  invoices               Invoice[]
-  lists                  List[]
-  metaWebhookLogs        MetaWebhookLog[]
-  members                OrganizationMember[]
-  units                  OrganizationUnit[]
-  owner                  User                     @relation("OwnedOrganizations", fields: [ownerId], references: [id])
-  legacyUsers            User[]                   @relation("LegacyUserOrganization")
-  pendingFormDeliveries  PendingFormDelivery[]
-  pipelineStages         PipelineStage[]
-  schedules              Schedule[]
-  segments               Segment[]
-  subscriptions          Subscription[]
-  tags                   Tag[]
-  transcriptions         Transcription[]
-  whatsappInstances      WhatsAppInstance[]
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  slug           String               @unique
+  ownerId        String?              @map("owner_id") @db.Uuid
+  status         String?              @default("ACTIVE")
+  settings       Json?                @default("{}")
+  createdAt      DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  members        OrganizationMember[]
+  owner          User?                @relation("OwnedOrganizations", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pipelineStages PipelineStage[]
 
-  @@index([ownerId])
-  @@index([status])
-  @@index([slug])
   @@map("organizations")
 }
 
 /// OrganizationMember - Relacionamento many-to-many entre User e Organization
 /// Um usuário pode ter roles diferentes em organizações diferentes
 model OrganizationMember {
-  id             String           @id @default(uuid())
-  organizationId String           @map("organization_id")
-  userId         String           @map("user_id")
-  role           OrganizationRole @default(MEMBER)
-  status         MemberStatus     @default(ACTIVE)
-  joinedAt       DateTime         @default(now()) @map("joined_at")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String?       @map("organization_id") @db.Uuid
+  userId         String?       @map("user_id") @db.Uuid
+  role           String        @default("MEMBER")
+  status         String?       @default("ACTIVE")
+  joinedAt       DateTime?     @default(now()) @map("joined_at") @db.Timestamptz(6)
+  createdAt      DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([organizationId, userId])
-  @@index([organizationId])
-  @@index([userId])
-  @@index([status])
   @@map("organization_members")
-}
-
-/// OrganizationUnit - Unidades/Filiais de uma organização
-model OrganizationUnit {
-  id             String       @id @default(uuid())
-  organizationId String       @map("organization_id")
-  name           String
-  slug           String
-  isDefault      Boolean      @default(false) @map("is_default")
-  settings       Json?
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  deals          Deal[]
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationId, slug])
-  @@index([organizationId])
-  @@map("organization_units")
 }
 
 /// User - Usuário do sistema
 model User {
-  id                 String               @id @default(uuid())
+  id                 String               @id @default(uuid()) @db.Uuid
   email              String               @unique
   name               String?
   avatarUrl          String?              @map("avatar_url")
-  passwordHash       String?              @map("password_hash")
+  phone              String?
+  status             String?              @default("ACTIVE")
+  createdAt          DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   /// Legado: campo usado na migração do Supabase Cloud. Preferir usar memberships.
   organizationId     String?              @map("organization_id") @db.Uuid
-  createdAt          DateTime             @default(now()) @map("created_at")
-  updatedAt          DateTime             @updatedAt @map("updated_at")
-  activities         DealActivity[]       @relation("PerformedActivities")
-  assignedDeals      Deal[]               @relation("AssignedDeals")
   memberships        OrganizationMember[]
   ownedOrganizations Organization[]       @relation("OwnedOrganizations")
-  assignedSchedules  Schedule[]           @relation("AssignedSchedules")
-  /// Relação legada com organização (via organization_id)
-  legacyOrganization Organization?        @relation("LegacyUserOrganization", fields: [organizationId], references: [id])
 
-  @@index([organizationId])
   @@map("users")
+}
+
+/// UserCredential - Credenciais de autenticação do usuário
+model UserCredential {
+  userId       String   @id @map("user_id") @db.Uuid
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("user_credentials")
 }
 
 /// WhatsAppInstance - Instância WhatsApp Business
 /// Modelo adaptado para tabela whatsapp_cloud_instances do Aurea
 model WhatsAppInstance {
-  id                    String                @id @default(uuid())
-  agentId               String?               @map("agent_id")
-  organizationId        String                @map("organization_id")
-  unitId                String?               @map("unit_id")
-  wabaId                String?               @map("waba_id")
-  phoneNumberId         String?               @map("phone_number_id")
-  businessId            String?               @map("business_id")
-  displayPhoneNumber    String?               @map("display_phone_number")
-  verifiedName          String?               @map("verified_name")
-  accessToken           String?               @map("access_token")
-  refreshToken          String?               @map("refresh_token")
-  status                String                @default("DISCONNECTED") @map("status")
-  webhookVerified       Boolean               @default(false) @map("webhook_verified")
-  qualityRating         String?               @map("quality_rating")
-  messagingLimit        String?               @map("messaging_limit")
-  channelType           String?               @map("channel_type")
-  scopes                String[]              @map("scopes")
-  tokenExpiresAt        DateTime?             @map("token_expires_at")
-  lastSyncAt            DateTime?             @map("last_sync_at")
-  errorMessage          String?               @map("error_message")
-  customFields          Json?                 @map("custom_fields")
-  name                  String
-  phoneNumber           String                @map("phone_number")
-  messagingTier         Int                   @default(1) @map("messaging_tier")
-  webhookVerifyToken    String?               @map("webhook_verify_token")
-  settings              Json?
-  connectedAt           DateTime?             @map("connected_at")
-  createdAt             DateTime              @default(now()) @map("created_at")
-  updatedAt             DateTime              @updatedAt @map("updated_at")
-  conversations         Conversation[]
-  metaWebhookLogs       MetaWebhookLog[]
-  pendingFormDeliveries PendingFormDelivery[]
-  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  logs                  WhatsAppLog[]
-  templates             WhatsAppTemplate[]
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String   @db.VarChar(255)
+  phoneNumber    String   @map("phone_number") @db.VarChar(50)
+  status         String   @default("DISCONNECTED") @map("status") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
-  @@index([organizationId])
-  @@index([status])
-  @@index([phoneNumber])
-  @@index([agentId])
-  @@index([unitId])
-  @@index([wabaId])
-  @@index([phoneNumberId])
   @@map("whatsapp_cloud_instances")
-}
-
-/// WhatsAppTemplate - Templates de mensagem
-/// Modelo adaptado para tabela whatsapp_cloud_templates do Aurea
-model WhatsAppTemplate {
-  id          String           @id @default(uuid())
-  instanceId  String           @map("instance_id")
-  templateId  String?          @unique @map("template_id")
-  name        String
-  category    String           @map("category")
-  language    String           @map("language")
-  components  Json             @map("components")
-  body        String           @map("body")
-  header      String?          @map("header")
-  footer      String?          @map("footer")
-  status      String           @default("DRAFT") @map("status")
-  reason      String?          @map("reason")
-  submittedAt DateTime?        @map("submitted_at")
-  approvedAt  DateTime?        @map("approved_at")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  messages    Message[]
-  instance    WhatsAppInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-
-  @@index([instanceId])
-  @@index([status])
-  @@index([category])
-  @@index([language])
-  @@index([name, instanceId])
-  @@map("whatsapp_cloud_templates")
-}
-
-/// WhatsAppLog - Logs de eventos e operações
-/// Modelo adaptado para tabela whatsapp_cloud_logs do Aurea
-model WhatsAppLog {
-  id          String           @id @default(uuid())
-  instanceId  String           @map("instance_id")
-  eventType   String           @map("event_type")
-  payload     Json             @map("payload")
-  level       String?          @map("level")
-  processed   Boolean          @default(false) @map("processed")
-  processedAt DateTime?        @map("processed_at")
-  error       String?          @map("error_message")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  type        String           @default("")
-  instance    WhatsAppInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-
-  @@index([instanceId])
-  @@index([type])
-  @@index([eventType])
-  @@index([processed])
-  @@index([createdAt])
-  @@map("whatsapp_cloud_logs")
 }
 
 /// Contact - Contatos unificados (WhatsApp, Instagram, etc)
 model Contact {
-  id                String                    @id @default(uuid())
-  organizationId    String                    @map("organization_id")
-  phone             String
-  name              String?
-  avatarUrl         String?                   @map("avatar_url")
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId    String        @map("organization_id") @db.Uuid
+  phone             String        @db.VarChar(50)
+  name              String?       @db.VarChar(255)
+  avatarUrl         String?       @map("avatar_url")
   metadata          Json?
   tags              String[]
-  leadScore         Int                       @default(0) @map("lead_score")
-  status            ContactStatus             @default(ACTIVE)
-  lastInteractionAt DateTime?                 @map("last_interaction_at")
-  deletedAt         DateTime?                 @map("deleted_at")
-  createdAt         DateTime                  @default(now()) @map("created_at")
-  updatedAt         DateTime                  @updatedAt @map("updated_at")
-  customFieldValues ContactCustomFieldValue[]
-  contactTags       ContactTag[]
-  organization      Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  conversations     Conversation[]
-  deals             Deal[]
-  listContacts      ListContact[]
-  messages          Message[]
-  schedules         Schedule[]
-  transcriptions    Transcription[]
+  leadScore         Int           @default(0) @map("lead_score")
+  status            ContactStatus @default(ACTIVE)
+  lastInteractionAt DateTime?     @map("last_interaction_at")
+  deletedAt         DateTime?     @map("deleted_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
 
   @@unique([organizationId, phone])
   @@index([organizationId])
   @@index([status])
-  @@index([tags])
-  @@index([leadScore])
-  @@index([deletedAt])
   @@map("contacts")
 }
 
 /// Conversation - Conversas (janela de 24h)
 model Conversation {
-  id             String             @id @default(uuid())
-  organizationId String             @map("organization_id")
-  instanceId     String             @map("instance_id")
-  contactId      String             @map("contact_id")
-  conversationId String?            @unique @map("conversation_id")
-  type           ConversationType
-  status         ConversationStatus @default(ACTIVE)
-  windowStart    DateTime           @map("window_start")
-  windowEnd      DateTime           @map("window_end")
-  lastMessageAt  DateTime?          @map("last_message_at")
-  messageCount   Int                @default(0) @map("message_count")
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
-  contact        Contact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  instance       WhatsAppInstance   @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  messages       Message[]
-  transcriptions Transcription[]
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  contactId      String   @map("contact_id") @db.Uuid
+  status         String   @default("active") @db.VarChar(50)
+  unread_count   Int      @default(0)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
-  @@index([organizationId])
-  @@index([instanceId])
-  @@index([contactId])
-  @@index([status])
-  @@index([windowEnd])
-  @@index([organizationId, contactId])
   @@map("conversations")
 }
 
 /// Message - Mensagens
 model Message {
-  id             String            @id @default(uuid())
-  conversationId String            @map("conversation_id")
-  contactId      String            @map("contact_id")
-  messageId      String?           @unique @map("message_id")
-  direction      MessageDirection
-  type           MessageType
-  content        String
-  mediaUrl       String?           @map("media_url")
-  caption        String?
-  templateId     String?           @map("template_id")
-  status         MessageStatus     @default(SENT)
-  sentAt         DateTime?         @map("sent_at")
-  deliveredAt    DateTime?         @map("delivered_at")
-  readAt         DateTime?         @map("read_at")
-  failedAt       DateTime?         @map("failed_at")
-  failedReason   String?           @map("failed_reason")
-  metadata       Json?
-  createdAt      DateTime          @default(now()) @map("created_at")
-  contact        Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  conversation   Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  template       WhatsAppTemplate? @relation(fields: [templateId], references: [id])
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  contactId      String   @map("contact_id") @db.Uuid
+  content        String?
+  status         String   @default("sent") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updated_at     DateTime @default(now())
 
-  @@index([conversationId])
-  @@index([contactId])
-  @@index([messageId])
-  @@index([status])
-  @@index([direction])
-  @@index([type])
-  @@index([createdAt])
-  @@index([conversationId, createdAt])
   @@map("messages")
-}
-
-/// InstagramInstance - Instância Instagram Business
-model InstagramInstance {
-  id                         String                  @id @default(uuid())
-  organizationId             String                  @map("organization_id")
-  name                       String
-  pageId                     String                  @map("page_id")
-  instagramBusinessAccountId String                  @map("instagram_business_account_id")
-  accessToken                String?                 @map("access_token")
-  refreshToken               String?                 @map("refresh_token")
-  tokenExpiresAt             DateTime?               @map("token_expires_at")
-  username                   String?
-  profilePictureUrl          String?                 @map("profile_picture_url")
-  status                     InstagramInstanceStatus @default(DISCONNECTED)
-  webhookVerifyToken         String?                 @map("webhook_verify_token")
-  settings                   Json?
-  lastSyncAt                 DateTime?               @map("last_sync_at")
-  createdAt                  DateTime                @default(now()) @map("created_at")
-  updatedAt                  DateTime                @updatedAt @map("updated_at")
-  connectedAt                DateTime?               @map("connected_at")
-  organization               Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  metaWebhookLogs            MetaWebhookLog[]
-
-  @@index([organizationId])
-  @@index([status])
-  @@index([instagramBusinessAccountId])
-  @@map("instagram_instances")
 }
 
 /// PipelineStage - Etapas do funil de vendas
 model PipelineStage {
-  id             String       @id @default(uuid())
-  organizationId String       @map("organization_id")
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String?       @map("organization_id") @db.Uuid
   name           String
   position       Int
   color          String?
-  probability    Int          @default(0)
-  isDefault      Boolean      @default(false) @map("is_default")
-  isClosed       Boolean      @default(false) @map("is_closed")
-  settings       Json?
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  deals          Deal[]
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  probability    Int?          @default(0)
+  isDefault      Boolean?      @default(false) @map("is_default")
+  isClosed       Boolean?      @default(false) @map("is_closed")
+  createdAt      DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([organizationId])
-  @@index([position])
   @@map("pipeline_stages")
 }
 
 /// Deal - Oportunidades no pipeline
 model Deal {
-  id                String                 @id @default(uuid())
-  organizationId    String                 @map("organization_id")
-  contactId         String                 @map("contact_id")
-  stageId           String                 @map("stage_id")
-  unitId            String?                @map("unit_id")
-  title             String
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId    String                 @map("organization_id") @db.Uuid
+  contactId         String                 @map("contact_id") @db.Uuid
+  stageId           String                 @map("stage_id") @db.Uuid
+  title             String                 @db.VarChar(255)
   description       String?
-  value             Decimal                @default(0) @db.Decimal(15, 2)
-  amount            Decimal?               @db.Decimal(15, 2)
-  currency          String?                @default("BRL")
-  leadScore         Int?                   @default(0) @map("lead_score")
+  value             Decimal                @default(0) @db.Decimal(12, 2)
   probability       Int                    @default(0)
   expectedCloseDate DateTime?              @map("expected_close_date")
   actualCloseDate   DateTime?              @map("actual_close_date")
-  assignedTo        String?                @map("assigned_to")
-  createdBy         String                 @map("created_by")
-  status            DealStatus             @default(OPEN)
-  priority          DealPriority           @default(MEDIUM)
-  source            String?
-  sourceId          String?                @map("source_id")
-  tags              String[]
-  metadata          Json?
+  status            DealStatus
   lostReason        String?                @map("lost_reason")
-  lostAt            DateTime?              @map("lost_at")
-  closedLostAt      DateTime?              @map("closed_lost_at")
-  closedWonAt       DateTime?              @map("closed_won_at")
-  channel           ChannelType            @default(OTHER)
-  utmSource         String?                @map("utm_source")
-  estimatedValue    Float                  @default(0) @map("estimated_value")
-  qualifiedAt       DateTime?              @map("qualified_at")
-  proposalSentAt    DateTime?              @map("proposal_sent_at")
-  negotiationAt     DateTime?              @map("negotiation_at")
+  metadata          Json?
+  assignedTo        String?                @map("assigned_to") @db.Uuid
+  createdBy         String                 @map("created_by") @db.Uuid
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @default(now()) @map("updated_at")
-  activities        DealActivity[]
-  assignee          User?                  @relation("AssignedDeals", fields: [assignedTo], references: [id])
-  contact           Contact                @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  stage             PipelineStage          @relation(fields: [stageId], references: [id])
-  unit              OrganizationUnit?      @relation(fields: [unitId], references: [id])
+  unitId            String?                @map("unit_id") @db.Uuid
+  amount            Decimal?               @db.Decimal(15, 2)
+  channel           ChannelType?           @default(OTHER)
+  estimatedValue    Float?                 @default(0) @map("estimated_value")
+  qualifiedAt       DateTime?              @map("qualified_at") @db.Timestamp(6)
+  proposalSentAt    DateTime?              @map("proposal_sent_at") @db.Timestamp(6)
+  negotiationAt     DateTime?              @map("negotiation_at") @db.Timestamp(6)
+  utmSource         String?                @map("utm_source") @db.VarChar(255)
+  currency          String?                @default("BRL") @db.VarChar(3)
+  closedWonAt       DateTime?              @map("closed_won_at") @db.Timestamp(6)
+  leadScore         Int?                   @default(0) @map("lead_score")
+  lostAt            DateTime?              @map("lost_at") @db.Timestamp(6)
+  priority          String?                @default("MEDIUM") @db.VarChar(20)
+  source            String?                @db.VarChar(100)
+  sourceId          String?                @map("source_id") @db.VarChar(100)
+  tags              String[]               @default([])
+  closedLostAt      DateTime?              @map("closed_lost_at") @db.Timestamp(6)
   stageHistory      PipelineStageHistory[]
-  schedules         Schedule[]
 
   @@index([organizationId])
-  @@index([contactId])
-  @@index([stageId])
-  @@index([assignedTo])
   @@index([status])
   @@index([leadScore])
-  @@index([expectedCloseDate])
-  @@index([status, createdAt])
   @@index([channel, createdAt])
   @@index([qualifiedAt])
   @@index([proposalSentAt])
+  @@index([lostReason, closedLostAt])
   @@map("deals")
 }
 
 model PipelineStageHistory {
-  id        String    @id @default(uuid())
-  dealId    String    @map("deal_id")
-  stage     String
-  enteredAt DateTime  @default(now()) @map("entered_at")
-  exitedAt  DateTime? @map("exited_at")
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealId    String    @map("deal_id") @db.Uuid
+  stage     String    @db.VarChar(255)
+  enteredAt DateTime? @default(now()) @map("entered_at") @db.Timestamp(6)
+  exitedAt  DateTime? @map("exited_at") @db.Timestamp(6)
   duration  Int?
-  deal      Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  deal      Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([dealId])
   @@index([stage, enteredAt])
@@ -439,22 +214,26 @@ model PipelineStageHistory {
 }
 
 model MonthlyGoal {
-  id              String   @id @default(uuid())
-  organizationId  String   @map("organization_id")
-  month           Int
-  year            Int
-  revenueGoal     Float    @default(0) @map("revenue_goal")
-  dealsGoal       Int      @default(0) @map("deals_goal")
-  leadsGoal       Int      @default(0) @map("leads_goal")
-  conversionGoal  Float    @default(0) @map("conversion_goal")
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  month          Int
+  year           Int
+  revenueGoal    Decimal  @default(0) @map("revenue_goal") @db.Decimal(12, 2)
+  dealsGoal      Int      @default(0) @map("deals_goal")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  target_revenue Decimal? @default(0) @db.Decimal(15, 2)
+  target_deals   Int?     @default(0)
+  leadsGoal      Int?     @default(0) @map("leads_goal")
+  conversionGoal Decimal? @default(0) @map("conversion_goal") @db.Decimal(5, 2)
+  active         Boolean? @default(true)
 
-  @@unique([organizationId, year, month], name: "organizationId_year_month")
-  @@index([organizationId])
+  @@unique([organizationId, month], map: "idx_monthly_goals_org_month")
+  @@unique([organizationId, year, month], map: "monthly_goals_org_year_month_key")
+  @@unique([organizationId, month, year])
   @@index([month])
   @@index([year])
+  @@index([organizationId], map: "monthly_goals_org_idx")
   @@map("monthly_goals")
 }
 
@@ -467,545 +246,204 @@ model DashboardMetricCache {
   calculatedAt   DateTime @default(now()) @map("calculated_at")
   expiresAt      DateTime @map("expires_at")
 
-  @@unique([organizationId, metricType, period])
+  @@unique([organizationId, metricType, period], map: "dashboard_metric_cache_org_type_period_key")
   @@index([expiresAt])
-  @@index([organizationId, metricType])
+  @@index([organizationId, metricType], map: "dashboard_metric_cache_org_type_idx")
   @@map("dashboard_metric_cache")
 }
 
 /// DealActivity - Atividades e timeline do deal
 model DealActivity {
-  id           String       @id @default(uuid())
-  dealId       String       @map("deal_id")
-  type         ActivityType
-  title        String
-  content      String?
-  metadata     Json?
-  scoreImpact  Int          @default(0) @map("score_impact")
-  performedBy  String?      @map("performed_by")
-  automationId String?      @map("automation_id")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  deal         Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  performer    User?        @relation("PerformedActivities", fields: [performedBy], references: [id])
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dealId      String       @map("deal_id") @db.Uuid
+  user_id     String       @db.Uuid
+  type        ActivityType
+  description String?
+  metadata    Json?
+  createdAt   DateTime     @default(now()) @map("created_at")
 
   @@index([dealId])
-  @@index([type])
-  @@index([performedBy])
-  @@index([createdAt])
   @@map("deal_activities")
 }
 
-/// MetaWebhookLog - Logs de webhooks da Meta (WhatsApp/Instagram)
-/// Tabela unificada para rastrear todos os eventos de webhook
-model MetaWebhookLog {
-  id                  String             @id @default(uuid())
-  organizationId      String             @map("organization_id")
-  whatsappInstanceId  String?            @map("whatsapp_instance_id")
-  instagramInstanceId String?            @map("instagram_instance_id")
-  eventType           String             @map("event_type")
-  payload             Json?
-  forwardedToN8n      Boolean            @default(false) @map("forwarded_to_n8n")
-  processed           Boolean            @default(false)
-  processedAt         DateTime?          @map("processed_at")
-  errorMessage        String?            @map("error_message")
-  createdAt           DateTime           @default(now()) @map("created_at")
-  instagramInstance   InstagramInstance? @relation(fields: [instagramInstanceId], references: [id])
-  organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  whatsappInstance    WhatsAppInstance?  @relation(fields: [whatsappInstanceId], references: [id])
-
-  @@index([organizationId])
-  @@index([whatsappInstanceId])
-  @@index([instagramInstanceId])
-  @@index([eventType])
-  @@index([createdAt])
-  @@index([processed])
-  @@map("meta_webhook_logs")
-}
-
 model Schedule {
-  id             String         @id @default(uuid())
-  organizationId String         @map("organization_id")
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
   type           ScheduleType
   title          String
   description    String?
-  contactId      String?        @map("contact_id")
-  dealId         String?        @map("deal_id")
-  assignedTo     String?        @map("assigned_to")
+  contactId      String?        @map("contact_id") @db.Uuid
+  dealId         String?        @map("deal_id") @db.Uuid
+  assignedTo     String?        @map("assigned_to") @db.Uuid
   startTime      DateTime       @map("start_time")
   endTime        DateTime       @map("end_time")
   completedAt    DateTime?      @map("completed_at")
   status         ScheduleStatus @default(pending)
   location       String?
   createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-  assignee       User?          @relation("AssignedSchedules", fields: [assignedTo], references: [id])
-  contact        Contact?       @relation(fields: [contactId], references: [id])
-  deal           Deal?          @relation(fields: [dealId], references: [id])
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
 
   @@index([organizationId])
-  @@index([contactId])
-  @@index([dealId])
-  @@index([assignedTo])
-  @@index([status])
-  @@index([startTime])
-  @@index([organizationId, startTime])
   @@map("schedules")
 }
 
 /// Tag - Tags para categorização de contatos
 model Tag {
-  id             String       @id @default(uuid())
-  organizationId String       @map("organization_id")
-  name           String
-  color          String       @default("#6366f1")
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String   @db.VarChar(100)
+  color          String   @default("#6366f1") @db.VarChar(20)
   description    String?
-  source         String       @default("manual")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  contactTags    ContactTag[]
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  source         String   @default("manual") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@unique([organizationId, name])
   @@index([organizationId])
-  @@index([name])
   @@map("tags")
 }
 
 /// ContactTag - Relacionamento many-to-many entre Contact e Tag
 model ContactTag {
-  contactId  String   @map("contact_id")
-  tagId      String   @map("tag_id")
+  contactId  String   @map("contact_id") @db.Uuid
+  tagId      String   @map("tag_id") @db.Uuid
   assignedAt DateTime @default(now()) @map("assigned_at")
-  assignedBy String?  @map("assigned_by")
-  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  assignedBy String?  @map("assigned_by") @db.Uuid
 
   @@id([contactId, tagId])
-  @@index([contactId])
-  @@index([tagId])
   @@map("contact_tags")
 }
 
 /// List - Listas de contatos (estáticas ou dinâmicas)
 model List {
-  id             String        @id @default(uuid())
-  organizationId String        @map("organization_id")
-  name           String
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String   @db.VarChar(200)
   description    String?
-  filters        Json          @default("{}")
-  isDynamic      Boolean       @default(false) @map("is_dynamic")
-  contactCount   Int           @default(0) @map("contact_count")
-  createdBy      String?       @map("created_by")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  listContacts   ListContact[]
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  color          String   @default("#46347F") @db.VarChar(7)
+  filters        Json     @default("{}")
+  isDynamic      Boolean  @default(false) @map("is_dynamic")
+  contactCount   Int      @default(0) @map("contact_count")
+  createdBy      String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
-  @@index([organizationId])
   @@map("lists")
 }
 
 /// ListContact - Relacionamento many-to-many entre List e Contact
 model ListContact {
-  listId    String   @map("list_id")
-  contactId String   @map("contact_id")
+  listId    String   @map("list_id") @db.Uuid
+  contactId String   @map("contact_id") @db.Uuid
   addedAt   DateTime @default(now()) @map("added_at")
-  addedBy   String?  @map("added_by")
-  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  list      List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  addedBy   String?  @map("added_by") @db.Uuid
 
   @@id([listId, contactId])
-  @@index([listId])
-  @@index([contactId])
   @@map("list_contacts")
-}
-
-/// CustomFieldDefinition - Definições de campos customizados
-model CustomFieldDefinition {
-  id             String                    @id @default(uuid())
-  organizationId String                    @map("organization_id")
-  name           String
-  key            String
-  description    String?
-  type           String
-  required       Boolean                   @default(false)
-  options        Json                      @default("[]")
-  displayOrder   Int                       @default(0) @map("display_order")
-  isActive       Boolean                   @default(true) @map("is_active")
-  createdAt      DateTime                  @default(now()) @map("created_at")
-  updatedAt      DateTime                  @updatedAt @map("updated_at")
-  values         ContactCustomFieldValue[]
-  organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationId, key])
-  @@index([organizationId])
-  @@index([isActive])
-  @@map("custom_field_definitions")
-}
-
-/// ContactCustomFieldValue - Valores de campos customizados para contatos
-model ContactCustomFieldValue {
-  id        String                @id @default(uuid())
-  contactId String                @map("contact_id")
-  fieldId   String                @map("field_id")
-  value     String?
-  updatedAt DateTime              @updatedAt @map("updated_at")
-  contact   Contact               @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  field     CustomFieldDefinition @relation(fields: [fieldId], references: [id], onDelete: Cascade)
-
-  @@unique([contactId, fieldId])
-  @@index([contactId])
-  @@index([fieldId])
-  @@map("contact_custom_field_values")
 }
 
 /// Segment - Segmentos dinâmicos de contatos
 model Segment {
-  id               String       @id @default(uuid())
-  organizationId   String       @map("organization_id")
-  name             String
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId   String    @map("organization_id") @db.Uuid
+  name             String    @db.VarChar(200)
   description      String?
-  rules            Json         @default("[]")
-  contactCount     Int          @default(0) @map("contact_count")
-  lastCalculatedAt DateTime?    @map("last_calculated_at")
-  createdBy        String?      @map("created_by")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rules            Json      @default("[]")
+  contactCount     Int       @default(0) @map("contact_count")
+  lastCalculatedAt DateTime? @map("last_calculated_at")
+  createdBy        String?   @map("created_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  @@index([organizationId])
   @@map("segments")
-}
-
-model PipelineTemplate {
-  id          String                  @id @default(uuid())
-  name        String
-  category    String                  @unique
-  description String?
-  isDefault   Boolean                 @default(false) @map("is_default")
-  createdAt   DateTime                @default(now()) @map("created_at")
-  updatedAt   DateTime                @updatedAt @map("updated_at")
-  stages      PipelineTemplateStage[]
-
-  @@index([category])
-  @@index([isDefault])
-  @@map("pipeline_templates")
-}
-
-model PipelineTemplateStage {
-  id          String           @id @default(uuid())
-  templateId  String           @map("template_id")
-  name        String
-  position    Int
-  color       String?
-  probability Int              @default(0)
-  isClosed    Boolean          @default(false) @map("is_closed")
-  description String?
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  template    PipelineTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@index([templateId])
-  @@index([position])
-  @@map("pipeline_template_stages")
-}
-
-model AiInsight {
-  id                String          @id @default(uuid())
-  organizationId    String          @map("organization_id")
-  type              AiInsightType
-  category          String
-  title             String
-  description       String
-  value             String?
-  confidence        Float?          @default(0.85)
-  metadata          Json?
-  relatedContactIds String[]        @map("related_contact_ids")
-  relatedDealIds    String[]        @map("related_deal_ids")
-  status            AiInsightStatus @default(ACTIVE)
-  action            String?         @map("action_text")
-  actionUrl         String?         @map("action_url")
-  clickedAt         DateTime?       @map("clicked_at")
-  dismissedAt       DateTime?       @map("dismissed_at")
-  createdAt         DateTime        @default(now()) @map("created_at")
-  updatedAt         DateTime        @updatedAt @map("updated_at")
-  expiresAt         DateTime?       @map("expires_at")
-  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([type])
-  @@index([status])
-  @@index([category])
-  @@index([createdAt])
-  @@map("ai_insights")
-}
-
-model Transcription {
-  id             String              @id @default(uuid())
-  organizationId String              @map("organization_id")
-  contactId      String?             @map("contact_id")
-  conversationId String?             @map("conversation_id")
-  source         TranscriptionSource
-  sourceId       String?             @map("source_id")
-  title          String?
-  duration       Int?
-  status         TranscriptionStatus @default(PENDING)
-  transcript     String?
-  summary        String?
-  sentiment      String?
-  sentimentScore Float?              @map("sentiment_score")
-  objections     Json?
-  keyTopics      String[]            @map("key_topics")
-  actionItems    String[]            @map("action_items")
-  converted      Boolean?            @default(false)
-  resolutionDays Int?                @map("resolution_days")
-  dealId         String?             @map("deal_id")
-  audioUrl       String?             @map("audio_url")
-  audioSize      Int?                @map("audio_size")
-  audioFormat    String?             @map("audio_format")
-  recordedAt     DateTime?           @map("recorded_at")
-  processedAt    DateTime?           @map("processed_at")
-  createdAt      DateTime            @default(now()) @map("created_at")
-  updatedAt      DateTime            @updatedAt @map("updated_at")
-  contact        Contact?            @relation(fields: [contactId], references: [id])
-  conversation   Conversation?       @relation(fields: [conversationId], references: [id])
-  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([contactId])
-  @@index([conversationId])
-  @@index([status])
-  @@index([source])
-  @@index([createdAt])
-  @@index([converted])
-  @@map("transcriptions")
-}
-
-/// Integration - Integrações de terceiros (Zapier, n8n, Make, etc)
-model Integration {
-  id                 String              @id @default(uuid())
-  organizationId     String              @map("organization_id")
-  type               String
-  name               String
-  status             String              @default("inactive")
-  config             Json?
-  connectedAt        DateTime?           @map("connected_at")
-  lastSyncAt         DateTime?           @map("last_sync_at")
-  errorMessage       String?             @map("error_message")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  integrationConfigs IntegrationConfig[]
-  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([type])
-  @@index([status])
-  @@index([organizationId, type])
-  @@index([organizationId, status])
-  @@map("integrations")
-}
-
-/// IntegrationConfig - Configurações específicas por integração
-/// Permite armazenar múltiplas configurações chave-valor para cada integração
-model IntegrationConfig {
-  id            String      @id @default(uuid())
-  integrationId String      @map("integration_id")
-  key           String
-  value         String
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
-  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-
-  @@unique([integrationId, key])
-  @@index([integrationId])
-  @@index([key])
-  @@map("integration_configs")
-}
-
-model IntegrationActivityLog {
-  id              String                    @id @default(uuid())
-  organizationId  String                    @map("organization_id")
-  integrationType IntegrationType           @map("integration_type")
-  instanceId      String?                   @map("instance_id")
-  activityType    IntegrationActivityType   @map("activity_type")
-  status          IntegrationActivityStatus @default(SUCCESS)
-  title           String
-  description     String?
-  requestPayload  Json?                     @map("request_payload")
-  responsePayload Json?                     @map("response_payload")
-  errorMessage    String?                   @map("error_message")
-  errorCode       String?                   @map("error_code")
-  contactId       String?                   @map("contact_id")
-  dealId          String?                   @map("deal_id")
-  messageId       String?                   @map("message_id")
-  sourceIp        String?                   @map("source_ip")
-  userAgent       String?                   @map("user_agent")
-  durationMs      Int?                      @map("duration_ms")
-  retryCount      Int                       @default(0) @map("retry_count")
-  maxRetries      Int                       @default(3) @map("max_retries")
-  createdAt       DateTime                  @default(now()) @map("created_at")
-  completedAt     DateTime?                 @map("completed_at")
-  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([integrationType])
-  @@index([instanceId])
-  @@index([activityType])
-  @@index([status])
-  @@index([contactId])
-  @@index([createdAt])
-  @@map("integration_activity_logs")
 }
 
 /// Plan - Planos de assinatura
 model Plan {
-  id            String         @id @default(uuid())
-  name          String
-  description   String?
-  priceCents    Int            @map("price_cents")
-  interval      String
-  features      Json?
-  limits        Json?
-  status        String         @default("active")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  subscriptions Subscription[]
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  interval    String   @default("month") @db.VarChar(50)
+  features    Json?
+  is_active   Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
-  @@index([status])
-  @@index([interval])
   @@map("plans")
 }
 
 /// Subscription - Assinaturas
 model Subscription {
-  id                 String       @id @default(uuid())
-  organizationId     String       @map("organization_id")
-  planId             String       @map("plan_id")
-  status             String       @default("active")
-  currentPeriodStart DateTime     @map("current_period_start")
-  currentPeriodEnd   DateTime     @map("current_period_end")
-  canceledAt         DateTime?    @map("canceled_at")
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @updatedAt @map("updated_at")
-  invoices           Invoice[]
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  plan               Plan         @relation(fields: [planId], references: [id])
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String             @map("organization_id") @db.Uuid
+  planId             String             @map("plan_id") @db.Uuid
+  status             SubscriptionStatus @default(TRIALING)
+  currentPeriodStart DateTime           @map("current_period_start")
+  currentPeriodEnd   DateTime           @map("current_period_end")
+  trial_ends_at      DateTime?
+  cancelled_at       DateTime?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at")
 
-  @@index([organizationId])
-  @@index([planId])
-  @@index([status])
-  @@index([currentPeriodEnd])
   @@map("subscriptions")
 }
 
 /// Invoice - Faturas
 model Invoice {
-  id              String       @id @default(uuid())
-  subscriptionId  String       @map("subscription_id")
-  organizationId  String       @map("organization_id")
-  amountCents     Int          @map("amount_cents")
-  status          String       @default("pending")
-  dueDate         DateTime     @map("due_date")
-  paidAt          DateTime?    @map("paid_at")
-  invoiceUrl      String?      @map("invoice_url")
-  stripeInvoiceId String?      @map("stripe_invoice_id")
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
-  charges         Charge[]
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  subscriptionId String?   @map("subscription_id") @db.Uuid
+  amount         Decimal   @db.Decimal(10, 2)
+  currency       String    @default("BRL") @db.VarChar(3)
+  status         String    @default("PENDING") @db.VarChar(50)
+  dueDate        DateTime  @map("due_date")
+  paidAt         DateTime? @map("paid_at")
+  metadata       Json?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  @@index([organizationId])
-  @@index([subscriptionId])
-  @@index([status])
-  @@index([dueDate])
-  @@index([stripeInvoiceId])
   @@map("invoices")
 }
 
 /// Charge - Cobranças
 model Charge {
-  id             String       @id @default(uuid())
-  organizationId String       @map("organization_id")
-  invoiceId      String?      @map("invoice_id")
-  amountCents    Int          @map("amount_cents")
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  invoiceId      String?      @map("invoice_id") @db.Uuid
+  amount         Decimal      @db.Decimal(10, 2)
+  status         ChargeStatus @default(PENDING)
+  type           ChargeType   @default(RECURRING)
   description    String?
-  status         String       @default("pending")
-  paymentMethod  String?      @map("payment_method")
+  due_date       DateTime
   paidAt         DateTime?    @map("paid_at")
+  metadata       Json?
   createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  invoice        Invoice?     @relation(fields: [invoiceId], references: [id])
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
 
-  @@index([organizationId])
-  @@index([invoiceId])
-  @@index([status])
-  @@index([paidAt])
   @@map("charges")
 }
 
-/// Coupon - Cupons
-model Coupon {
-  id              String   @id @default(uuid())
-  code            String   @unique
-  description     String?
-  discountPercent Int?     @map("discount_percent")
-  discountCents   Int?     @map("discount_cents")
-  validFrom       DateTime @map("valid_from")
-  validUntil      DateTime @map("valid_until")
-  maxUses         Int?     @map("max_uses")
-  usesCount       Int      @default(0) @map("uses_count")
-  status          String   @default("active")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  @@index([code])
-  @@index([status])
-  @@index([validFrom, validUntil])
-  @@map("coupons")
+model dashboard_metric_caches {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String    @db.Uuid
+  metric_type     String    @db.VarChar(100)
+  period          String    @db.VarChar(50)
+  data            Json
+  calculated_at   DateTime  @default(now())
+  expires_at      DateTime?
 }
 
-/// PendingFormDelivery - Entregas pendentes de formulários do Plano de Ação
-/// Rastreia o estado de envio de PDFs via WhatsApp após template ser entregue
-model PendingFormDelivery {
-  id               String                    @id @default(cuid())
-  messageId        String                    @unique
-  organizationId   String
-  instanceId       String
-  phone            String
-  pdfUrl           String
-  pdfFilename      String
-  mediaId          String?
-  templateName     String
-  templateLanguage String                    @default("pt_BR")
-  leadName         String?
-  leadEmail        String?
-  dossieId         String?
-  alunoId          String?
-  status           PendingFormDeliveryStatus @default(WAITING)
-  retryCount       Int                       @default(0)
-  isCancelled      Boolean                   @default(false)
-  cancelledAt      DateTime?
-  cancelledBy      String?
-  reprocessedFrom  String?
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
-  expiresAt        DateTime
-  completedAt      DateTime?
-  errorMessage     String?
-  lastErrorAt      DateTime?
-  instance         WhatsAppInstance          @relation(fields: [instanceId], references: [id])
-  organization     Organization              @relation(fields: [organizationId], references: [id])
+model pipeline_stage_histories {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deal_id       String   @db.Uuid
+  from_stage_id String?  @db.Uuid
+  to_stage_id   String   @db.Uuid
+  moved_by      String   @db.Uuid
+  moved_at      DateTime @default(now())
+  created_at    DateTime @default(now())
 
-  @@index([messageId])
-  @@index([organizationId])
-  @@index([status])
-  @@index([expiresAt])
-  @@index([dossieId])
-  @@index([createdAt])
-  @@map("pending_form_deliveries")
+  @@index([deal_id])
 }
 
 enum ScheduleType {
@@ -1136,18 +574,15 @@ enum DealPriority {
 }
 
 enum ActivityType {
-  NOTE
   CALL
-  EMAIL
   MEETING
+  EMAIL
+  TASK
+  NOTE
   WHATSAPP
-  INSTAGRAM
   STAGE_CHANGE
-  TASK_CREATED
-  TASK_COMPLETED
-  DOCUMENT
-  AUTOMATION
-  SYSTEM
+  DEAL_CREATED
+  DEAL_CLOSED
 }
 
 enum LostReason {
@@ -1167,12 +602,12 @@ enum ChannelType {
   EMAIL
   PHONE
   FORM
+  OTHER
   WEBSITE
   LANDING_PAGE
   MANUAL
   API
   CHATBOT
-  OTHER
 }
 
 enum AiInsightType {
@@ -1244,4 +679,32 @@ enum PendingFormDeliveryStatus {
   FAILED
   EXPIRED
   CANCELLED
+}
+
+enum ChargeStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum ChargeType {
+  RECURRING
+  ONE_TIME
+  SETUP
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  UNPAID
+  TRIALING
+}
+
+enum dealstatus {
+  OPEN
+  WON
+  LOST
 }

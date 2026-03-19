@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase-server';
+import { prisma } from '@/lib/prisma';
 
 interface ContactImportData {
   nome?: string;
@@ -70,12 +70,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Busca organização válida
     let orgId = organizationId;
     if (organizationId === 'default_org_id') {
-      const { data: existingOrg } = await supabaseServer
-        .from('organizations')
-        .select('id')
-        .limit(1)
-        .single();
-      
+      const existingOrg = await prisma.organization.findFirst({ select: { id: true } });
       if (existingOrg) {
         orgId = existingOrg.id;
       }
@@ -123,16 +118,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         // Verificar se contato já existe (por telefone)
         if (normalizedPhone) {
-          const { data: existingContact, error: checkError } = await supabaseServer
-            .from('contacts')
-            .select('id')
-            .eq('organization_id', orgId)
-            .eq('phone', normalizedPhone)
-            .single();
-
-          if (checkError && checkError.code !== 'PGRST116') {
-            console.error('[Import Contacts] Erro ao verificar contato existente:', checkError);
-          }
+          const existingContact = await prisma.contact.findFirst({
+            where: { organizationId: orgId, phone: normalizedPhone },
+            select: { id: true },
+          });
 
           if (existingContact) {
             result.duplicates.push({
@@ -169,31 +158,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         if (contact.cargo) metadata.cargo = contact.cargo;
 
         // Inserir contato
-        const { error: insertError } = await supabaseServer
-          .from('contacts')
-          .insert({
-            organization_id: orgId,
+        await prisma.contact.create({
+          data: {
+            organizationId: orgId,
             phone: normalizedPhone || `sem-telefone-${Date.now()}-${i}`,
             name: fullName,
-            email: contact.email || null,
             metadata: Object.keys(metadata).length > 0 ? metadata : {},
             tags: [],
-            status: contactStatus,
-            lead_score: 0,
-            created_at: now,
-            updated_at: now,
-            last_interaction_at: now,
-          });
-
-        if (insertError) {
-          console.error('[Import Contacts] Erro ao inserir contato:', insertError);
-          result.errors.push({
-            row: rowNumber,
-            contact,
-            error: `Erro ao salvar: ${insertError.message}`,
-          });
-          continue;
-        }
+            status: contactStatus as 'ACTIVE' | 'INACTIVE' | 'BLOCKED',
+            leadScore: 0,
+            lastInteractionAt: new Date(now),
+          },
+        });
 
         result.imported++;
       } catch (error: any) {

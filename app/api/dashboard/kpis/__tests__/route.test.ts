@@ -1,44 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET } from '../route'
 
-// Mock das dependências
-const mockGetUser = vi.fn()
-const mockFrom = vi.fn()
-const mockSingle = vi.fn()
-const mockEq = vi.fn()
-const mockSelect = vi.fn()
-
-vi.mock('@supabase/ssr', () => ({
-  createServerClient: vi.fn(() => ({
-    auth: { getUser: mockGetUser },
-    from: mockFrom,
-  })),
-}))
+vi.mock('@/lib/auth/helpers', () => {
+  class AuthError extends Error {
+    statusCode: number
+    constructor(message: string, statusCode = 401) {
+      super(message)
+      this.name = 'AuthError'
+      this.statusCode = statusCode
+    }
+  }
+  return {
+    getAuthenticatedUser: vi.fn(),
+    AuthError,
+  }
+})
 
 vi.mock('@/lib/db/dashboard-queries', () => ({
   getKPIs: vi.fn(),
 }))
 
-vi.mock('next/headers', () => ({
-  cookies: vi.fn(() => ({
-    getAll: vi.fn(() => []),
-  })),
-}))
-
 // Import after mocks
+const { getAuthenticatedUser } = await import('@/lib/auth/helpers')
 const { getKPIs } = await import('@/lib/db/dashboard-queries')
 
 describe('GET /api/dashboard/kpis', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Setup chain mocks
-    mockFrom.mockReturnValue({ select: mockSelect })
-    mockSelect.mockReturnValue({ eq: mockEq })
-    mockEq.mockReturnValue({ single: mockSingle })
   })
 
   it('should return 401 when user is not authenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } })
+    const { AuthError } = await import('@/lib/auth/helpers')
+    vi.mocked(getAuthenticatedUser).mockRejectedValue(new AuthError('Unauthorized'))
 
     const request = new Request('http://localhost/api/dashboard/kpis?period=30d')
     const response = await GET(request)
@@ -50,8 +43,7 @@ describe('GET /api/dashboard/kpis', () => {
   })
 
   it('should return 400 when organization is not found', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: null })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: null })
 
     const request = new Request('http://localhost/api/dashboard/kpis?period=30d')
     const response = await GET(request)
@@ -63,8 +55,7 @@ describe('GET /api/dashboard/kpis', () => {
   })
 
   it('should return KPIs data successfully', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
 
     const mockData = {
       leads: { value: 100, change: 10 },
@@ -82,13 +73,13 @@ describe('GET /api/dashboard/kpis', () => {
 
     expect(response.status).toBe(200)
     expect(data.success).toBe(true)
-    expect(data.data).toEqual(mockData)
+    expect(data.data.leadsThisWeek).toBe(100)
+    expect(data.data.leadsGrowth).toBe(10)
     expect(getKPIs).toHaveBeenCalledWith('org_123', '30d')
   })
 
   it('should return 400 for invalid period', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
 
     const request = new Request('http://localhost/api/dashboard/kpis?period=invalid')
     const response = await GET(request)
@@ -100,8 +91,7 @@ describe('GET /api/dashboard/kpis', () => {
   })
 
   it('should return 500 on database error', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
     vi.mocked(getKPIs).mockRejectedValue(new Error('DB Error'))
 
     const request = new Request('http://localhost/api/dashboard/kpis?period=30d')
@@ -114,8 +104,7 @@ describe('GET /api/dashboard/kpis', () => {
   })
 
   it('should use default period when not provided', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
 
     const mockData = {
       leads: { value: 0, change: 0 },
@@ -134,8 +123,7 @@ describe('GET /api/dashboard/kpis', () => {
   })
 
   it('should handle positive and negative changes', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-    mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
 
     const mockData = {
       leads: { value: 100, change: 15.5 },
@@ -152,9 +140,9 @@ describe('GET /api/dashboard/kpis', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data.data.leads.change).toBe(15.5)
-    expect(data.data.revenue.change).toBe(-8.2)
-    expect(data.data.conversionRate.change).toBe(0)
+    expect(data.data.leadsGrowth).toBe(15.5)
+    expect(data.data.revenueGrowth).toBe(-8.2)
+    expect(data.data.conversionChange).toBe(0)
   })
 
   it('should support all valid periods', async () => {
@@ -169,11 +157,7 @@ describe('GET /api/dashboard/kpis', () => {
 
     for (const period of periods) {
       vi.clearAllMocks()
-      mockFrom.mockReturnValue({ select: mockSelect })
-      mockSelect.mockReturnValue({ eq: mockEq })
-      mockEq.mockReturnValue({ single: mockSingle })
-      mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } })
-      mockSingle.mockResolvedValue({ data: { organization_id: 'org_123' } })
+      vi.mocked(getAuthenticatedUser).mockResolvedValue({ userId: 'user_123', email: 'test@test.com', name: null, organizationId: 'org_123' })
       vi.mocked(getKPIs).mockResolvedValue(mockData)
 
       const request = new Request(`http://localhost/api/dashboard/kpis?period=${period}`)

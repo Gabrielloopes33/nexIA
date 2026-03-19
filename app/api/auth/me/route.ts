@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
+import { getAuthenticatedUser, AuthError } from '@/lib/auth/helpers'
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) {
-    return NextResponse.json({ authenticated: false }, { status: 401 })
+  try {
+    const user = await getAuthenticatedUser()
+    return NextResponse.json({
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      organizationId: user.organizationId,
+    })
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
-  return NextResponse.json({
-    authenticated: true,
-    user: {
-      userId: session.userId,
-      email: session.email,
-      name: session.name,
-      organizationId: session.organizationId,
-    },
-  })
 }

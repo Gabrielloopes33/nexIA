@@ -1,21 +1,35 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { ContactsTable } from "@/components/contacts/contacts-table"
 import { ContactFilters } from "@/components/contacts/contact-filters"
 import { ContactDetailPanel } from "@/components/contact-detail-panel"
-import { useContacts, Contact } from "@/hooks/use-contacts"
-import { useOrganization } from "@/lib/contexts/organization-context"
 import { Button } from "@/components/ui/button"
 import { Download, Upload, UserPlus, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { toast } from "sonner"
+
+interface Contact {
+  id: string
+  organizationId: string
+  phone: string
+  name?: string | null
+  avatarUrl?: string | null
+  metadata?: Record<string, unknown> | null
+  tags: string[]
+  leadScore: number
+  status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED'
+  lastInteractionAt?: string | null
+  deletedAt?: string | null
+  createdAt: string
+  updatedAt: string
+}
 
 export default function ContactsPage() {
-  const { organization, isLoading: isLoadingOrg } = useOrganization()
-  // Usa default_org_id quando não tiver organização carregada
-  const organizationId = organization?.id || 'default_org_id'
-  
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [total, setTotal] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -23,19 +37,33 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
 
-  // Fetch contacts from API - não precisa passar organizationId,
-  // o hook usa automaticamente do contexto
-  const { 
-    contacts, 
-    total, 
-    isLoading, 
-    error,
-    deleteContact 
-  } = useContacts(undefined, {
-    search: searchQuery,
-    tags: selectedTags,
-    status: selectedStatuses.length === 1 ? selectedStatuses[0] as 'ACTIVE' | 'INACTIVE' | 'BLOCKED' : undefined,
-  })
+  const fetchContacts = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (searchQuery) params.append('search', searchQuery)
+      if (selectedTags.length) params.append('tags', selectedTags.join(','))
+      if (selectedStatuses.length === 1) params.append('status', selectedStatuses[0])
+      
+      const response = await fetch(`/api/contacts?${params.toString()}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setContacts(data.data || [])
+        setTotal(data.pagination?.total || 0)
+      } else {
+        toast.error(data.error || 'Erro ao carregar contatos')
+      }
+    } catch (error) {
+      toast.error('Erro ao carregar contatos')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [searchQuery, selectedTags, selectedStatuses])
+
+  useEffect(() => {
+    fetchContacts()
+  }, [fetchContacts])
 
   const handleSelectContact = (id: string, selected: boolean) => {
     if (selected) {
@@ -65,19 +93,26 @@ export default function ContactsPage() {
 
   const handleDeleteContact = async (contact: Contact) => {
     if (confirm('Tem certeza que deseja excluir este contato?')) {
-      const success = await deleteContact(contact.id)
-      if (success) {
-        setSelectedContacts(selectedContacts.filter(id => id !== contact.id))
+      try {
+        const response = await fetch(`/api/contacts/${contact.id}`, { method: 'DELETE' })
+        const data = await response.json()
+        if (data.success) {
+          toast.success('Contato excluído')
+          setSelectedContacts(selectedContacts.filter(id => id !== contact.id))
+          fetchContacts()
+        } else {
+          toast.error(data.error || 'Erro ao excluir')
+        }
+      } catch (error) {
+        toast.error('Erro ao excluir contato')
       }
     }
   }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Main Sidebar */}
       <Sidebar />
 
-      {/* Main Content - ocupa o resto */}
       <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 min-w-0">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
@@ -97,7 +132,7 @@ export default function ContactsPage() {
               Exportar
             </Button>
             <Link href="/contatos/novo">
-              <Button size="sm" className="gap-2 bg-[#46347F] hover:bg-[#46347F]">
+              <Button size="sm" className="gap-2 bg-[#46347F] hover:bg-[#3a2c6b]">
                 <UserPlus className="h-4 w-4" />
                 Adicionar Contato
               </Button>
@@ -105,62 +140,55 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-600">
-            {error}
-          </div>
-        )}
-
-        {/* Full Width Table Layout - ocupa altura total */}
+        {/* Full Width Table Layout */}
         <div className="flex flex-col gap-4 h-[calc(100vh-180px)]">
-            {/* Filters */}
-            <ContactFilters
-              organizationId={organizationId}
-              onSearch={setSearchQuery}
-              onFilterTags={setSelectedTags}
-              onFilterStatus={setSelectedStatuses}
-              selectedTags={selectedTags}
-              selectedStatuses={selectedStatuses}
-            />
+          {/* Filters */}
+          <ContactFilters
+            organizationId=""
+            onSearch={setSearchQuery}
+            onFilterTags={setSelectedTags}
+            onFilterStatus={setSelectedStatuses}
+            selectedTags={selectedTags}
+            selectedStatuses={selectedStatuses}
+          />
 
-            {/* Selected Actions */}
-            {selectedContacts.length > 0 && (
-              <div className="flex items-center gap-2 rounded-md bg-[#46347F]/10 p-2">
-                <span className="text-sm font-medium text-[#46347F]">
-                  {selectedContacts.length} contatos selecionados
-                </span>
-                <Button variant="ghost" size="sm" className="h-7 text-[#46347F]">
-                  Exportar
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 text-red-600">
-                  Excluir
-                </Button>
-              </div>
-            )}
+          {/* Selected Actions */}
+          {selectedContacts.length > 0 && (
+            <div className="flex items-center gap-2 rounded-md bg-[#46347F]/10 p-2">
+              <span className="text-sm font-medium text-[#46347F]">
+                {selectedContacts.length} contatos selecionados
+              </span>
+              <Button variant="ghost" size="sm" className="h-7 text-[#46347F]">
+                Exportar
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-red-600">
+                Excluir
+              </Button>
+            </div>
+          )}
 
-            {/* Loading State */}
-            {isLoading && (
-              <div className="flex flex-1 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
-              </div>
-            )}
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex flex-1 items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+            </div>
+          )}
 
-            {/* Table - ocupa espaço restante */}
-            {!isLoading && (
-              <div className="flex-1 min-h-0 overflow-auto">
-                <ContactsTable
-                  contacts={contacts}
-                  selectedContacts={selectedContacts}
-                  onSelectContact={handleSelectContact}
-                  onSelectAll={handleSelectAll}
-                  onViewContact={handleViewContact}
-                  onEditContact={handleEditContact}
-                  onDeleteContact={handleDeleteContact}
-                />
-              </div>
-            )}
-          </div>
+          {/* Table */}
+          {!isLoading && (
+            <div className="flex-1 min-h-0 overflow-auto">
+              <ContactsTable
+                contacts={contacts}
+                selectedContacts={selectedContacts}
+                onSelectContact={handleSelectContact}
+                onSelectAll={handleSelectAll}
+                onViewContact={handleViewContact}
+                onEditContact={handleEditContact}
+                onDeleteContact={handleDeleteContact}
+              />
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Contact Detail Panel */}

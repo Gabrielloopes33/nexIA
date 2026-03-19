@@ -101,7 +101,7 @@ export const topNavItems: SidebarNavItem[] = [
       { label: "Concluídas", href: "/agendamentos/concluidas", section: "Principal", badge: 0 },
       { label: "Ligações", href: "/agendamentos/ligacoes", section: "Tipos" },
       { label: "Reuniões", href: "/agendamentos/reunioes", section: "Tipos" },
-      { label: "Tarefas", href: "/agendamentos/tarefas", section: "Tipos" },
+      { label: "Tarefas", href: "/agendamentos", section: "Tipos" },
       { label: "Prazos", href: "/agendamentos/prazos", section: "Tipos" },
     ],
   },

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useTags } from "@/hooks/use-tags"
-import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 const quickLeadSchema = z.object({
   nome: z.string().min(2, "Nome é obrigatório"),
@@ -53,14 +52,31 @@ interface QuickLeadModalProps {
 }
 
 export function QuickLeadModal({ children }: QuickLeadModalProps) {
-  const orgIdFromHook = useOrganizationId()
-  // Só usa organizationId se for um UUID válido
-  const organizationId = orgIdFromHook
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoadingOrg, setIsLoadingOrg] = useState(false)
 
-  // Buscar tags da API real (só quando tem organizationId válido)
+  // Buscar organizationId da API ao abrir o modal
+  useEffect(() => {
+    if (open) {
+      fetch('/api/auth/me')
+        .then(res => res.json())
+        .then(data => {
+          if (data.organizationId) {
+            setOrganizationId(data.organizationId)
+          } else {
+            setOrganizationId(null)
+            toast.error("Usuário sem organização. Contate o administrador.")
+          }
+        })
+        .catch(() => {
+          setOrganizationId(null)
+          toast.error("Erro ao carregar dados. Faça login novamente.")
+        })
+    }
+  }, [open])
+
+  // Buscar tags da API real
   const { tags, isLoading: isLoadingTags } = useTags(organizationId || undefined)
 
   const form = useForm<QuickLeadForm>({
@@ -91,15 +107,16 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
 
   const onSubmit = async (data: QuickLeadForm) => {
     if (!organizationId) {
-      toast.error("Erro: Organização não encontrada")
+      toast.error("Você precisa estar associado a uma organização para criar leads.")
       return
     }
 
     setIsSubmitting(true)
-    console.log('[QuickLeadModal] Creating lead with org:', organizationId)
 
     try {
-      // 1. Cria o contato
+      let contactId: string
+      let contactExisted = false
+
       const contactResponse = await fetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -114,52 +131,57 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
         }),
       })
 
-      if (!contactResponse.ok) {
+      if (contactResponse.status === 409) {
+        // Contato já existe, busca ele pelo telefone
+        const normalizedPhone = data.telefone.replace(/\D/g, '')
+        const searchResponse = await fetch(`/api/contacts?search=${normalizedPhone}&limit=1`)
+        const searchData = await searchResponse.json()
+        
+        if (searchData.data?.length > 0) {
+          contactId = searchData.data[0].id
+          contactExisted = true
+        } else {
+          const errorData = await contactResponse.json()
+          throw new Error(errorData.error || 'Contato já existe mas não foi encontrado')
+        }
+      } else if (!contactResponse.ok) {
         const errorData = await contactResponse.json()
-        throw new Error(errorData.error || errorData.message || 'Erro ao criar contato')
+        throw new Error(errorData.error || 'Erro ao criar contato')
+      } else {
+        const { data: contact } = await contactResponse.json()
+        contactId = contact.id
       }
 
-      const { data: contact } = await contactResponse.json()
-      console.log("Contato criado:", contact)
-
-      // 2. Busca o primeiro estágio do pipeline (default)
       const stagesResponse = await fetch(`/api/pipeline/stages?organizationId=${organizationId}`)
       const { data: stages } = await stagesResponse.json()
       
       const defaultStage = stages?.find((s: any) => s.is_default) || stages?.[0]
       
       if (defaultStage) {
-        // 3. Cria o deal no pipeline
-        const dealResponse = await fetch('/api/pipeline/deals', {
+        await fetch('/api/pipeline/deals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             organizationId,
             stageId: defaultStage.id,
-            contactId: contact.id,
+            contactId: contactId,
             title: data.nome,
             description: data.observacoes || `Lead de ${data.origem}`,
             source: data.origem,
             tags: data.tags,
           }),
         })
-
-        if (!dealResponse.ok) {
-          const dealError = await dealResponse.json().catch(() => ({ error: 'Erro desconhecido' }))
-          console.error('Erro ao criar deal:', dealError)
-        } else {
-          console.log("Deal criado no pipeline")
-        }
       }
 
-      toast.success("Lead criado com sucesso!")
+      if (contactExisted) {
+        toast.success("Lead criado com contato existente!")
+      } else {
+        toast.success("Lead criado com sucesso!")
+      }
       setOpen(false)
       form.reset()
-      
-      // Recarrega a página para mostrar o novo lead
       window.location.reload()
     } catch (error: any) {
-      console.error("Erro ao criar lead:", error)
       toast.error(error.message || "Erro ao criar lead")
     } finally {
       setIsSubmitting(false)
@@ -272,7 +294,7 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {tags.slice(0, 6).map((tag) => {
+                {tags.slice(0, 6).map((tag: any) => {
                   const isSelected = selectedTags.includes(tag.id)
                   return (
                     <button
@@ -330,16 +352,14 @@ export function QuickLeadModal({ children }: QuickLeadModalProps) {
               </Button>
               <Button
                 type="submit"
-                className="bg-[#46347F] hover:bg-[#46347F] text-white"
+                className="bg-[#46347F] hover:bg-[#3a2c6b] text-white"
                 disabled={isSubmitting || !organizationId}
               >
                 {isSubmitting ? (
                   <>
-                    <span className="animate-spin mr-2">⏳</span>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Criando...
                   </>
-                ) : !organizationId ? (
-                  "Sem organização"
                 ) : (
                   "Criar Lead"
                 )}

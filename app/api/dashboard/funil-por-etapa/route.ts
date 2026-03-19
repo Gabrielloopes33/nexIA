@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthenticatedUser, AuthError } from '@/lib/auth/helpers'
 import type { FunilPorEtapaData } from '@/types/dashboard'
 
 /**
@@ -15,15 +15,7 @@ import type { FunilPorEtapaData } from '@/types/dashboard'
 export async function GET(request: NextRequest) {
   try {
     // Autenticação
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      )
-    }
+    const authUser = await getAuthenticatedUser()
 
     // Parâmetros
     const { searchParams } = new URL(request.url)
@@ -36,28 +28,8 @@ export async function GET(request: NextRequest) {
     const days = parseInt(period.replace('d', ''))
     startDate.setDate(endDate.getDate() - days)
 
-    // Buscar usuário com organização
-    const userData = await prisma.user.findUnique({
-      where: { authId: user.id },
-      include: {
-        organizations: {
-          include: {
-            organization: true
-          }
-        }
-      }
-    })
-
-    if (!userData) {
-      return NextResponse.json(
-        { error: 'Usuário não encontrado' },
-        { status: 404 }
-      )
-    }
-
     // Determinar organizationId
-    const orgId = organizationId || 
-      userData.organizations[0]?.organizationId
+    const orgId = organizationId || authUser.organizationId
 
     if (!orgId) {
       return NextResponse.json(
@@ -145,7 +117,14 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('[API] Erro ao buscar funil por etapa:', error)
-    
+
+    if (error instanceof AuthError) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      )
+    }
+
     return NextResponse.json(
       { 
         error: 'Erro interno ao carregar dados do funil',
