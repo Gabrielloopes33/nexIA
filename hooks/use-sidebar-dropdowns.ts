@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { SidebarNavItem, isGroupActive } from "@/components/sidebar-nav-config"
 
@@ -20,10 +20,12 @@ export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropd
   // Start with empty set for SSR consistency
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [isHydrated, setIsHydrated] = useState(false)
+  const initialHydrationDone = useRef(false)
 
-  // Hydrate from localStorage after mount (client-side only)
+  // Initial hydration from localStorage - runs ONLY ONCE after mount
   useEffect(() => {
     if (typeof window === 'undefined') return
+    if (initialHydrationDone.current) return
     
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
@@ -44,8 +46,29 @@ export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropd
       setOpenGroups(new Set(activeKeys))
     }
     
+    initialHydrationDone.current = true
     setIsHydrated(true)
-  }, [pathname, navItems])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty deps - run only once on mount
+
+  // Auto-open groups when pathname changes (but don't reset user-opened groups)
+  useEffect(() => {
+    if (!isHydrated) return
+    
+    // Find active groups that should be open
+    const activeKeys = navItems
+      .filter((item) => isGroupActive(item, pathname))
+      .map((item) => item.key)
+    
+    if (activeKeys.length > 0) {
+      setOpenGroups((prev) => {
+        const newSet = new Set(prev)
+        // Add active keys without closing others (preserve user state)
+        activeKeys.forEach((key) => newSet.add(key))
+        return newSet
+      })
+    }
+  }, [pathname, navItems, isHydrated])
 
   // Persist to localStorage when openGroups changes
   useEffect(() => {
