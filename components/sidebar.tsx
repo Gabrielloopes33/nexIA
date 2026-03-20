@@ -36,10 +36,6 @@ function SimpleNavLink({
           : "text-white hover:bg-white/15 px-3"
       )}
     >
-      {/* Active indicator bar - yellow */}
-      {isActive && (
-        <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
-      )}
       <Icon className="h-4 w-4 text-white shrink-0" />
       <span className="flex-1 text-left text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
         {item.label}
@@ -145,10 +141,6 @@ export function Sidebar() {
                     : "text-white hover:bg-white/15 px-3"
                 )}
               >
-                {/* Active indicator bar - yellow */}
-                {isActive && (
-                  <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
-                )}
                 <Icon className="h-4 w-4 text-white shrink-0" />
                 <span className="text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
                   {item.label}
