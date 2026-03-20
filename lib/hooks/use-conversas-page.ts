@@ -67,7 +67,6 @@ function mapConversation(apiConv: ApiConversation): Conversation {
     lastMessageAt: apiConv.lastMessageAt || apiConv.createdAt,
     messages: [], // Mensagens são carregadas separadamente
     starred: false,
-    mentioned: false,
     teamId: null,
   }
 }

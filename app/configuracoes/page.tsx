@@ -43,8 +43,9 @@ const configSections: ConfigSection[] = [
     icon: User,
     items: [
       { label: "Perfil", href: "/configuracoes/perfil", icon: User, description: "Dados pessoais e avatar" },
-      { label: "Empresa", href: "/configuracoes/empresa", icon: Building2, description: "Informações da organização" },
+      { label: "Empresa", href: "/configuracoes/empresa", icon: Building2, description: "Informações da organização atual" },
       { label: "Usuários", href: "/configuracoes/usuarios", icon: Users, description: "Gerenciar equipe" },
+      { label: "Organizações", href: "/configuracoes/organizacoes", icon: Building2, description: "Trocar ou criar organizações" },
       { label: "Permissões", href: "#", icon: Shield, description: "Controle de acesso" },
     ],
   },

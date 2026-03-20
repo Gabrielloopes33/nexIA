@@ -1,10 +1,11 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { ConversationsPanel } from "@/components/conversations/conversations-panel"
 import { ChatWindow } from "@/components/chat-window"
 import { CustomerContextPanel } from "@/components/customer-context-panel"
+import { NewConversationModal } from "@/components/conversations/new-conversation-modal"
 import { useConversasPage } from "@/lib/hooks/use-conversas-page"
 import { Conversation } from "@/lib/types/conversation"
 import { Inbox } from "lucide-react"
@@ -60,6 +61,8 @@ function ConversasPageShellContent({
     isLoading,
     error,
   } = useConversasPage({ filterFn, basePath })
+  
+  const [isNewConversationOpen, setIsNewConversationOpen] = useState(false)
 
   const isEmpty = !isLoading && conversations.length === 0
 
@@ -75,6 +78,13 @@ function ConversasPageShellContent({
           conversations={conversations}
           selectedId={selectedConversation}
           onSelect={handleSelectConversation}
+          onNewConversation={() => setIsNewConversationOpen(true)}
+        />
+        
+        {/* New Conversation Modal */}
+        <NewConversationModal
+          open={isNewConversationOpen}
+          onOpenChange={setIsNewConversationOpen}
         />
 
         {/* Chat Window */}

@@ -3,8 +3,16 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LeadScoreBadge } from "./LeadScoreBadge";
-import { formatCurrency, formatDistanceToNow } from "@/lib/utils";
-import { Calendar, DollarSign, MessageSquare, User } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { Calendar, DollarSign, MessageSquare, MoreVertical, Pencil, Trash2, GripVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface DealCardProps {
   deal: {
@@ -25,9 +33,22 @@ interface DealCardProps {
     updatedAt: string;
   };
   onClick?: () => void;
+  onEdit?: (e: React.MouseEvent) => void;
+  onDelete?: (e: React.MouseEvent) => void;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  isDragging?: boolean;
 }
 
-export function DealCard({ deal, onClick }: DealCardProps) {
+export function DealCard({ 
+  deal, 
+  onClick, 
+  onEdit, 
+  onDelete, 
+  draggable = false,
+  onDragStart,
+  isDragging = false
+}: DealCardProps) {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "HIGH":
@@ -52,17 +73,57 @@ export function DealCard({ deal, onClick }: DealCardProps) {
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow border-l-4"
+      draggable={draggable}
+      onDragStart={onDragStart}
+      className={cn(
+        "cursor-pointer hover:shadow-md transition-all border-l-4 group relative",
+        draggable && "cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50 rotate-2 scale-105 shadow-xl ring-2 ring-[#46347F]/30"
+      )}
       style={{ borderLeftColor: deal.leadScore >= 60 ? "#10b981" : "#3b82f6" }}
       onClick={onClick}
     >
       <CardContent className="p-3">
         {/* Header */}
         <div className="flex items-start justify-between mb-2">
+          {draggable && (
+            <div className="mr-2 text-muted-foreground/50">
+              <GripVertical className="h-4 w-4" />
+            </div>
+          )}
           <h4 className="font-medium text-sm line-clamp-2 flex-1 mr-2">
             {deal.title}
           </h4>
-          <LeadScoreBadge score={deal.leadScore} className="shrink-0" />
+          <div className="flex items-center gap-1">
+            <LeadScoreBadge score={deal.leadScore} className="shrink-0" />
+            
+            {/* Menu de Ações - 3 Pontinhos */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={onEdit}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={onDelete}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Value */}

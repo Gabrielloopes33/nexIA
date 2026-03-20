@@ -9,7 +9,7 @@ import { requireAuth } from '@/lib/auth/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
     const { searchParams } = new URL(request.url);
 
     const period = searchParams.get('period') || '7d';

@@ -364,7 +364,9 @@ export async function requirePermission(
   request: NextRequest,
   permission: Permission
 ): Promise<CurrentMember> {
+  console.log('[RBAC] Checking permission:', permission);
   const member = await getCurrentMember(request);
+  console.log('[RBAC] Member:', member);
 
   if (!member) {
     throw new PermissionError('Membro não encontrado na organização', 404);
@@ -381,6 +383,7 @@ export async function requirePermission(
     );
   }
 
+  console.log('[RBAC] Permission granted');
   return member;
 }
 

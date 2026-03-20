@@ -97,7 +97,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const organizationId = await getOrganizationId();
     const { id } = await params;
     const body = await request.json();
-    const { stageId, status, title, description, value, priority, expectedCloseDate, metadata } = body;
+    const { stageId, contactId, status, title, description, value, priority, expectedCloseDate, metadata } = body;
 
     // Get current deal to check stage change
     const currentDeal = await prisma.deal.findUnique({
@@ -125,10 +125,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       where: { id },
       data: {
         ...(stageId && { stageId }),
+        ...(contactId && { contactId }),
         ...(status && { status: status as DealStatus }),
         ...(title && { title }),
         ...(description !== undefined && { description }),
-        ...(value !== undefined && { amount: value }),
+        ...(value !== undefined && { value }),
         ...(priority && { priority: priority as DealPriority }),
         ...(expectedCloseDate && { expectedCloseDate: new Date(expectedCloseDate) }),
         ...(metadata && { metadata }),

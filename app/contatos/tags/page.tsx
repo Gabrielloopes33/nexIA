@@ -61,8 +61,14 @@ const UTM_MEDIUMS = [
 ]
 
 export default function TagsPage() {
-  const organizationId = useOrganizationId() ?? ''
-  const { tags, isLoading, createTag, updateTag, deleteTag } = useTags(organizationId)
+  const organizationId = useOrganizationId()
+  const { tags, isLoading, createTag, updateTag, deleteTag, error } = useTags(organizationId)
+  
+  // Debug logs
+  console.log('[TagsPage] organizationId:', organizationId)
+  console.log('[TagsPage] isLoading:', isLoading)
+  console.log('[TagsPage] tags count:', tags.length)
+  console.log('[TagsPage] error:', error)
   const [searchQuery, setSearchQuery] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
@@ -103,18 +109,26 @@ export default function TagsPage() {
   const handleSaveTag = async () => {
     if (!formData.name) return
 
+    let success = false
     if (editingTag) {
-      await updateTag(editingTag.id, {
+      const result = await updateTag(editingTag.id, {
         name: formData.name,
         color: formData.color,
       })
+      success = !!result
     } else {
-      await createTag({
+      const result = await createTag({
         name: formData.name,
         color: formData.color || "#46347F",
       })
+      success = !!result
     }
-    setIsDialogOpen(false)
+    
+    if (success) {
+      setIsDialogOpen(false)
+    } else {
+      alert(error || 'Erro ao salvar tag. Verifique se você tem permissão ou se a tag já existe.')
+    }
   }
 
   const handleDeleteTag = async (tagId: string) => {
@@ -125,17 +139,17 @@ export default function TagsPage() {
 
   const colorOptions = [
     "#46347F",
-    "#46347F",
-    "#46347F",
-    "#46347F",
-    "#46347F",
-    "#46347F",
-    "#46347F",
-    "#46347F",
     "#E57373",
     "#81C784",
     "#64B5F6",
     "#FFB74D",
+    "#9575CD",
+    "#4DB6AC",
+    "#FF8A65",
+    "#90A4AE",
+    "#F06292",
+    "#A1887F",
+    "#7986CB",
   ]
 
   return (
@@ -159,6 +173,7 @@ export default function TagsPage() {
           <Button
             onClick={handleCreateTag}
             className="gap-2 bg-[#46347F] hover:bg-[#46347F]"
+            disabled={!organizationId}
           >
             <Plus className="h-4 w-4" />
             Adicionar Tag
@@ -177,6 +192,14 @@ export default function TagsPage() {
             />
           </div>
         </div>
+
+        {/* Error State - No Organization */}
+        {!organizationId && !isLoading && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">
+            <p className="font-medium">Organização não encontrada</p>
+            <p className="text-sm">Você precisa estar em uma organização para gerenciar tags.</p>
+          </div>
+        )}
 
         {/* Loading State */}
         {isLoading && (
@@ -366,7 +389,6 @@ export default function TagsPage() {
                       <SelectValue placeholder="Selecione a origem" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
                       {UTM_SOURCES.map((source) => (
                         <SelectItem key={source.value} value={source.value}>
                           {source.label}
@@ -388,7 +410,6 @@ export default function TagsPage() {
                       <SelectValue placeholder="Selecione o meio" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
                       {UTM_MEDIUMS.map((medium) => (
                         <SelectItem key={medium.value} value={medium.value}>
                           {medium.label}

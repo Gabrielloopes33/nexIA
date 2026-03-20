@@ -12,6 +12,7 @@ import {
   Eye,
   Users,
   X,
+  Loader2,
 } from "lucide-react"
 
 import { Sidebar } from "@/components/sidebar"
@@ -43,26 +44,27 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { useContacts } from "@/hooks/use-contacts"
+import { useSegments, type SegmentRule } from "@/hooks/use-segments"
 import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 // Types defined locally
 type RuleField = "nome" | "email" | "telefone" | "status" | "tags" | "origem"
 type RuleOperator = "equals" | "contains" | "startsWith" | "endsWith" | "notEquals"
 
-interface SegmentRule {
+interface LocalSegmentRule {
   id: string
   field: RuleField
   operator: RuleOperator
   value: string
 }
 
-interface Segment {
+interface LocalSegment {
   id: string
   nome: string
   descricao?: string
   cor: string
   operador: "AND" | "OR"
-  regras: SegmentRule[]
+  regras: LocalSegmentRule[]
   contatosCount: number
   criadoEm: string
   atualizadoEm: string
@@ -119,14 +121,14 @@ function generateRuleId(): string {
   return `rule-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
 
-function getRuleDisplayText(rule: SegmentRule): string {
+function getRuleDisplayText(rule: LocalSegmentRule): string {
   const field = RULE_FIELDS.find((f) => f.value === rule.field)?.label || rule.field
   const operator = RULE_OPERATORS.find((o) => o.value === rule.operator)?.label || rule.operator
   return `${field} ${operator} ${rule.value}`
 }
 
 // Simple evaluation function for preview
-function evaluateContact(contact: any, rules: SegmentRule[], operator: "AND" | "OR"): boolean {
+function evaluateContact(contact: any, rules: LocalSegmentRule[], operator: "AND" | "OR"): boolean {
   if (rules.length === 0) return false
 
   const results = rules.map(rule => {
@@ -148,21 +150,21 @@ function evaluateContact(contact: any, rules: SegmentRule[], operator: "AND" | "
 }
 
 export default function SegmentosPage() {
-  const organizationId = useOrganizationId() ?? ''
-  const { contacts } = useContacts(organizationId)
+  const organizationId = useOrganizationId()
+  const { contacts } = useContacts(organizationId ?? '')
+  const { segments: apiSegments, isLoading, createSegment, updateSegment, deleteSegment } = useSegments(organizationId)
 
-  const [segments, setSegments] = useState<Segment[]>(INITIAL_SEGMENTS)
   const [search, setSearch] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingSegment, setEditingSegment] = useState<Segment | null>(null)
+  const [editingSegment, setEditingSegment] = useState<LocalSegment | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [segmentToDelete, setSegmentToDelete] = useState<Segment | null>(null)
+  const [segmentToDelete, setSegmentToDelete] = useState<LocalSegment | null>(null)
   const [formData, setFormData] = useState({
     nome: "",
     descricao: "",
     cor: SEGMENT_COLORS[0],
     operador: "AND" as "AND" | "OR",
-    regras: [] as SegmentRule[],
+    regras: [] as LocalSegmentRule[],
   })
   const [newRule, setNewRule] = useState<{
     field: RuleField | ""
@@ -170,6 +172,22 @@ export default function SegmentosPage() {
     value: string
   }>({ field: "", operator: "", value: "" })
   const [showRuleForm, setShowRuleForm] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Convert API segments to local format
+  const segments: LocalSegment[] = useMemo(() => {
+    return apiSegments.map(s => ({
+      id: s.id,
+      nome: s.name,
+      descricao: s.description || undefined,
+      cor: s.color || '#46347F',
+      operador: (s.operator as "AND" | "OR") || 'AND',
+      regras: (s.rules as LocalSegmentRule[]) || [],
+      contatosCount: s.contactCount,
+      criadoEm: s.createdAt,
+      atualizadoEm: s.updatedAt,
+    }))
+  }, [apiSegments])
 
   const filteredSegments = useMemo(() => {
     return segments.filter((segment) =>
@@ -217,46 +235,39 @@ export default function SegmentosPage() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.nome.trim()) return
-
-    if (editingSegment) {
-      setSegments((prev) =>
-        prev.map((s) =>
-          s.id === editingSegment.id
-            ? {
-                ...s,
-                nome: formData.nome,
-                descricao: formData.descricao,
-                cor: formData.cor,
-                operador: formData.operador,
-                regras: formData.regras,
-                contatosCount: previewCount,
-                atualizadoEm: new Date().toISOString(),
-              }
-            : s
-        )
-      )
-    } else {
-      const newSegment: Segment = {
-        id: generateId(),
-        nome: formData.nome,
-        descricao: formData.descricao,
-        cor: formData.cor,
-        operador: formData.operador,
-        regras: formData.regras,
-        contatosCount: previewCount,
-        criadoEm: new Date().toISOString(),
-        atualizadoEm: new Date().toISOString(),
+    
+    setIsSaving(true)
+    try {
+      if (editingSegment) {
+        await updateSegment(editingSegment.id, {
+          name: formData.nome,
+          description: formData.descricao,
+          color: formData.cor,
+          operator: formData.operador,
+          rules: formData.regras as SegmentRule[],
+          contactCount: previewCount,
+        })
+      } else {
+        await createSegment({
+          name: formData.nome,
+          description: formData.descricao,
+          color: formData.cor,
+          operator: formData.operador,
+          rules: formData.regras as SegmentRule[],
+          contactCount: previewCount,
+        })
       }
-      setSegments((prev) => [...prev, newSegment])
+      setIsDialogOpen(false)
+    } finally {
+      setIsSaving(false)
     }
-    setIsDialogOpen(false)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (segmentToDelete) {
-      setSegments((prev) => prev.filter((s) => s.id !== segmentToDelete.id))
+      await deleteSegment(segmentToDelete.id)
       setIsDeleteDialogOpen(false)
       setSegmentToDelete(null)
     }
@@ -308,8 +319,13 @@ export default function SegmentosPage() {
           <Button
             onClick={handleCreateClick}
             className="bg-[#46347F] hover:bg-[#46347F] text-white"
+            disabled={!organizationId || isLoading}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
             Criar Segmento
           </Button>
         </div>
@@ -329,8 +345,23 @@ export default function SegmentosPage() {
           </div>
         </div>
 
+        {/* Error State - No Organization */}
+        {!organizationId && !isLoading && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">
+            <p className="font-medium">Organização não encontrada</p>
+            <p className="text-sm">Você precisa estar em uma organização para gerenciar segmentos.</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+          </div>
+        )}
+
         {/* Grid or Empty State */}
-        {filteredSegments.length === 0 ? (
+        {!isLoading && filteredSegments.length === 0 ? (
           <Card className="rounded-sm border border-border bg-white py-12">
             <CardContent className="flex flex-col items-center justify-center p-0">
               <Layers className="h-12 w-12 text-muted-foreground mb-4" />
@@ -341,6 +372,7 @@ export default function SegmentosPage() {
               <Button
                 onClick={handleCreateClick}
                 className="bg-[#46347F] hover:bg-[#46347F] text-white"
+                disabled={!organizationId}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Criar Segmento
@@ -682,9 +714,15 @@ export default function SegmentosPage() {
               <Button
                 onClick={handleSave}
                 className="bg-[#46347F] hover:bg-[#46347F] text-white"
-                disabled={!formData.nome.trim()}
+                disabled={!formData.nome.trim() || isSaving}
               >
-                {editingSegment ? "Salvar" : "Criar Segmento"}
+                {isSaving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : editingSegment ? (
+                  "Salvar"
+                ) : (
+                  "Criar Segmento"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -1,7 +1,6 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { getSessionPayload, getOrganizationIdFromSession, isAuthenticated } from "@/lib/auth/client"
 
 interface Organization {
   id: string
@@ -22,52 +21,70 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(u
 /**
  * Provider de contexto de organização.
  * 
- * Este provider obtém o organizationId do cookie JWT (client-side) e busca
- * os detalhes da organização via API apenas quando necessário.
+ * Busca a organização do usuário autenticado via API.
+ * Se o usuário não tiver organização, tenta fazer refresh da sessão.
  */
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchOrganization = useCallback(async () => {
+  const fetchOrganization = useCallback(async (attemptRefresh = true): Promise<void> => {
     try {
       setIsLoading(true)
       setError(null)
 
-      // Verifica se o usuário está autenticado via JWT no cookie
-      if (!isAuthenticated()) {
+      // Busca a organização via API (o cookie httpOnly é enviado automaticamente)
+      const response = await fetch("/api/organization/me", {
+        credentials: 'same-origin'
+      })
+
+      if (response.ok) {
+        const org = await response.json()
+        setOrganization(org)
+        return
+      }
+
+      // Se não tem organização (404) e ainda não tentou refresh
+      if (response.status === 404 && attemptRefresh) {
+        console.log('[OrganizationContext] Organização não encontrada, tentando refresh da sessão...')
+        
+        try {
+          const refreshResponse = await fetch('/api/auth/refresh-session', { 
+            method: 'POST',
+            credentials: 'same-origin'
+          })
+          
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json()
+            console.log('[OrganizationContext] Sessão atualizada:', refreshData)
+            
+            // Tenta buscar a organização novamente (sem tentar refresh de novo)
+            await fetchOrganization(false)
+            return
+          } else {
+            const errorData = await refreshResponse.json().catch(() => ({}))
+            console.log('[OrganizationContext] Refresh falhou:', errorData)
+          }
+        } catch (refreshError) {
+          console.error('[OrganizationContext] Erro no refresh:', refreshError)
+        }
+        
+        // Se chegou aqui, não conseguiu obter organização mesmo após refresh
+        setOrganization(null)
+        setError(new Error("Usuário não possui organização associada. Contate o administrador."))
+        return
+      }
+
+      if (response.status === 401) {
         setOrganization(null)
         setError(new Error("Usuário não autenticado"))
         return
       }
 
-      // Obtém o organizationId do payload JWT (client-side, sem fetch)
-      const organizationId = getOrganizationIdFromSession()
-
-      if (!organizationId) {
-        setOrganization(null)
-        setError(new Error("Organização não encontrada para o usuário"))
-        return
-      }
-
-      // Busca detalhes da organização via API
-      // Isso garante que temos os dados mais atualizados e valida no servidor
-      const response = await fetch("/api/organization/me")
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Usuário não autenticado")
-        }
-        if (response.status === 404) {
-          throw new Error("Organização não encontrada para o usuário")
-        }
-        throw new Error("Erro ao carregar organização")
-      }
-
-      const org = await response.json()
-      setOrganization(org)
+      throw new Error("Erro ao carregar organização")
     } catch (err) {
+      console.error('[OrganizationContext] Erro:', err)
       setError(err instanceof Error ? err : new Error("Erro desconhecido"))
       setOrganization(null)
     } finally {
@@ -78,28 +95,25 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     fetchOrganization()
 
-    // Atualiza quando o cookie mudar (outra aba/login/logout)
-    const handleStorageChange = () => {
-      fetchOrganization()
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    
-    // Também verifica periodicamente se o token mudou
-    const interval = setInterval(() => {
-      const currentOrgId = organization?.id
-      const newOrgId = getOrganizationIdFromSession()
-      
-      if (newOrgId !== currentOrgId) {
+    // Atualiza quando a aba ganha foco (pode ter mudado em outra aba)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
         fetchOrganization()
       }
-    }, 5000) // Verifica a cada 5 segundos
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Também verifica periodicamente
+    const interval = setInterval(() => {
+      fetchOrganization()
+    }, 30000) // Verifica a cada 30 segundos
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       clearInterval(interval)
     }
-  }, [fetchOrganization, organization?.id])
+  }, [fetchOrganization])
 
   return (
     <OrganizationContext.Provider
@@ -107,7 +121,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         organization,
         isLoading,
         error,
-        refreshOrganization: fetchOrganization,
+        refreshOrganization: () => fetchOrganization(),
       }}
     >
       {children}
@@ -120,19 +134,6 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
  * 
  * @returns O contexto com organization, isLoading, error e refreshOrganization
  * @throws Erro se usado fora do OrganizationProvider
- * 
- * @example
- * ```tsx
- * function MyComponent() {
- *   const { organization, isLoading, error } = useOrganization()
- *   
- *   if (isLoading) return <Loading />
- *   if (error) return <Error message={error.message} />
- *   if (!organization) return <NotFound />
- *   
- *   return <div>{organization.name}</div>
- * }
- * ```
  */
 export function useOrganization() {
   const context = useContext(OrganizationContext)
@@ -155,17 +156,6 @@ export function useOrganization() {
  * Hook conveniente para obter apenas o ID da organização.
  * 
  * @returns O ID da organização ou null se não estiver carregado
- * 
- * @example
- * ```tsx
- * function MyComponent() {
- *   const orgId = useOrganizationId()
- *   
- *   if (!orgId) return <Loading />
- *   
- *   return <div>Org ID: {orgId}</div>
- * }
- * ```
  */
 export function useOrganizationId(): string | null {
   const { organization, isLoading } = useOrganization()

@@ -93,12 +93,12 @@ export function Sidebar() {
       {/* Main sidebar container */}
       <div
         className={cn(
-          "flex flex-1 flex-col rounded-sm bg-[#46347F] py-4 border-r-2 border-white/20 relative px-2 items-stretch shadow-[4px_0_24px_rgba(0,0,0,0.18)]",
+          "flex flex-1 flex-col rounded-sm bg-[#46347F] py-4 border-r-2 border-white/20 relative px-2 items-stretch shadow-[4px_0_24px_rgba(0,0,0,0.18)] overflow-hidden",
           isReady && "transition-all duration-300 ease-in-out"
         )}
       >
         {/* Top navigation */}
-        <nav className="flex flex-1 flex-col gap-1 w-full items-stretch overflow-y-auto">
+        <nav className="flex flex-1 flex-col gap-1 w-full items-stretch overflow-y-auto sidebar-scroll">
           {topNavItems.map((item) => {
             const isItemActive =
               pathname === item.href ||

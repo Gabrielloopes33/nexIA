@@ -128,8 +128,6 @@ export interface Conversation {
   starred?: boolean
   /** Foi arquivada */
   archived?: boolean
-  /** Usuário foi mencionado em nota interna */
-  mentioned?: boolean
   /** ID da equipe responsável */
   teamId?: "sales" | "support" | null
 }

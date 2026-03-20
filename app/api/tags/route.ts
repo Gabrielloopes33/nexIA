@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { 
-  getOrganizationId, 
+  getAuthenticatedUser, 
   AuthError, 
   createAuthErrorResponse 
 } from '@/lib/auth/helpers';
@@ -21,7 +21,31 @@ import {
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    const organizationId = await getOrganizationId();
+    console.log('[Tags API] GET request received');
+    
+    // Busca usuário autenticado e depois a organização do banco
+    // (pois o cookie pode estar desatualizado)
+    const user = await getAuthenticatedUser();
+    console.log('[Tags API] User authenticated:', user.userId, 'org:', user.organizationId);
+    
+    let organizationId = user.organizationId;
+    
+    // Se não tem organizationId no cookie, busca do banco
+    if (!organizationId) {
+      console.log('[Tags API] No org in cookie, fetching from DB...');
+      const membership = await prisma.organizationMember.findFirst({
+        where: { userId: user.userId, status: 'ACTIVE' },
+        select: { organizationId: true },
+      });
+      
+      if (!membership) {
+        console.log('[Tags API] No membership found');
+        throw new AuthError('Usuário não possui organização', 403);
+      }
+      
+      organizationId = membership.organizationId;
+      console.log('[Tags API] Found org in DB:', organizationId);
+    }
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -85,7 +109,9 @@ export const POST = withPermission(
   'tags:manage',
   async (request: NextRequest, member) => {
     try {
+      console.log('[Tags API] POST - Member:', member.userId, 'Role:', member.role, 'Org:', member.organizationId);
       const body = await request.json();
+      console.log('[Tags API] POST - Body:', body);
       const { 
         name, 
         color,

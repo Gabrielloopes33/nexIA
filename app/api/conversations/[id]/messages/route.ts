@@ -15,7 +15,7 @@ interface Params {
 // GET /api/conversations/[id]/messages?limit=50&before=
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 // POST /api/conversations/[id]/messages - Enviar mensagem
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
     const { id } = await params;
     const body = await request.json();
 
