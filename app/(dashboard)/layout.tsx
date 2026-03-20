@@ -17,12 +17,12 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar - 280px */}
-      <aside className="w-[280px] flex-shrink-0 bg-white border-r">
+      <aside className="w-[280px] flex-shrink-0 bg-white">
         <Sidebar />
       </aside>
       
       {/* KPI Column - 100px */}
-      <div className="w-[100px] flex-shrink-0 bg-white border-r">
+      <div className="w-[100px] flex-shrink-0 bg-white">
         <KpiColumn />
       </div>
       
