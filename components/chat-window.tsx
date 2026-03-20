@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Send, Bot, User, Phone, MoreHorizontal, Clock, Tag, UserPlus, AlertCircle, Star } from "lucide-react"
+import { Send, Bot, User, Phone, MoreHorizontal, Clock, Tag, AlertCircle, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Conversation } from "@/lib/types/conversation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { AssignConversationDialog } from "@/components/conversations/assign-conversation-dialog"
 
 const mockMessages: Record<string, { id: string; from: "user" | "agent" | "bot"; text: string; time: string }[]> = {
   "1": [
@@ -141,9 +142,10 @@ export function ChatWindow({ conversation }: Props) {
           <div className="h-4 w-px bg-border mx-1" />
 
           {/* Action Buttons */}
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <UserPlus className="h-4 w-4" />
-          </Button>
+          <AssignConversationDialog
+            conversationId={conversation.id}
+            currentAssignee={conversation.assignedTo}
+          />
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <Tag className="h-4 w-4" />
           </Button>

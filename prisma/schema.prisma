@@ -100,6 +100,9 @@ model Contact {
   deletedAt         DateTime?     @map("deleted_at")
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
+  contactTags       ContactTag[]
+  listContacts      ListContact[]
+  deals             Deal[]
 
   @@unique([organizationId, phone])
   @@index([organizationId])
@@ -146,6 +149,7 @@ model PipelineStage {
   createdAt      DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  deals          Deal[]
 
   @@map("pipeline_stages")
 }
@@ -187,6 +191,8 @@ model Deal {
   tags              String[]               @default([])
   closedLostAt      DateTime?              @map("closed_lost_at") @db.Timestamp(6)
   stageHistory      PipelineStageHistory[]
+  contact           Contact                @relation(fields: [contactId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stage             PipelineStage          @relation(fields: [stageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([organizationId])
   @@index([status])
@@ -287,16 +293,75 @@ model Schedule {
   @@map("schedules")
 }
 
+/// Transcription - Transcrições de chamadas e áudios analisados pela IA
+model Transcription {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId   String              @map("organization_id") @db.Uuid
+  contactId        String?             @map("contact_id") @db.Uuid
+  conversationId   String?             @map("conversation_id") @db.Uuid
+  source           TranscriptionSource
+  sourceId         String?             @map("source_id")
+  title            String?
+  duration         Int?                // segundos
+  status           TranscriptionStatus @default(PENDING)
+  transcript       String?
+  summary          String?
+  sentiment        String?
+  sentimentScore   Float?              @map("sentiment_score")
+  objections       Json?
+  keyTopics        String[]            @default([]) @map("key_topics")
+  actionItems      String[]            @default([]) @map("action_items")
+  converted        Boolean?            @default(false)
+  resolutionDays   Int?                @map("resolution_days")
+  audioUrl         String?             @map("audio_url")
+  audioSize        Int?                @map("audio_size")
+  audioFormat      String?             @map("audio_format")
+  recordedAt       DateTime?           @map("recorded_at")
+  processedAt      DateTime?           @map("processed_at")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([status])
+  @@index([source])
+  @@map("transcriptions")
+}
+
+/// SchedulingQueue - Fila de leads aguardando agendamento
+model SchedulingQueue {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  contactId      String              @map("contact_id") @db.Uuid
+  tagId          String?             @map("tag_id") @db.Uuid
+  source         String              @default("manual") // webhook, manual, chatbot
+  priority       Int                 @default(0) // 0-10, maior = mais prioritário
+  status         QueueStatus         @default(WAITING)
+  notes          String?
+  assignedTo     String?             @map("assigned_to") @db.Uuid
+  scheduledAt    DateTime?           @map("scheduled_at")
+  completedAt    DateTime?           @map("completed_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @default(now()) @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([priority])
+  @@index([contactId])
+  @@map("scheduling_queue")
+}
+
 /// Tag - Tags para categorização de contatos
 model Tag {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
-  name           String   @db.VarChar(100)
-  color          String   @default("#6366f1") @db.VarChar(20)
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  name           String       @db.VarChar(100)
+  color          String       @default("#6366f1") @db.VarChar(20)
   description    String?
-  source         String   @default("manual") @db.VarChar(50)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  source         String       @default("manual") @db.VarChar(50)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+  contactTags    ContactTag[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -309,6 +374,8 @@ model ContactTag {
   tagId      String   @map("tag_id") @db.Uuid
   assignedAt DateTime @default(now()) @map("assigned_at")
   assignedBy String?  @map("assigned_by") @db.Uuid
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([contactId, tagId])
   @@map("contact_tags")
@@ -316,17 +383,18 @@ model ContactTag {
 
 /// List - Listas de contatos (estáticas ou dinâmicas)
 model List {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
-  name           String   @db.VarChar(200)
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  name           String        @db.VarChar(200)
   description    String?
-  color          String   @default("#46347F") @db.VarChar(7)
-  filters        Json     @default("{}")
-  isDynamic      Boolean  @default(false) @map("is_dynamic")
-  contactCount   Int      @default(0) @map("contact_count")
-  createdBy      String?  @map("created_by") @db.Uuid
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  color          String        @default("#46347F") @db.VarChar(7)
+  filters        Json          @default("{}")
+  isDynamic      Boolean       @default(false) @map("is_dynamic")
+  contactCount   Int           @default(0) @map("contact_count")
+  createdBy      String?       @map("created_by") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  listContacts   ListContact[]
 
   @@map("lists")
 }
@@ -337,6 +405,8 @@ model ListContact {
   contactId String   @map("contact_id") @db.Uuid
   addedAt   DateTime @default(now()) @map("added_at")
   addedBy   String?  @map("added_by") @db.Uuid
+  list      List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@id([listId, contactId])
   @@map("list_contacts")
@@ -348,6 +418,8 @@ model Segment {
   organizationId   String    @map("organization_id") @db.Uuid
   name             String    @db.VarChar(200)
   description      String?
+  color            String    @default("#46347F") @db.VarChar(20)
+  operator         String    @default("AND") @db.VarChar(10)
   rules            Json      @default("[]")
   contactCount     Int       @default(0) @map("contact_count")
   lastCalculatedAt DateTime? @map("last_calculated_at")
@@ -628,6 +700,14 @@ enum TranscriptionStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum QueueStatus {
+  WAITING
+  IN_PROGRESS
+  SCHEDULED
+  COMPLETED
+  CANCELLED
 }
 
 enum TranscriptionSource {

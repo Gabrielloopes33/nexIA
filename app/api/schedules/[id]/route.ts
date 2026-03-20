@@ -112,29 +112,6 @@ export async function GET(
 
     const schedule = await prisma.schedule.findUnique({
       where: { id },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
-        },
-        deal: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
     });
 
     if (!schedule) {
@@ -143,10 +120,26 @@ export async function GET(
         { status: 404 }
       );
     }
+    
+    // Buscar relações
+    const [contact, deal, assignee] = await Promise.all([
+      schedule.contactId ? prisma.contact.findUnique({
+        where: { id: schedule.contactId },
+        select: { id: true, name: true, phone: true, avatarUrl: true },
+      }) : null,
+      schedule.dealId ? prisma.deal.findUnique({
+        where: { id: schedule.dealId },
+        select: { id: true, title: true },
+      }) : null,
+      schedule.assignedTo ? prisma.user.findUnique({
+        where: { id: schedule.assignedTo },
+        select: { id: true, name: true, email: true },
+      }) : null,
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: schedule,
+      data: { ...schedule, contact, deal, assignee },
     });
   } catch (error) {
     console.error('Error fetching schedule:', error);
@@ -252,7 +245,7 @@ export async function PATCH(
       completedAt = null;
     }
 
-    const schedule = await prisma.schedule.update({
+    const updatedSchedule = await prisma.schedule.update({
       where: { id },
       data: {
         type: type || undefined,
@@ -267,34 +260,27 @@ export async function PATCH(
         status: status || undefined,
         completedAt,
       },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
-        },
-        deal: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
     });
+    
+    // Buscar relações
+    const [contact, deal, assignee] = await Promise.all([
+      updatedSchedule.contactId ? prisma.contact.findUnique({
+        where: { id: updatedSchedule.contactId },
+        select: { id: true, name: true, phone: true, avatarUrl: true },
+      }) : null,
+      updatedSchedule.dealId ? prisma.deal.findUnique({
+        where: { id: updatedSchedule.dealId },
+        select: { id: true, title: true },
+      }) : null,
+      updatedSchedule.assignedTo ? prisma.user.findUnique({
+        where: { id: updatedSchedule.assignedTo },
+        select: { id: true, name: true, email: true },
+      }) : null,
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: schedule,
+      data: { ...updatedSchedule, contact, deal, assignee },
     });
   } catch (error) {
     console.error('Error updating schedule:', error);

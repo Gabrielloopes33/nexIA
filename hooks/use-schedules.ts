@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useOrganizationId } from '@/lib/contexts/organization-context'
 import { ScheduleType, ScheduleStatus } from '@prisma/client'
 
@@ -131,7 +131,8 @@ export function useSchedules(
     } finally {
       setIsLoading(false)
     }
-  }, [effectiveOrgId, buildQueryString])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveOrgId, filters?.type, filters?.status, filters?.startDate, filters?.endDate])
 
   const createSchedule = async (scheduleData: CreateScheduleData): Promise<Schedule | null> => {
     if (!effectiveOrgId) return null
@@ -220,9 +221,19 @@ export function useSchedules(
     }
   }
 
+  // Create a stable filter key based on filter values (not object reference)
+  const filterKey = `${effectiveOrgId || ''}:${filters?.type || ''}:${filters?.status || ''}:${filters?.startDate || ''}:${filters?.endDate || ''}`
+  
+  // Track the last fetched key to prevent duplicate fetches
+  const lastFetchedKey = useRef<string | null>(null)
+  
   useEffect(() => {
-    fetchSchedules()
-  }, [fetchSchedules])
+    if (effectiveOrgId && filterKey !== lastFetchedKey.current) {
+      fetchSchedules()
+      lastFetchedKey.current = filterKey
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey, effectiveOrgId])
 
   return {
     schedules,

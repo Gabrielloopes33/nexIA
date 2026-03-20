@@ -8,6 +8,9 @@ import {
   Store,
   Settings,
   LucideIcon,
+  Headphones,
+  ListTodo,
+  Phone,
 } from "lucide-react"
 
 export interface SidebarNavChild {
@@ -75,7 +78,8 @@ export const topNavItems: SidebarNavItem[] = [
     icon: MessageSquare,
     children: [
       { label: "Todas", href: "/conversas", section: "Principal" },
-      { label: "Menções", href: "/conversas/mentions", section: "Principal" },
+      { label: "Minhas", href: "/conversas/minhas", section: "Principal" },
+      { label: "Não Atribuídas", href: "/conversas/nao-atribuidas", section: "Principal" },
       { label: "Não Atendidas", href: "/conversas/unattended", section: "Principal" },
       { label: "Prioridade", href: "/conversas/folders/priority", section: "Pastas" },
       { label: "Leads", href: "/conversas/folders/leads", section: "Pastas" },
@@ -98,10 +102,12 @@ export const topNavItems: SidebarNavItem[] = [
     icon: Calendar,
     children: [
       { label: "Visão Geral", href: "/agendamentos", section: "Principal" },
+      { label: "Fila de Atendimento", href: "/agendamentos/fila", section: "Principal", badge: 0 },
+      { label: "Histórico de Calls", href: "/agendamentos/calls", section: "Principal" },
       { label: "Concluídas", href: "/agendamentos/concluidas", section: "Principal", badge: 0 },
       { label: "Ligações", href: "/agendamentos/ligacoes", section: "Tipos" },
       { label: "Reuniões", href: "/agendamentos/reunioes", section: "Tipos" },
-      { label: "Tarefas", href: "/agendamentos", section: "Tipos" },
+      { label: "Tarefas", href: "/agendamentos/tarefas", section: "Tipos" },
       { label: "Prazos", href: "/agendamentos/prazos", section: "Tipos" },
     ],
   },
@@ -148,6 +154,7 @@ export const topNavItems: SidebarNavItem[] = [
       { label: "Perfil", href: "/configuracoes/perfil", section: "Conta" },
       { label: "Empresa", href: "/configuracoes/empresa", section: "Conta" },
       { label: "Usuários", href: "/configuracoes/usuarios", section: "Conta" },
+      { label: "Organizações", href: "/configuracoes/organizacoes", section: "Conta" },
       // Assinaturas (antiga Cobranças)
       { label: "Visão Geral", href: "/configuracoes/assinaturas", section: "Assinaturas" },
       { label: "Assinaturas", href: "/configuracoes/assinaturas/assinaturas", section: "Assinaturas" },

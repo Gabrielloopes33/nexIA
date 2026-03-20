@@ -16,30 +16,14 @@ interface Params {
 // GET /api/transcriptions/[id]
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) return user;
     const { id } = await params;
 
     const transcription = await prisma.transcription.findFirst({
       where: {
         id,
         organizationId: user.organization.id,
-      },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
-        },
-        conversation: {
-          select: {
-            id: true,
-            status: true,
-            lastMessageAt: true,
-          },
-        },
       },
     });
 
@@ -49,10 +33,16 @@ export async function GET(request: NextRequest, { params }: Params) {
         { status: 404 }
       );
     }
+    
+    // Buscar contato
+    const contact = transcription.contactId ? await prisma.contact.findUnique({
+      where: { id: transcription.contactId },
+      select: { id: true, name: true, phone: true, avatarUrl: true },
+    }) : null;
 
     return NextResponse.json({
       success: true,
-      data: transcription,
+      data: { ...transcription, contact },
     });
   } catch (error) {
     console.error('Transcription GET Error:', error);
@@ -66,7 +56,8 @@ export async function GET(request: NextRequest, { params }: Params) {
 // PATCH /api/transcriptions/[id] - Atualizar transcrição
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) return user;
     const { id } = await params;
     const body = await request.json();
 
@@ -118,20 +109,17 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const transcription = await prisma.transcription.update({
       where: { id },
       data: updateData,
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
-      },
     });
+    
+    // Buscar contato
+    const contact = transcription.contactId ? await prisma.contact.findUnique({
+      where: { id: transcription.contactId },
+      select: { id: true, name: true, phone: true, avatarUrl: true },
+    }) : null;
 
     return NextResponse.json({
       success: true,
-      data: transcription,
+      data: { ...transcription, contact },
     });
   } catch (error) {
     console.error('Transcription PATCH Error:', error);
@@ -145,7 +133,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 // DELETE /api/transcriptions/[id]
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) return user;
     const { id } = await params;
 
     // Verifica se existe

@@ -35,31 +35,35 @@ export async function GET(request: NextRequest) {
     const [transcriptions, total] = await Promise.all([
       prisma.transcription.findMany({
         where,
-        include: {
-          contact: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              avatarUrl: true,
-            },
-          },
-        },
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset,
       }),
       prisma.transcription.count({ where }),
     ]);
+    
+    // Buscar contatos em batch
+    const contactIds = transcriptions.map(t => t.contactId).filter(Boolean) as string[];
+    const contacts = await prisma.contact.findMany({
+      where: { id: { in: contactIds } },
+      select: { id: true, name: true, phone: true, avatarUrl: true },
+    });
+    
+    const contactMap = new Map(contacts.map(c => [c.id, c]));
+    
+    const transcriptionsWithContacts = transcriptions.map(t => ({
+      ...t,
+      contact: t.contactId ? contactMap.get(t.contactId) || null : null,
+    }));
 
     return NextResponse.json({
       success: true,
-      data: transcriptions,
+      data: transcriptionsWithContacts,
       meta: {
         total,
         limit,
         offset,
-        hasMore: offset + limit < total,
+        hasMore: offset + transcriptions.length < total,
       },
     });
   } catch (error) {
@@ -118,20 +122,20 @@ export async function POST(request: NextRequest) {
         status: transcript ? 'COMPLETED' : 'PENDING',
         processedAt: transcript ? new Date() : null,
       },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
-      },
     });
+    
+    // Buscar contato se houver
+    let contact = null;
+    if (contactId) {
+      contact = await prisma.contact.findUnique({
+        where: { id: contactId },
+        select: { id: true, name: true, phone: true, avatarUrl: true },
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      data: transcription,
+      data: { ...transcription, contact },
     }, { status: 201 });
   } catch (error) {
     console.error('Transcriptions POST Error:', error);

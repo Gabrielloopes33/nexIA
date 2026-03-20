@@ -174,36 +174,44 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         orderBy: { startTime: 'asc' },
         take: limit,
         skip: offset,
-        include: {
-          contact: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              avatarUrl: true,
-            },
-          },
-          deal: {
-            select: {
-              id: true,
-              title: true,
-            },
-          },
-          assignee: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
       }),
       prisma.schedule.count({ where }),
     ]);
+    
+    // Buscar relações em batch
+    const contactIds = schedules.map(s => s.contactId).filter(Boolean) as string[];
+    const dealIds = schedules.map(s => s.dealId).filter(Boolean) as string[];
+    const userIds = schedules.map(s => s.assignedTo).filter(Boolean) as string[];
+    
+    const [contacts, deals, users] = await Promise.all([
+      contactIds.length > 0 ? prisma.contact.findMany({
+        where: { id: { in: contactIds } },
+        select: { id: true, name: true, phone: true, avatarUrl: true },
+      }) : [],
+      dealIds.length > 0 ? prisma.deal.findMany({
+        where: { id: { in: dealIds } },
+        select: { id: true, title: true },
+      }) : [],
+      userIds.length > 0 ? prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, email: true },
+      }) : [],
+    ]);
+    
+    const contactMap = new Map(contacts.map(c => [c.id, c]));
+    const dealMap = new Map(deals.map(d => [d.id, d]));
+    const userMap = new Map(users.map(u => [u.id, u]));
+    
+    const schedulesWithRelations = schedules.map(s => ({
+      ...s,
+      contact: s.contactId ? contactMap.get(s.contactId) || null : null,
+      deal: s.dealId ? dealMap.get(s.dealId) || null : null,
+      assignee: s.assignedTo ? userMap.get(s.assignedTo) || null : null,
+    }));
 
     return NextResponse.json({
       success: true,
-      data: schedules,
+      data: schedulesWithRelations,
       pagination: {
         total,
         limit,
@@ -288,34 +296,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         location: location?.trim() || null,
         status: 'pending',
       },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
-        },
-        deal: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
     });
+    
+    // Buscar relações
+    const [contact, deal, assignee] = await Promise.all([
+      contactId ? prisma.contact.findUnique({
+        where: { id: contactId },
+        select: { id: true, name: true, phone: true, avatarUrl: true },
+      }) : null,
+      dealId ? prisma.deal.findUnique({
+        where: { id: dealId },
+        select: { id: true, title: true },
+      }) : null,
+      assignedTo ? prisma.user.findUnique({
+        where: { id: assignedTo },
+        select: { id: true, name: true, email: true },
+      }) : null,
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: schedule,
+      data: { ...schedule, contact, deal, assignee },
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating schedule:', error);

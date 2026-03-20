@@ -25,16 +25,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const instances = await prisma.whatsAppInstance.findMany({
       where: { organizationId },
-      include: {
-        _count: {
-          select: {
-            conversations: {
-              where: { status: 'ACTIVE' },
-            },
-            templates: true,
-          },
-        },
-      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -48,7 +38,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       messagingLimit: instance.messagingLimit,
       connectedAt: instance.connectedAt,
       createdAt: instance.createdAt,
-      _count: instance._count,
     }));
 
     return NextResponse.json({

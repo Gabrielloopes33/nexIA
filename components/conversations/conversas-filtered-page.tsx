@@ -5,9 +5,10 @@ import { ConversasPageShell } from "./conversas-page-shell"
 import { Conversation } from "@/lib/types/conversation"
 
 export type FilterType = 
-  | "mentions"
-  | "unattended"
-  | "priority"
+  | "mine"           // Minhas conversas (atribuídas a mim)
+  | "unassigned"     // Não atribuídas (disponíveis)
+  | "unattended"     // Não atendidas (SLA/urgência)
+  | "priority"       // Alta prioridade
   | "leads"
   | "sales"
   | "support"
@@ -41,15 +42,19 @@ export function ConversasFilteredPage({
   // Memoizar a função de filtro para evitar recriação em cada render
   const filterFn = useCallback((c: Conversation): boolean => {
     switch (filter) {
-      case "mentions":
-        return c.mentioned === true
+      case "mine":
+        // Conversas atribuídas ao usuário logado (simulado por enquanto)
+        // TODO: Pegar ID do usuário logado do contexto de autenticação
+        return c.assignedTo !== null && c.status === "open"
+      
+      case "unassigned":
+        // Conversas sem atribuição (disponíveis para pegar)
+        return c.assignedTo === null && c.status === "open"
       
       case "unattended":
-        // Conversas abertas sem agente atribuído OU com SLA em breach/warning
-        return (
-          (c.assignedTo === null && c.status === "open") ||
-          c.slaStatus === "breach" ||
-          c.slaStatus === "warning"
+        // Conversas com SLA em breach/warning (independentemente de atribuição)
+        return c.status === "open" && (
+          c.slaStatus === "breach" || c.slaStatus === "warning"
         )
       
       case "priority":

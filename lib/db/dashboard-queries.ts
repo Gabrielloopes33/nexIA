@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import { ChannelType, Prisma } from '@prisma/client'
 
+// Helper para obter valor do deal (value tem prioridade, com fallback para amount)
+function getDealValue(deal: { value?: any; amount?: any; estimatedValue?: number | null }): number {
+  return Number(deal.value) || Number(deal.amount) || deal.estimatedValue || 0
+}
+
 // Tipos de retorno
 export interface FunnelStage {
   name: string
@@ -53,7 +58,7 @@ export async function getFunnelMetrics(
 
     const count = dealsInStage.length
     const value = dealsInStage.reduce((sum, deal) =>
-      sum + (Number(deal.amount) || deal.estimatedValue || 0), 0
+      sum + getDealValue(deal), 0
     )
 
     // Taxa de conversão baseada no estágio anterior
@@ -131,7 +136,7 @@ export async function getLostDealsWithRecoveryPotential(
       id: deal.id,
       title: deal.title,
       contactName: 'Sem contato',
-      value: Number(deal.amount) || deal.estimatedValue || 0,
+      value: getDealValue(deal),
       lostAt: deal.closedLostAt!,
       lostReason: deal.lostReason || 'OTHER',
       daysSinceLost,
@@ -187,7 +192,7 @@ export async function getChannelPerformance(
             status: 'WON',
             closedWonAt: { gte: startDate },
           },
-          _sum: { amount: true },
+          _sum: { value: true },
         }),
       ])
       
@@ -197,7 +202,7 @@ export async function getChannelPerformance(
         deals,
         conversionRate: leads > 0 ? (deals / leads) * 100 : 0,
         avgResponseTime: 0, // Implementar com base em activities
-        revenue: Number(revenue._sum.amount) || 0,
+        revenue: Number(revenue._sum.value) || 0,
       }
     })
   )
@@ -231,7 +236,7 @@ export async function getLostReasonsStats(
       lostReason: { not: null },
     },
     _count: { id: true },
-    _avg: { amount: true },
+    _avg: { value: true },
   })
   
   // Buscar dados do período anterior para trend
@@ -263,7 +268,7 @@ export async function getLostReasonsStats(
       count: stat._count.id,
       percentage: total > 0 ? (stat._count.id / total) * 100 : 0,
       trend,
-      avgDealValue: Number(stat._avg.amount) || 0,
+      avgDealValue: Number(stat._avg.value) || 0,
     }
   }).sort((a, b) => b.count - a.count)
 }
@@ -322,7 +327,7 @@ export async function getWeeklyRevenue(
     if (!weeklyData[weekKey]) {
       weeklyData[weekKey] = { revenue: 0, deals: 0 }
     }
-    weeklyData[weekKey].revenue += Number(deal.amount) || 0
+    weeklyData[weekKey].revenue += Number(deal.value) || Number(deal.amount) || 0
     weeklyData[weekKey].deals += 1
   })
   
@@ -509,7 +514,7 @@ function calculateRecoveryScore(deal: any, daysSinceLost: number): number {
   let score = 50
   
   // Valor (0-30 pontos)
-  const value = Number(deal.amount) || deal.estimatedValue || 0
+  const value = getDealValue(deal)
   score += Math.min(value / 1000, 30)
   
   // Recência (0-30 pontos) - mais recente = melhor
@@ -568,14 +573,14 @@ async function calculateKPIsForPeriod(
         status: 'WON',
         closedWonAt: { gte: startDate, lte: endDate },
       },
-      _sum: { amount: true },
+      _sum: { value: true },
     }),
     prisma.deal.aggregate({
       where: {
         organizationId,
         status: { notIn: ['WON', 'LOST'] },
       },
-      _sum: { amount: true },
+      _sum: { value: true },
     }),
     prisma.deal.count({
       where: {
@@ -597,8 +602,8 @@ async function calculateKPIsForPeriod(
   
   return {
     leads,
-    revenue: Number(revenue._sum.amount) || 0,
-    pipelineValue: Number(pipeline._sum.amount) || 0,
+    revenue: Number(revenue._sum.value) || 0,
+    pipelineValue: Number(pipeline._sum.value) || 0,
     conversionRate: leads > 0 ? (wonDeals / leads) * 100 : 0,
     avgDealTime: (stageHistory[0]?.avg_duration || 0) / 24, // converter horas para dias
   }

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Star, AlertCircle } from "lucide-react"
+import { Search, Star, AlertCircle, Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { cn, formatRelativeDate } from "@/lib/utils"
 import { Conversation } from "@/lib/types/conversation"
 
@@ -42,9 +43,10 @@ interface Props {
   selectedId: string | null
   onSelect: (id: string) => void
   conversations?: Conversation[]
+  onNewConversation?: () => void
 }
 
-export function ConversationsPanel({ selectedId, onSelect, conversations = [] }: Props) {
+export function ConversationsPanel({ selectedId, onSelect, conversations = [], onNewConversation }: Props) {
   const [search, setSearch] = useState("")
 
   const filtered = conversations.filter((c) => {
@@ -61,7 +63,18 @@ export function ConversationsPanel({ selectedId, onSelect, conversations = [] }:
       <div className="border-b border-border px-4 py-3">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-foreground">Conversas</h2>
-          <span className="text-xs text-muted-foreground">{filtered.length} total</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onNewConversation}
+              className="h-8 px-2 text-[#46347F] hover:text-[#46347F] hover:bg-[#46347F]/10"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Nova
+            </Button>
+            <span className="text-xs text-muted-foreground">{filtered.length} total</span>
+          </div>
         </div>
 
         {/* Search */}

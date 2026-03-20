@@ -16,7 +16,7 @@ interface Params {
 // GET /api/conversations/[id]?messagesLimit=50
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const messagesLimit = Math.min(parseInt(searchParams.get('messagesLimit') || '50'), 100);
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 // PATCH /api/conversations/[id]
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
     const { id } = await params;
     const body = await request.json();
 
@@ -150,7 +150,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 // DELETE /api/conversations/[id]
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth(request);
     const { id } = await params;
 
     // Verifica se existe

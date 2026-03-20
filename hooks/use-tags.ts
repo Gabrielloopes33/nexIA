@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useOrganizationId } from '@/lib/contexts/organization-context'
 
 export interface Tag {
@@ -39,13 +39,20 @@ export function useTags(organizationId?: string): UseTagsReturn {
   const [error, setError] = useState<string | null>(null)
 
   const fetchTags = useCallback(async () => {
-    if (!effectiveOrgId) return
+    console.log('[useTags] fetchTags called, effectiveOrgId:', effectiveOrgId)
+    if (!effectiveOrgId) {
+      console.log('[useTags] No effectiveOrgId, skipping fetch')
+      return
+    }
     
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/tags?organizationId=${effectiveOrgId}`)
+      const url = `/api/tags?organizationId=${effectiveOrgId}`
+      console.log('[useTags] Fetching:', url)
+      const response = await fetch(url)
       const data = await response.json()
+      console.log('[useTags] Response:', response.status, data)
       
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Erro ao carregar tags')
@@ -53,6 +60,7 @@ export function useTags(organizationId?: string): UseTagsReturn {
       
       setTags(data.data || [])
     } catch (err) {
+      console.error('[useTags] Error:', err)
       setError(err instanceof Error ? err.message : 'Erro ao carregar tags')
     } finally {
       setIsLoading(false)
@@ -60,7 +68,11 @@ export function useTags(organizationId?: string): UseTagsReturn {
   }, [effectiveOrgId])
 
   const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
-    if (!effectiveOrgId) return null
+    console.log('[useTags] createTag called:', tagData)
+    if (!effectiveOrgId) {
+      console.log('[useTags] createTag: No effectiveOrgId')
+      return null
+    }
     
     try {
       const response = await fetch('/api/tags', {
@@ -70,6 +82,7 @@ export function useTags(organizationId?: string): UseTagsReturn {
       })
       
       const data = await response.json()
+      console.log('[useTags] createTag response:', response.status, data)
       
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Erro ao criar tag')
@@ -78,6 +91,7 @@ export function useTags(organizationId?: string): UseTagsReturn {
       await fetchTags()
       return data.data
     } catch (err) {
+      console.error('[useTags] createTag error:', err)
       setError(err instanceof Error ? err.message : 'Erro ao criar tag')
       return null
     }
@@ -165,9 +179,16 @@ export function useTags(organizationId?: string): UseTagsReturn {
     }
   }
 
+  // Track last fetched orgId to prevent loops from parent context re-renders
+  const lastFetchedOrgId = useRef<string | null>(null)
+  
   useEffect(() => {
-    fetchTags()
-  }, [fetchTags])
+    if (effectiveOrgId && effectiveOrgId !== lastFetchedOrgId.current) {
+      fetchTags()
+      lastFetchedOrgId.current = effectiveOrgId
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveOrgId])
 
   return {
     tags,

@@ -15,12 +15,20 @@ import {
   XCircle,
   AlertCircle,
   Check,
-  GripVertical,
-  Kanban
+  Kanban,
+  X,
+  Loader2,
+  DollarSign,
+  Calendar,
+  User,
+  Tag,
+  Pencil
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { DealCard } from "./DealCard"
 import { DealDetailModal } from "./DealDetailModal"
 import { PipelineStage, Deal, DealActivity, DealPriority, DealStatus } from "@prisma/client"
@@ -66,30 +74,46 @@ interface PipelineColumnProps {
   stage: PipelineStage
   deals: DealWithRelations[]
   draggedDealId: string | null
+  draggedOverStageId: string | null
   onDragStart: (e: React.DragEvent, dealId: string) => void
-  onDragOver: (e: React.DragEvent) => void
+  onDragOver: (e: React.DragEvent, stageId: string) => void
+  onDragLeave: (e: React.DragEvent, stageId: string) => void
   onDrop: (e: React.DragEvent, stageId: string) => void
   onDealClick: (deal: DealWithRelations) => void
   selectedDealId: string | null
+  onAddDeal?: (stageId: string) => void
+  onEditDeal?: (deal: DealWithRelations) => void
+  onDeleteDeal?: (deal: DealWithRelations) => void
 }
 
 function PipelineColumn({
   stage,
   deals,
   draggedDealId,
+  draggedOverStageId,
   onDragStart,
   onDragOver,
+  onDragLeave,
   onDrop,
   onDealClick,
   selectedDealId,
+  onAddDeal,
+  onEditDeal,
+  onDeleteDeal,
 }: PipelineColumnProps) {
-  const totalValue = deals.reduce((sum, d) => sum + Number(d.amount), 0)
+  const totalValue = deals.reduce((sum, d) => sum + Number(d.value ?? d.amount ?? 0), 0)
   const openDeals = deals.filter(d => d.status === "OPEN")
+
+  const isDraggedOver = draggedOverStageId === stage.id
 
   return (
     <div
-      className="flex w-[280px] flex-shrink-0 flex-col"
-      onDragOver={onDragOver}
+      className={cn(
+        "flex w-[280px] flex-shrink-0 flex-col rounded-xl transition-all duration-200",
+        isDraggedOver && "bg-[#46347F]/5 scale-[1.02]"
+      )}
+      onDragOver={(e) => onDragOver(e, stage.id)}
+      onDragLeave={(e) => onDragLeave(e, stage.id)}
       onDrop={(e) => onDrop(e, stage.id)}
     >
       {/* Header */}
@@ -120,22 +144,40 @@ function PipelineColumn({
             deal={{
               id: deal.id,
               title: deal.title,
-              value: Number(deal.amount),
+              value: Number(deal.value ?? deal.amount ?? 0),
               currency: deal.currency,
               priority: deal.priority,
               leadScore: deal.leadScore,
-              expectedCloseDate: deal.expectedCloseDate?.toISOString() || null,
+              expectedCloseDate: deal.expectedCloseDate 
+                ? (typeof deal.expectedCloseDate === 'string' 
+                    ? deal.expectedCloseDate 
+                    : deal.expectedCloseDate.toISOString())
+                : null,
               contact: deal.contact,
               activitiesCount: deal.activitiesCount,
-              updatedAt: deal.updatedAt.toISOString(),
+              updatedAt: typeof deal.updatedAt === 'string' ? deal.updatedAt : deal.updatedAt.toISOString(),
             }}
+            draggable
+            onDragStart={(e) => onDragStart(e, deal.id)}
+            isDragging={draggedDealId === deal.id}
             onClick={() => onDealClick(deal)}
+            onEdit={(e) => {
+              e.stopPropagation()
+              onEditDeal?.(deal)
+            }}
+            onDelete={(e) => {
+              e.stopPropagation()
+              onDeleteDeal?.(deal)
+            }}
           />
         ))}
       </div>
 
       {/* Add Button */}
-      <button className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-[#46347F]/40 hover:bg-[#46347F]/5 hover:text-[#46347F]">
+      <button 
+        onClick={() => onAddDeal?.(stage.id)}
+        className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border py-2 text-xs text-muted-foreground transition-colors hover:border-[#46347F]/40 hover:bg-[#46347F]/5 hover:text-[#46347F]"
+      >
         <Plus className="h-3.5 w-3.5" />
         Adicionar negócio
       </button>
@@ -154,6 +196,7 @@ interface DealListViewProps {
   onDragStart: (e: React.DragEvent, dealId: string) => void
   onDragOver: (e: React.DragEvent) => void
   onDrop: (e: React.DragEvent, stageId: string) => void
+  onAddDeal?: (stageId: string) => void
 }
 
 function DealListView({ 
@@ -164,7 +207,8 @@ function DealListView({
   draggedDealId,
   onDragStart,
   onDragOver,
-  onDrop
+  onDrop,
+  onAddDeal
 }: DealListViewProps) {
   // Agrupa deals por estágio
   const dealsByStage = stages.map(stage => ({
@@ -185,7 +229,7 @@ function DealListView({
     <div className="flex-1 overflow-auto p-4">
       <div className="space-y-4">
         {dealsByStage.map(({ stage, deals: stageDeals }) => {
-          const totalValue = stageDeals.reduce((sum, d) => sum + Number(d.amount), 0)
+          const totalValue = stageDeals.reduce((sum, d) => sum + Number(d.value ?? d.amount ?? 0), 0)
           const openDeals = stageDeals.filter(d => d.status === "OPEN")
 
           return (
@@ -269,7 +313,7 @@ function DealListView({
 
                       {/* Value */}
                       <div className="w-24 shrink-0 text-sm font-semibold text-foreground text-right">
-                        {formatCurrency(Number(deal.amount))}
+                        {formatCurrency(Number(deal.value ?? deal.amount ?? 0))}
                       </div>
 
                       {/* Priority */}
@@ -311,7 +355,10 @@ function DealListView({
               )}
 
               {/* Add Button */}
-              <button className="flex w-full items-center justify-center gap-1.5 border-t border-border py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-[#46347F]">
+              <button 
+                onClick={() => onAddDeal?.(stage.id)}
+                className="flex w-full items-center justify-center gap-1.5 border-t border-border py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30 hover:text-[#46347F]"
+              >
                 <Plus className="h-3.5 w-3.5" />
                 Adicionar negócio
               </button>
@@ -490,6 +537,550 @@ function FilterDropdown({ filtros, onChange }: FilterDropdownProps) {
 
 // ─── Main View ───────────────────────────────────────────────────────────────
 
+// ─── Add Deal Modal Component ────────────────────────────────────────────────
+
+interface AddDealModalProps {
+  stages: PipelineStage[]
+  initialStageId?: string
+  onClose: () => void
+  onSuccess: () => void
+}
+
+function AddDealModal({ stages, initialStageId, onClose, onSuccess }: AddDealModalProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [contacts, setContacts] = useState<Array<{ id: string; name: string; phone: string }>>([])
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false)
+  const [searchContact, setSearchContact] = useState("")
+  const [showContactDropdown, setShowContactDropdown] = useState(false)
+  
+  const [formData, setFormData] = useState({
+    title: "",
+    contactId: "",
+    contactName: "",
+    stageId: initialStageId || stages[0]?.id || "",
+    amount: "",
+    priority: "MEDIUM" as "HIGH" | "MEDIUM" | "LOW",
+    expectedCloseDate: "",
+    description: "",
+  })
+
+  // Buscar contatos
+  useEffect(() => {
+    const fetchContacts = async () => {
+      setIsLoadingContacts(true)
+      try {
+        const response = await fetch("/api/contacts?limit=100")
+        const data = await response.json()
+        if (data.success) {
+          setContacts(data.data.map((c: any) => ({
+            id: c.id,
+            name: c.name || c.phone,
+            phone: c.phone
+          })))
+        }
+      } catch (error) {
+        console.error("Failed to fetch contacts:", error)
+      } finally {
+        setIsLoadingContacts(false)
+      }
+    }
+    fetchContacts()
+  }, [])
+
+  const filteredContacts = contacts.filter(c => 
+    c.name.toLowerCase().includes(searchContact.toLowerCase()) ||
+    c.phone.includes(searchContact)
+  )
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!formData.title.trim() || !formData.contactId) {
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch("/api/pipeline/deals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: formData.title,
+          contactId: formData.contactId,
+          stageId: formData.stageId,
+          amount: Number(formData.amount) || 0,
+          priority: formData.priority,
+          expectedCloseDate: formData.expectedCloseDate || null,
+          description: formData.description || null,
+        }),
+      })
+
+      if (response.ok) {
+        onSuccess()
+      } else {
+        const error = await response.json()
+        alert(error.error || "Erro ao criar negócio")
+      }
+    } catch (error) {
+      console.error("Failed to create deal:", error)
+      alert("Erro ao criar negócio")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-xl border border-border bg-white p-6 shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold">Novo Negócio</h3>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Título */}
+          <div className="space-y-2">
+            <Label htmlFor="title">
+              Título <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="title"
+              placeholder="Ex: Proposta Comercial"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+            />
+          </div>
+
+          {/* Contato */}
+          <div className="space-y-2 relative">
+            <Label>
+              Contato <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar contato..."
+                value={formData.contactName || searchContact}
+                onChange={(e) => {
+                  setSearchContact(e.target.value)
+                  setShowContactDropdown(true)
+                  if (!e.target.value) {
+                    setFormData({ ...formData, contactId: "", contactName: "" })
+                  }
+                }}
+                onFocus={() => setShowContactDropdown(true)}
+                className="pl-9"
+              />
+              {formData.contactId && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                  onClick={() => {
+                    setFormData({ ...formData, contactId: "", contactName: "" })
+                    setSearchContact("")
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            
+            {/* Dropdown de contatos */}
+            {showContactDropdown && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowContactDropdown(false)} 
+                />
+                <div className="absolute z-50 left-0 right-0 mt-1 max-h-48 overflow-auto rounded-lg border border-border bg-white shadow-lg">
+                  {isLoadingContacts ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  ) : filteredContacts.length > 0 ? (
+                    filteredContacts.map((contact) => (
+                      <button
+                        key={contact.id}
+                        type="button"
+                        className="flex w-full items-center gap-3 px-3 py-2 hover:bg-muted text-left"
+                        onClick={() => {
+                          setFormData({ 
+                            ...formData, 
+                            contactId: contact.id, 
+                            contactName: contact.name 
+                          })
+                          setShowContactDropdown(false)
+                          setSearchContact("")
+                        }}
+                      >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#46347F]/10 text-[#46347F] text-xs font-bold">
+                          {contact.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{contact.name}</p>
+                          <p className="text-xs text-muted-foreground">{contact.phone}</p>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Nenhum contato encontrado
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Etapa */}
+          <div className="space-y-2">
+            <Label htmlFor="stage">Etapa</Label>
+            <select
+              id="stage"
+              value={formData.stageId}
+              onChange={(e) => setFormData({ ...formData, stageId: e.target.value })}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {stages.map((stage) => (
+                <option key={stage.id} value={stage.id}>
+                  {stage.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Valor */}
+          <div className="space-y-2">
+            <Label htmlFor="amount">Valor</Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="amount"
+                type="number"
+                placeholder="0,00"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
+          {/* Prioridade */}
+          <div className="space-y-2">
+            <Label>Prioridade</Label>
+            <div className="flex gap-2">
+              {[
+                { value: "LOW", label: "Baixa", color: "bg-gray-100 text-gray-700 border-gray-200" },
+                { value: "MEDIUM", label: "Média", color: "bg-amber-100 text-amber-700 border-amber-200" },
+                { value: "HIGH", label: "Alta", color: "bg-red-100 text-red-700 border-red-200" },
+              ].map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, priority: p.value as any })}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    formData.priority === p.value
+                      ? p.color
+                      : "border-border bg-white text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Data de fechamento esperada */}
+          <div className="space-y-2">
+            <Label htmlFor="expectedCloseDate">Fechamento esperado</Label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
+              <Input
+                id="expectedCloseDate"
+                type="date"
+                value={formData.expectedCloseDate}
+                onChange={(e) => setFormData({ ...formData, expectedCloseDate: e.target.value })}
+                className="pl-10 h-11 rounded-xl border-border/60 bg-background/50 backdrop-blur-sm transition-all focus:border-[#46347F] focus:ring-2 focus:ring-[#46347F]/20 hover:border-[#46347F]/30 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Descrição */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição</Label>
+            <textarea
+              id="description"
+              placeholder="Detalhes do negócio..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || !formData.title.trim() || !formData.contactId}
+              className="bg-[#46347F] hover:bg-[#7b79c4] text-white"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Negócio
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Edit Deal Modal Component ───────────────────────────────────────────────
+
+interface EditDealModalProps {
+  deal: DealWithRelations
+  stages: PipelineStage[]
+  onClose: () => void
+  onSuccess: () => void
+}
+
+function EditDealModal({ deal, stages, onClose, onSuccess }: EditDealModalProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [contacts, setContacts] = useState<Array<{ id: string; name: string; phone: string }>>([])
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false)
+  
+  const [formData, setFormData] = useState({
+    title: deal.title,
+    contactId: deal.contactId,
+    contactName: deal.contact?.name || "",
+    stageId: deal.stageId,
+    amount: String(deal.value ?? deal.amount ?? 0),
+    priority: deal.priority as "HIGH" | "MEDIUM" | "LOW",
+    expectedCloseDate: deal.expectedCloseDate 
+      ? (typeof deal.expectedCloseDate === 'string' 
+          ? deal.expectedCloseDate.split('T')[0] 
+          : deal.expectedCloseDate.toISOString().split('T')[0])
+      : "",
+    description: deal.description || "",
+  })
+
+  // Buscar contatos
+  useEffect(() => {
+    async function fetchContacts() {
+      setIsLoadingContacts(true)
+      try {
+        const response = await fetch("/api/contacts?limit=100")
+        const data = await response.json()
+        if (data.success) {
+          setContacts(data.data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch contacts:", error)
+      } finally {
+        setIsLoadingContacts(false)
+      }
+    }
+    fetchContacts()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch(`/api/pipeline/deals/${deal.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: formData.title,
+          contactId: formData.contactId,
+          stageId: formData.stageId,
+          value: Number(formData.amount) || 0,
+          priority: formData.priority,
+          expectedCloseDate: formData.expectedCloseDate || null,
+          description: formData.description || null,
+        }),
+      })
+
+      if (response.ok) {
+        onSuccess()
+      } else {
+        const error = await response.json()
+        alert(error.error || "Erro ao atualizar negócio")
+      }
+    } catch (error) {
+      console.error("Failed to update deal:", error)
+      alert("Erro ao atualizar negócio")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-xl border border-border bg-white p-6 shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold">Editar Negócio</h3>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Título */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-title">Título do negócio</Label>
+            <Input
+              id="edit-title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Ex: Implementação CRM"
+              required
+            />
+          </div>
+
+          {/* Contato */}
+          <div className="space-y-2">
+            <Label>Contato</Label>
+            <select
+              value={formData.contactId}
+              onChange={(e) => {
+                const contact = contacts.find(c => c.id === e.target.value)
+                setFormData({ ...formData, contactId: e.target.value, contactName: contact?.name || "" })
+              }}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              required
+            >
+              <option value="">Selecione um contato</option>
+              {contacts.map((contact) => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.name} {contact.phone && `(${contact.phone})`}
+                </option>
+              ))}
+            </select>
+            {isLoadingContacts && (
+              <p className="text-xs text-muted-foreground">Carregando contatos...</p>
+            )}
+          </div>
+
+          {/* Etapa */}
+          <div className="space-y-2">
+            <Label>Etapa do funil</Label>
+            <select
+              value={formData.stageId}
+              onChange={(e) => setFormData({ ...formData, stageId: e.target.value })}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              required
+            >
+              {stages.map((stage) => (
+                <option key={stage.id} value={stage.id}>
+                  {stage.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Valor e Prioridade */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="edit-amount">Valor (R$)</Label>
+              <Input
+                id="edit-amount"
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="15000"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Prioridade</Label>
+              <select
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value as "HIGH" | "MEDIUM" | "LOW" })}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="HIGH">Alta</option>
+                <option value="MEDIUM">Média</option>
+                <option value="LOW">Baixa</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Data de fechamento esperada */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-expectedCloseDate">Fechamento esperado</Label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
+              <Input
+                id="edit-expectedCloseDate"
+                type="date"
+                value={formData.expectedCloseDate}
+                onChange={(e) => setFormData({ ...formData, expectedCloseDate: e.target.value })}
+                className="pl-10 h-11 rounded-xl border-border/60 bg-background/50 backdrop-blur-sm transition-all focus:border-[#46347F] focus:ring-2 focus:ring-[#46347F]/20 hover:border-[#46347F]/30 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Descrição */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-description">Descrição</Label>
+            <Textarea
+              id="edit-description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Observações sobre o negócio..."
+              rows={3}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || !formData.title.trim() || !formData.contactId}
+              className="bg-[#46347F] hover:bg-[#7b79c4] text-white"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Salvar Alterações
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 interface PipelineViewRealProps {
   onNewPipeline?: () => void
 }
@@ -505,6 +1096,10 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("board")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingDeal, setEditingDeal] = useState<DealWithRelations | null>(null)
+  const [draggedOverStageId, setDraggedOverStageId] = useState<string | null>(null)
+  const [selectedStageId, setSelectedStageId] = useState<string>("")
   const [filtros, setFiltros] = useState<Filtros>({
     prioridade: [],
     status: [],
@@ -536,7 +1131,13 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
       const response = await fetch("/api/pipeline/deals")
       const data = await response.json()
       if (data.success) {
-        setDeals(data.data)
+        // Converter valores Decimal para number
+        const processedDeals = data.data.map((deal: any) => ({
+          ...deal,
+          value: Number(deal.value ?? deal.amount ?? 0),
+        }))
+        console.log('[Pipeline] Deals carregados:', processedDeals.map((d: any) => ({ id: d.id, title: d.title, value: d.value })))
+        setDeals(processedDeals)
       }
     } catch (error) {
       console.error("Failed to fetch deals:", error)
@@ -628,10 +1229,10 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
     
     // Filtro de valor
     if (filtros.valorMin !== null) {
-      result = result.filter(d => Number(d.amount) >= filtros.valorMin!)
+      result = result.filter(d => Number(d.value ?? d.amount ?? 0) >= filtros.valorMin!)
     }
     if (filtros.valorMax !== null) {
-      result = result.filter(d => Number(d.amount) <= filtros.valorMax!)
+      result = result.filter(d => Number(d.value ?? d.amount ?? 0) <= filtros.valorMax!)
     }
     
     return result
@@ -643,27 +1244,51 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
   )
 
   // Totals
-  const totalValue = deals.filter(d => d.status === "OPEN").reduce((sum, d) => sum + Number(d.amount), 0)
+  const totalValue = deals.filter(d => d.status === "OPEN").reduce((sum, d) => sum + Number(d.value ?? d.amount ?? 0), 0)
   const openDealsCount = deals.filter(d => d.status === "OPEN").length
 
   const handleDragStart = (e: React.DragEvent, dealId: string) => {
     setDraggedDealId(dealId)
     e.dataTransfer.effectAllowed = "move"
+    // Adicionar dados para o drag
+    e.dataTransfer.setData("text/plain", dealId)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, stageId: string) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = "move"
+    setDraggedOverStageId(stageId)
+  }
+
+  const handleDragLeave = (e: React.DragEvent, stageId: string) => {
+    // Só remove se realmente saiu da coluna (não entrou em um elemento filho)
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDraggedOverStageId(null)
+    }
   }
 
   const handleDrop = (e: React.DragEvent, stageId: string) => {
     e.preventDefault()
-    if (!draggedDealId) return
+    setDraggedOverStageId(null)
+    
+    const dealId = e.dataTransfer.getData("text/plain") || draggedDealId
+    if (!dealId) return
+
+    // Encontrar o deal atual para verificar se mudou de estágio
+    const currentDeal = deals.find(d => d.id === dealId)
+    if (!currentDeal || currentDeal.stageId === stageId) {
+      setDraggedDealId(null)
+      return
+    }
 
     // Optimistic update
     setDeals((prev) =>
       prev.map((deal) => {
-        if (deal.id === draggedDealId) {
+        if (deal.id === dealId) {
           return { ...deal, stageId }
         }
         return deal
@@ -671,7 +1296,7 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
     )
 
     // Persist to backend
-    handleMoveDeal(draggedDealId, stageId)
+    handleMoveDeal(dealId, stageId)
     setDraggedDealId(null)
   }
 
@@ -679,6 +1304,33 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
     setSelectedDealId(deal.id)
     fetchActivities(deal.id)
     setIsModalOpen(true)
+  }
+
+  const handleEditDeal = (deal: DealWithRelations) => {
+    setEditingDeal(deal)
+    setShowEditModal(true)
+  }
+
+  const handleDeleteDeal = async (deal: DealWithRelations) => {
+    if (!confirm(`Tem certeza que deseja excluir o negócio "${deal.title}"?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/pipeline/deals/${deal.id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        await fetchDeals()
+      } else {
+        const error = await response.json()
+        alert(error.error || "Erro ao excluir negócio")
+      }
+    } catch (error) {
+      console.error("Failed to delete deal:", error)
+      alert("Erro ao excluir negócio")
+    }
   }
 
   const handleCloseModal = () => {
@@ -807,7 +1459,10 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
           <Button 
             size="sm" 
             className="h-8 gap-1.5 bg-[#46347F] hover:bg-[#7b79c4] text-white"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setSelectedStageId("")
+              setShowAddModal(true)
+            }}
           >
             <Plus className="h-4 w-4" />
             Negócio
@@ -837,11 +1492,19 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
               stage={stage}
               deals={filteredDeals.filter((d) => d.stageId === stage.id)}
               draggedDealId={draggedDealId}
+              draggedOverStageId={draggedOverStageId}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onDealClick={handleDealClick}
               selectedDealId={selectedDealId}
+              onAddDeal={(stageId) => {
+                setSelectedStageId(stageId)
+                setShowAddModal(true)
+              }}
+              onEditDeal={handleEditDeal}
+              onDeleteDeal={handleDeleteDeal}
             />
           ))}
         </div>
@@ -855,24 +1518,41 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          onAddDeal={(stageId) => {
+            setSelectedStageId(stageId)
+            setShowAddModal(true)
+          }}
         />
       )}
 
       {/* Add Deal Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-[400px] rounded-xl border border-border bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-bold mb-4">Novo Negócio</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Funcionalidade em desenvolvimento. Use a API para criar deals.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowAddModal(false)}>
-                Fechar
-              </Button>
-            </div>
-          </div>
-        </div>
+        <AddDealModal
+          stages={stages}
+          initialStageId={selectedStageId}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false)
+            fetchDeals()
+          }}
+        />
+      )}
+
+      {/* Edit Deal Modal */}
+      {showEditModal && editingDeal && (
+        <EditDealModal
+          deal={editingDeal}
+          stages={stages}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingDeal(null)
+          }}
+          onSuccess={() => {
+            setShowEditModal(false)
+            setEditingDeal(null)
+            fetchDeals()
+          }}
+        />
       )}
 
       {/* Deal Detail Modal */}
@@ -880,23 +1560,31 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
         <DealDetailModal
           deal={{
             ...selectedDeal,
-            value: Number(selectedDeal.amount),
+            value: Number(selectedDeal.value ?? selectedDeal.amount ?? 0),
             contact: selectedDeal.contact ? {
               ...selectedDeal.contact,
               avatar: selectedDeal.contact.avatarUrl,
             } : undefined,
             stage: selectedDeal.stage || undefined,
-            expectedCloseDate: selectedDeal.expectedCloseDate?.toISOString() || null,
-            actualCloseDate: selectedDeal.actualCloseDate?.toISOString() || null,
-            createdAt: selectedDeal.createdAt.toISOString(),
-            updatedAt: selectedDeal.updatedAt.toISOString(),
+            expectedCloseDate: selectedDeal.expectedCloseDate 
+              ? (typeof selectedDeal.expectedCloseDate === 'string' 
+                  ? selectedDeal.expectedCloseDate 
+                  : selectedDeal.expectedCloseDate.toISOString())
+              : null,
+            actualCloseDate: selectedDeal.actualCloseDate 
+              ? (typeof selectedDeal.actualCloseDate === 'string' 
+                  ? selectedDeal.actualCloseDate 
+                  : selectedDeal.actualCloseDate.toISOString())
+              : null,
+            createdAt: typeof selectedDeal.createdAt === 'string' ? selectedDeal.createdAt : selectedDeal.createdAt.toISOString(),
+            updatedAt: typeof selectedDeal.updatedAt === 'string' ? selectedDeal.updatedAt : selectedDeal.updatedAt.toISOString(),
           }}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           activities={activities.map(a => ({
             ...a,
             description: a.content || a.title,
-            createdAt: a.createdAt.toISOString(),
+            createdAt: typeof a.createdAt === 'string' ? a.createdAt : a.createdAt.toISOString(),
           }))}
           onAddNote={handleAddNote}
           onUpdateDeal={async () => {}}

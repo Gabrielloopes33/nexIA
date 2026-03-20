@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withRLS } from "@/lib/db/rls";
 import { 
+  getAuthenticatedUser,
   getOrganizationId, 
   AuthError, 
   createAuthErrorResponse 
@@ -15,7 +16,16 @@ type DealStatus = 'OPEN' | 'WON' | 'LOST' | 'CANCELLED';
  */
 export async function GET(request: NextRequest) {
   try {
-    const organizationId = await getOrganizationId();
+    const user = await getAuthenticatedUser();
+    
+    if (!user.organizationId) {
+      return NextResponse.json(
+        { success: false, error: "Usuário não possui organização" },
+        { status: 403 }
+      );
+    }
+    
+    const organizationId = user.organizationId;
     
     const { searchParams } = new URL(request.url);
     const stageId = searchParams.get("stageId");
@@ -44,6 +54,8 @@ export async function GET(request: NextRequest) {
     // Transform data to match expected format
     const dealsWithScore = deals.map((deal) => ({
       ...deal,
+      value: Number(deal.value ?? deal.amount ?? 0),
+      amount: deal.amount ? Number(deal.amount) : null,
       leadScore: calculateLeadScore({
         ...deal,
         created_at: deal.createdAt.toISOString(),
@@ -51,6 +63,8 @@ export async function GET(request: NextRequest) {
       }),
       activitiesCount: 0,
     }));
+
+    console.log('[Pipeline Deals GET] Returning deals:', dealsWithScore.map(d => ({ id: d.id, title: d.title, value: d.value })));
 
     return NextResponse.json({
       success: true,
@@ -80,7 +94,16 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const organizationId = await getOrganizationId();
+    const user = await getAuthenticatedUser();
+    
+    if (!user.organizationId) {
+      return NextResponse.json(
+        { success: false, error: "Usuário não possui organização" },
+        { status: 403 }
+      );
+    }
+    
+    const organizationId = user.organizationId;
     
     const body = await request.json();
     const {
@@ -89,6 +112,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       value,
+      amount,
       currency = "BRL",
       priority = "MEDIUM",
       expectedCloseDate,
@@ -96,8 +120,13 @@ export async function POST(request: NextRequest) {
       tags,
       metadata,
     } = body;
+    
+    // Usar value ou amount (para compatibilidade)
+    const dealValue = value ?? amount ?? 0;
 
     console.log('[Pipeline Deals POST] Body:', body);
+    console.log('[Pipeline Deals POST] dealValue calculado:', dealValue, '| value:', value, '| amount:', amount);
+    console.log('[Pipeline Deals POST] User:', { userId: user.userId, organizationId });
 
     if (!stageId || !contactId || !title) {
       return NextResponse.json(
@@ -105,6 +134,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const userId = user.userId;
 
     // Create deal - com contexto RLS
     const deal = await withRLS(prisma, organizationId, async (tx) => {
@@ -115,7 +146,7 @@ export async function POST(request: NextRequest) {
           contactId,
           title,
           description,
-          amount: value ?? 0,
+          value: dealValue,
           currency,
           priority,
           expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
@@ -123,6 +154,7 @@ export async function POST(request: NextRequest) {
           tags: tags ?? [],
           metadata: metadata ?? {},
           status: 'OPEN',
+          createdBy: userId,
         },
         include: {
           contact: { select: { id: true, name: true, phone: true, avatarUrl: true } },
@@ -135,9 +167,9 @@ export async function POST(request: NextRequest) {
         await tx.dealActivity.create({
           data: {
             dealId: newDeal.id,
-            type: "NOTE",
-            title: "Deal criado",
-            content: "Deal criado manualmente no sistema",
+            user_id: userId,
+            type: "DEAL_CREATED",
+            description: "Negócio criado manualmente no sistema",
             metadata: { source: "manual" },
           },
         });

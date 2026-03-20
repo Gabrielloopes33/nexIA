@@ -6,10 +6,12 @@ export interface WhatsAppInstance {
   id: string
   name: string
   phoneNumber: string
-  status: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR' | 'SUSPENDED' | 'PENDING_SETUP'
-  qualityRating: 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN'
-  messagingLimit: number
-  connectedAt?: string | null
+  displayPhoneNumber?: string
+  verifiedName?: string
+  status: 'CONNECTED' | 'DISCONNECTED' | 'CONNECTING' | 'ERROR'
+  qualityRating?: string
+  messagingLimit?: string
+  connectedAt?: string
   createdAt: string
   _count?: {
     conversations: number
@@ -17,14 +19,7 @@ export interface WhatsAppInstance {
   }
 }
 
-interface UseWhatsAppInstancesReturn {
-  instances: WhatsAppInstance[]
-  isLoading: boolean
-  error: string | null
-  refreshInstances: () => Promise<void>
-}
-
-export function useWhatsAppInstances(organizationId?: string): UseWhatsAppInstancesReturn {
+export function useWhatsAppInstances(organizationId?: string | null) {
   const [instances, setInstances] = useState<WhatsAppInstance[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,6 +29,7 @@ export function useWhatsAppInstances(organizationId?: string): UseWhatsAppInstan
     
     setIsLoading(true)
     setError(null)
+    
     try {
       const response = await fetch(`/api/whatsapp/instances?organizationId=${organizationId}`)
       const data = await response.json()
@@ -50,14 +46,20 @@ export function useWhatsAppInstances(organizationId?: string): UseWhatsAppInstan
     }
   }, [organizationId])
 
+  // Filtra apenas instâncias conectadas
+  const connectedInstances = instances.filter(
+    (i) => i.status === 'CONNECTED'
+  )
+
   useEffect(() => {
     fetchInstances()
   }, [fetchInstances])
 
   return {
     instances,
+    connectedInstances,
     isLoading,
     error,
-    refreshInstances: fetchInstances,
+    refresh: fetchInstances,
   }
 }

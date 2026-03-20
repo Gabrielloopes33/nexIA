@@ -189,6 +189,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       organizationId, 
       name, 
       description,
+      color,
+      operator,
       rules,
       createdBy,
     } = body;
@@ -206,6 +208,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         organizationId,
         name: name.trim(),
         description: description || null,
+        color: color || '#46347F',
+        operator: operator || 'AND',
         rules: rules || [],
         createdBy: createdBy || null,
       },
