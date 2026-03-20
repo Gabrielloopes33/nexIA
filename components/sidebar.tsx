@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import { User, LogOut } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -48,7 +48,30 @@ function SimpleNavLink({
   )
 }
 
-export function Sidebar() {
+// Separate component for dropdown items to prevent re-renders
+const NavItemWithDropdown = memo(function NavItemWithDropdown({
+  item,
+  pathname,
+  isGroupOpen,
+  onToggle,
+}: {
+  item: (typeof topNavItems)[number]
+  pathname: string
+  isGroupOpen: boolean
+  onToggle: () => void
+}) {
+  return (
+    <SidebarDropdownGroup
+      item={item}
+      isOpen={isGroupOpen}
+      onToggle={onToggle}
+      pathname={pathname}
+    />
+  )
+})
+
+// Memoized sidebar to prevent unnecessary re-renders when parent state changes
+export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { isReady } = useMainSidebar()
@@ -68,6 +91,11 @@ export function Sidebar() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Memoized toggle handler for each nav item
+  const createToggleHandler = useCallback((key: string) => {
+    return () => toggleGroup(key)
+  }, [toggleGroup])
 
   return (
     <div
@@ -108,11 +136,11 @@ export function Sidebar() {
             // Render dropdown group for items with children
             if (hasChildren) {
               return (
-                <SidebarDropdownGroup
+                <NavItemWithDropdown
                   key={item.key}
                   item={item}
-                  isOpen={isGroupOpen(item.key)}
-                  onToggle={() => toggleGroup(item.key)}
+                  isGroupOpen={isGroupOpen(item.key)}
+                  onToggle={createToggleHandler(item.key)}
                   pathname={pathname}
                 />
               )
@@ -180,4 +208,4 @@ export function Sidebar() {
       </div>
     </div>
   )
-}
+})

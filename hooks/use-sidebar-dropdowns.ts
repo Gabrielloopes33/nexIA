@@ -21,6 +21,7 @@ export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropd
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [isHydrated, setIsHydrated] = useState(false)
   const initialHydrationDone = useRef(false)
+  const isToggling = useRef(false)
 
   // Initial hydration from localStorage - runs ONLY ONCE after mount
   useEffect(() => {
@@ -51,25 +52,6 @@ export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Empty deps - run only once on mount
 
-  // Auto-open groups when pathname changes (but don't reset user-opened groups)
-  useEffect(() => {
-    if (!isHydrated) return
-    
-    // Find active groups that should be open
-    const activeKeys = navItems
-      .filter((item) => isGroupActive(item, pathname))
-      .map((item) => item.key)
-    
-    if (activeKeys.length > 0) {
-      setOpenGroups((prev) => {
-        const newSet = new Set(prev)
-        // Add active keys without closing others (preserve user state)
-        activeKeys.forEach((key) => newSet.add(key))
-        return newSet
-      })
-    }
-  }, [pathname, navItems, isHydrated])
-
   // Persist to localStorage when openGroups changes
   useEffect(() => {
     if (typeof window !== 'undefined' && isHydrated) {
@@ -78,25 +60,45 @@ export function useSidebarDropdowns(navItems: SidebarNavItem[]): UseSidebarDropd
   }, [openGroups, isHydrated])
 
   const toggleGroup = useCallback((key: string) => {
+    // Prevent rapid successive toggles (debounce)
+    if (isToggling.current) return
+    isToggling.current = true
+    
     setOpenGroups((prev) => {
+      const newSet = new Set(prev)
+      const wasOpen = prev.has(key)
+      
       // If clicking the already open group, close it
-      if (prev.has(key)) {
-        return new Set()
+      if (wasOpen) {
+        newSet.delete(key)
+      } else {
+        // Accordion behavior: close others and open clicked
+        newSet.clear()
+        newSet.add(key)
       }
-      // Otherwise, close all and open only the clicked one (accordion behavior)
-      return new Set([key])
+      
+      return newSet
     })
+    
+    // Reset toggle lock after animation completes
+    setTimeout(() => {
+      isToggling.current = false
+    }, 300)
   }, [])
 
   const openGroup = useCallback((key: string) => {
-    setOpenGroups((prev) => new Set([...prev, key]))
+    setOpenGroups((prev) => {
+      const newSet = new Set(prev)
+      newSet.add(key)
+      return newSet
+    })
   }, [])
 
   const closeGroup = useCallback((key: string) => {
     setOpenGroups((prev) => {
-      const next = new Set(prev)
-      next.delete(key)
-      return next
+      const newSet = new Set(prev)
+      newSet.delete(key)
+      return newSet
     })
   }, [])
 
