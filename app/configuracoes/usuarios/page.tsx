@@ -9,7 +9,8 @@ import {
   Edit,
   Trash2,
   UserX,
-  X,
+  Loader2,
+  RefreshCw,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -47,121 +48,66 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { useOrganizationMembers, OrganizationMember } from "@/hooks/use-organization-members"
+import { toast } from "sonner"
 
-// Types
-interface User {
-  id: string
-  name: string
-  email: string
-  role: "Admin" | "Vendedor" | "Suporte" | "Gerente"
-  status: "Ativo" | "Inativo" | "Pendente"
-  lastAccess: Date
-  permissions: string[]
+// Mapeia roles do backend para labels amigáveis
+const roleLabels: Record<string, string> = {
+  OWNER: "Proprietário",
+  ADMIN: "Admin",
+  MANAGER: "Gerente",
+  MEMBER: "Membro",
 }
 
-// Mock data
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "Ana Silva",
-    email: "ana.silva@empresa.com",
-    role: "Admin",
-    status: "Ativo",
-    lastAccess: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    permissions: ["Acessar Pipeline", "Gerenciar Contatos", "Configurações", "Relatórios"],
-  },
-  {
-    id: "2",
-    name: "Carlos Mendes",
-    email: "carlos.mendes@empresa.com",
-    role: "Vendedor",
-    status: "Ativo",
-    lastAccess: new Date(Date.now() - 24 * 60 * 60 * 1000), // Yesterday
-    permissions: ["Acessar Pipeline", "Gerenciar Contatos"],
-  },
-  {
-    id: "3",
-    name: "Fernanda Costa",
-    email: "fernanda.costa@empresa.com",
-    role: "Suporte",
-    status: "Ativo",
-    lastAccess: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-    permissions: ["Acessar Pipeline", "Gerenciar Contatos", "Chat"],
-  },
-  {
-    id: "4",
-    name: "João Pereira",
-    email: "joao.pereira@empresa.com",
-    role: "Gerente",
-    status: "Pendente",
-    lastAccess: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-    permissions: ["Acessar Pipeline", "Gerenciar Contatos", "Relatórios"],
-  },
-  {
-    id: "5",
-    name: "Mariana Souza",
-    email: "mariana.souza@empresa.com",
-    role: "Vendedor",
-    status: "Inativo",
-    lastAccess: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 days ago
-    permissions: ["Acessar Pipeline"],
-  },
-  {
-    id: "6",
-    name: "Pedro Oliveira",
-    email: "pedro.oliveira@empresa.com",
-    role: "Suporte",
-    status: "Ativo",
-    lastAccess: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-    permissions: ["Acessar Pipeline", "Gerenciar Contatos", "Chat", "Configurações"],
-  },
-]
-
-// Available permissions
-const availablePermissions = [
-  { id: "pipeline", label: "Acessar Pipeline" },
-  { id: "contacts", label: "Gerenciar Contatos" },
-  { id: "settings", label: "Configurações" },
-  { id: "reports", label: "Relatórios" },
-  { id: "chat", label: "Chat" },
-  { id: "integrations", label: "Integrações" },
-  { id: "billing", label: "Faturamento" },
-]
-
 // Helper functions
-function getRoleBadgeColor(role: User["role"]) {
+function getRoleBadgeColor(role: string) {
   switch (role) {
-    case "Admin":
+    case "OWNER":
       return "bg-[#46347F] text-white hover:bg-[#46347F]/90"
-    case "Vendedor":
-      return "bg-blue-500 text-white hover:bg-blue-500/90"
-    case "Suporte":
-      return "bg-green-500 text-white hover:bg-green-500/90"
-    case "Gerente":
+    case "ADMIN":
+      return "bg-purple-500 text-white hover:bg-purple-500/90"
+    case "MANAGER":
       return "bg-orange-500 text-white hover:bg-orange-500/90"
+    case "MEMBER":
+      return "bg-blue-500 text-white hover:bg-blue-500/90"
     default:
       return "bg-gray-500 text-white"
   }
 }
 
-function getStatusBadgeColor(status: User["status"]) {
+function getStatusBadgeColor(status: string) {
   switch (status) {
-    case "Ativo":
+    case "ACTIVE":
       return "bg-green-100 text-green-700 border-green-200"
-    case "Inativo":
+    case "INACTIVE":
       return "bg-gray-100 text-gray-700 border-gray-200"
-    case "Pendente":
+    case "PENDING":
       return "bg-yellow-100 text-yellow-700 border-yellow-200"
     default:
       return "bg-gray-100 text-gray-700"
   }
 }
 
-function formatRelativeDate(date: Date): string {
+function formatStatusLabel(status: string): string {
+  switch (status) {
+    case "ACTIVE":
+      return "Ativo"
+    case "INACTIVE":
+      return "Inativo"
+    case "PENDING":
+      return "Pendente"
+    default:
+      return status
+  }
+}
+
+function formatRelativeDate(date: Date | null | undefined): string {
+  if (!date) return "Nunca"
+  
   const now = new Date()
-  const diffInMs = now.getTime() - date.getTime()
+  const dateObj = new Date(date)
+  const diffInMs = now.getTime() - dateObj.getTime()
   const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
@@ -172,10 +118,11 @@ function formatRelativeDate(date: Date): string {
   if (diffInHours < 24) return `${diffInHours} horas atrás`
   if (diffInDays === 1) return "Ontem"
   if (diffInDays < 7) return `${diffInDays} dias atrás`
-  return date.toLocaleDateString("pt-BR")
+  return dateObj.toLocaleDateString("pt-BR")
 }
 
 function getInitials(name: string): string {
+  if (!name) return "??"
   return name
     .split(" ")
     .map((n) => n[0])
@@ -188,110 +135,135 @@ function getInitials(name: string): string {
 const emptyFormState = {
   name: "",
   email: "",
-  role: "Vendedor" as User["role"],
-  status: "Ativo" as User["status"],
-  permissions: [] as string[],
+  password: "",
+  role: "MEMBER" as const,
 }
 
 export default function UsuariosPage() {
-  const [users, setUsers] = useState<User[]>(mockUsers)
+  const { 
+    members, 
+    isLoading, 
+    error, 
+    refresh, 
+    inviteMember, 
+    updateMember, 
+    deleteMember 
+  } = useOrganizationMembers()
+  
   const [searchQuery, setSearchQuery] = useState("")
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null)
   const [inviteForm, setInviteForm] = useState(emptyFormState)
-  const [editForm, setEditForm] = useState(emptyFormState)
+  const [editForm, setEditForm] = useState({ role: "MEMBER" as const, status: "ACTIVE" as const })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Filter users based on search query
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users
+  // Filter members based on search query
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery.trim()) return members
     const query = searchQuery.toLowerCase()
-    return users.filter(
-      (user) =>
-        user.name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        user.role.toLowerCase().includes(query)
+    return members.filter(
+      (member) =>
+        member.name.toLowerCase().includes(query) ||
+        member.email.toLowerCase().includes(query) ||
+        member.role.toLowerCase().includes(query)
     )
-  }, [users, searchQuery])
+  }, [members, searchQuery])
 
-  // Handle invite user
-  const handleInvite = () => {
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: inviteForm.name,
-      email: inviteForm.email,
-      role: inviteForm.role,
-      status: "Pendente",
-      lastAccess: new Date(),
-      permissions: inviteForm.permissions,
+  // Handle invite member
+  const handleInvite = async () => {
+    if (!inviteForm.name || !inviteForm.email || !inviteForm.password) return
+    
+    try {
+      setIsSubmitting(true)
+      await inviteMember({
+        name: inviteForm.name,
+        email: inviteForm.email,
+        password: inviteForm.password,
+        role: inviteForm.role,
+      })
+      toast.success("Usuário criado com sucesso! Ele já pode fazer login.")
+      setInviteForm(emptyFormState)
+      setIsInviteOpen(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao criar usuário")
+    } finally {
+      setIsSubmitting(false)
     }
-    setUsers([...users, newUser])
-    setInviteForm(emptyFormState)
-    setIsInviteOpen(false)
   }
 
-  // Handle edit user
-  const handleEdit = () => {
-    if (!selectedUser) return
-    const updatedUsers = users.map((user) =>
-      user.id === selectedUser.id
-        ? {
-            ...user,
-            name: editForm.name,
-            email: editForm.email,
-            role: editForm.role,
-            status: editForm.status,
-            permissions: editForm.permissions,
-          }
-        : user
-    )
-    setUsers(updatedUsers)
-    setIsEditOpen(false)
-    setSelectedUser(null)
+  // Handle edit member
+  const handleEdit = async () => {
+    if (!selectedMember) return
+    
+    try {
+      setIsSubmitting(true)
+      await updateMember(selectedMember.id, {
+        role: editForm.role,
+        status: editForm.status,
+      })
+      toast.success("Usuário atualizado com sucesso!")
+      setIsEditOpen(false)
+      setSelectedMember(null)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar usuário")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  // Handle delete user
-  const handleDelete = (userId: string) => {
-    setUsers(users.filter((user) => user.id !== userId))
+  // Handle delete member
+  const handleDelete = async (memberId: string) => {
+    if (!confirm("Tem certeza que deseja remover este membro?")) return
+    
+    try {
+      await deleteMember(memberId)
+      toast.success("Usuário removido com sucesso!")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao remover usuário")
+    }
   }
 
-  // Handle toggle user status
-  const handleToggleStatus = (userId: string) => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              status: user.status === "Ativo" ? "Inativo" : "Ativo" as User["status"],
-            }
-          : user
-      )
-    )
+  // Handle toggle member status
+  const handleToggleStatus = async (member: OrganizationMember) => {
+    const newStatus = member.status === "ACTIVE" ? "INACTIVE" : "ACTIVE"
+    try {
+      await updateMember(member.id, { status: newStatus })
+      toast.success(`Usuário ${newStatus === "ACTIVE" ? "ativado" : "desativado"} com sucesso!`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar status")
+    }
   }
 
   // Open edit modal
-  const openEditModal = (user: User) => {
-    setSelectedUser(user)
+  const openEditModal = (member: OrganizationMember) => {
+    setSelectedMember(member)
     setEditForm({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      permissions: user.permissions,
+      role: member.role as "OWNER" | "ADMIN" | "MANAGER" | "MEMBER",
+      status: member.status as "ACTIVE" | "INACTIVE" | "PENDING",
     })
     setIsEditOpen(true)
   }
 
-  // Toggle permission in form
-  const togglePermission = (permission: string, isEdit: boolean = false) => {
-    const formState = isEdit ? editForm : inviteForm
-    const setFormState = isEdit ? setEditForm : setInviteForm
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
+        <p className="text-sm text-gray-500">Carregando membros...</p>
+      </div>
+    )
+  }
 
-    const newPermissions = formState.permissions.includes(permission)
-      ? formState.permissions.filter((p) => p !== permission)
-      : [...formState.permissions, permission]
-
-    setFormState({ ...formState, permissions: newPermissions })
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <p className="text-red-500">Erro ao carregar membros: {error}</p>
+        <Button onClick={refresh} variant="outline" className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Tentar novamente
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -327,14 +299,14 @@ export default function UsuariosPage() {
               style={{ backgroundColor: "#46347F" }}
             >
               <Plus className="h-4 w-4" />
-              Convidar Usuário
+              Criar Usuário
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Convidar Usuário</DialogTitle>
+              <DialogTitle>Criar Novo Usuário</DialogTitle>
               <DialogDescription>
-                Preencha os dados para convidar um novo membro para a equipe.
+                Preencha os dados para criar um novo usuário. Ele poderá fazer login imediatamente.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -350,7 +322,7 @@ export default function UsuariosPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="invite-email">E-mail</Label>
+                <Label htmlFor="invite-email">E-mail *</Label>
                 <Input
                   id="invite-email"
                   type="email"
@@ -362,10 +334,23 @@ export default function UsuariosPage() {
                 />
               </div>
               <div className="grid gap-2">
+                <Label htmlFor="invite-password">Senha *</Label>
+                <Input
+                  id="invite-password"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={inviteForm.password}
+                  onChange={(e) =>
+                    setInviteForm({ ...inviteForm, password: e.target.value })
+                  }
+                />
+                <p className="text-xs text-gray-500">O usuário poderá fazer login com este e-mail e senha</p>
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="invite-role">Cargo</Label>
                 <Select
                   value={inviteForm.role}
-                  onValueChange={(value: User["role"]) =>
+                  onValueChange={(value: "OWNER" | "ADMIN" | "MANAGER" | "MEMBER") =>
                     setInviteForm({ ...inviteForm, role: value })
                   }
                 >
@@ -373,39 +358,12 @@ export default function UsuariosPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Vendedor">Vendedor</SelectItem>
-                    <SelectItem value="Suporte">Suporte</SelectItem>
-                    <SelectItem value="Gerente">Gerente</SelectItem>
+                    <SelectItem value="OWNER">Proprietário</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="MANAGER">Gerente</SelectItem>
+                    <SelectItem value="MEMBER">Membro</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="grid gap-3">
-                <Label>Permissões</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {availablePermissions.map((permission) => (
-                    <div
-                      key={permission.id}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={`invite-${permission.id}`}
-                        checked={inviteForm.permissions.includes(
-                          permission.label
-                        )}
-                        onCheckedChange={() =>
-                          togglePermission(permission.label, false)
-                        }
-                      />
-                      <Label
-                        htmlFor={`invite-${permission.id}`}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {permission.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
             <DialogFooter>
@@ -420,11 +378,15 @@ export default function UsuariosPage() {
               </Button>
               <Button
                 onClick={handleInvite}
-                disabled={!inviteForm.name || !inviteForm.email}
+                disabled={!inviteForm.name || !inviteForm.email || !inviteForm.password || isSubmitting}
                 className="text-white"
                 style={{ backgroundColor: "#46347F" }}
               >
-                Convidar
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Criar Usuário"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -446,7 +408,7 @@ export default function UsuariosPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.length === 0 ? (
+              {filteredMembers.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={5}
@@ -459,8 +421,8 @@ export default function UsuariosPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
+                filteredMembers.map((member) => (
+                  <TableRow key={member.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
@@ -471,36 +433,36 @@ export default function UsuariosPage() {
                               color: "#46347F",
                             }}
                           >
-                            {getInitials(user.name)}
+                            {getInitials(member.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="font-medium text-sm">
-                            {user.name}
+                            {member.name}
                           </span>
                           <span className="text-xs text-gray-500">
-                            {user.email}
+                            {member.email}
                           </span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge
-                        className={`text-xs ${getRoleBadgeColor(user.role)}`}
+                        className={`text-xs ${getRoleBadgeColor(member.role)}`}
                       >
-                        {user.role}
+                        {roleLabels[member.role] || member.role}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
-                        className={`text-xs ${getStatusBadgeColor(user.status)}`}
+                        className={`text-xs ${getStatusBadgeColor(member.status)}`}
                       >
-                        {user.status}
+                        {formatStatusLabel(member.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-gray-600">
-                      {formatRelativeDate(user.lastAccess)}
+                      {formatRelativeDate(member.lastAccess)}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -511,29 +473,30 @@ export default function UsuariosPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => openEditModal(user)}
+                            onClick={() => openEditModal(member)}
                             className="gap-2"
                           >
                             <Edit className="h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleToggleStatus(user.id)}
+                            onClick={() => handleToggleStatus(member)}
                             className="gap-2"
                           >
                             <UserX className="h-4 w-4" />
-                            {user.status === "Ativo"
+                            {member.status === "ACTIVE"
                               ? "Desativar"
                               : "Ativar"}
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(user.id)}
-                            variant="destructive"
-                            className="gap-2"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Excluir
-                          </DropdownMenuItem>
+                          {member.role !== "OWNER" && (
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(member.id)}
+                              className="gap-2 text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -551,39 +514,24 @@ export default function UsuariosPage() {
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
             <DialogDescription>
-              Atualize as informações do usuário {selectedUser?.name}.
+              Atualize as informações de {selectedMember?.name}.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-name">Nome</Label>
-              <Input
-                id="edit-name"
-                placeholder="Nome completo"
-                value={editForm.name}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, name: e.target.value })
-                }
-              />
+              <Label>Nome</Label>
+              <p className="text-sm text-gray-600">{selectedMember?.name}</p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-email">E-mail</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                placeholder="email@empresa.com"
-                value={editForm.email}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, email: e.target.value })
-                }
-              />
+              <Label>E-mail</Label>
+              <p className="text-sm text-gray-600">{selectedMember?.email}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="edit-role">Cargo</Label>
                 <Select
                   value={editForm.role}
-                  onValueChange={(value: User["role"]) =>
+                  onValueChange={(value: "OWNER" | "ADMIN" | "MANAGER" | "MEMBER") =>
                     setEditForm({ ...editForm, role: value })
                   }
                 >
@@ -591,10 +539,10 @@ export default function UsuariosPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Vendedor">Vendedor</SelectItem>
-                    <SelectItem value="Suporte">Suporte</SelectItem>
-                    <SelectItem value="Gerente">Gerente</SelectItem>
+                    <SelectItem value="OWNER">Proprietário</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="MANAGER">Gerente</SelectItem>
+                    <SelectItem value="MEMBER">Membro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -602,7 +550,7 @@ export default function UsuariosPage() {
                 <Label htmlFor="edit-status">Status</Label>
                 <Select
                   value={editForm.status}
-                  onValueChange={(value: User["status"]) =>
+                  onValueChange={(value: "ACTIVE" | "INACTIVE" | "PENDING") =>
                     setEditForm({ ...editForm, status: value })
                   }
                 >
@@ -610,36 +558,11 @@ export default function UsuariosPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Ativo">Ativo</SelectItem>
-                    <SelectItem value="Inativo">Inativo</SelectItem>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="ACTIVE">Ativo</SelectItem>
+                    <SelectItem value="INACTIVE">Inativo</SelectItem>
+                    <SelectItem value="PENDING">Pendente</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
-            <div className="grid gap-3">
-              <Label>Permissões</Label>
-              <div className="grid grid-cols-2 gap-3">
-                {availablePermissions.map((permission) => (
-                  <div
-                    key={permission.id}
-                    className="flex items-center space-x-2"
-                  >
-                    <Checkbox
-                      id={`edit-${permission.id}`}
-                      checked={editForm.permissions.includes(permission.label)}
-                      onCheckedChange={() =>
-                        togglePermission(permission.label, true)
-                      }
-                    />
-                    <Label
-                      htmlFor={`edit-${permission.id}`}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {permission.label}
-                    </Label>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
@@ -648,18 +571,22 @@ export default function UsuariosPage() {
               variant="outline"
               onClick={() => {
                 setIsEditOpen(false)
-                setSelectedUser(null)
+                setSelectedMember(null)
               }}
             >
               Cancelar
             </Button>
             <Button
               onClick={handleEdit}
-              disabled={!editForm.name || !editForm.email}
+              disabled={isSubmitting}
               className="text-white"
               style={{ backgroundColor: "#46347F" }}
             >
-              Salvar alterações
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Salvar alterações"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
