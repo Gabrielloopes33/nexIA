@@ -106,11 +106,18 @@ export function SidebarDropdownGroup({
     (child) => pathname === child.href || pathname.startsWith(child.href + "/")
   )
 
+  // Handle toggle with event prevention
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onToggle()
+  }
+
   return (
     <div className="w-full">
       {/* Group Header - Parent Level */}
       <button
-        onClick={onToggle}
+        onClick={handleToggle}
         className={cn(
           "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200",
           "text-white/95 hover:text-white hover:bg-white/10",
@@ -134,8 +141,8 @@ export function SidebarDropdownGroup({
       {/* Dropdown Content - Child Level */}
       <div
         className={cn(
-          "overflow-hidden transition-all duration-200 ease-in-out",
-          isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+          "overflow-hidden",
+          isOpen ? "block" : "hidden"
         )}
       >
         {/* Tree container */}
