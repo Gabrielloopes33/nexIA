@@ -36,6 +36,10 @@ function SimpleNavLink({
           : "text-white hover:bg-white/15 px-3"
       )}
     >
+      {/* Active indicator bar - yellow */}
+      {isActive && (
+        <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
+      )}
       <Icon className="h-4 w-4 text-white shrink-0" />
       <span className="flex-1 text-left text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
         {item.label}
@@ -89,7 +93,7 @@ export function Sidebar() {
       {/* Main sidebar container */}
       <div
         className={cn(
-          "flex flex-1 flex-col rounded-sm bg-[#46347F] py-4 border-r-2 border-white/20 relative px-2 items-stretch shadow-[4px_0_24px_rgba(0,0,0,0.18)] overflow-hidden",
+          "flex flex-1 flex-col rounded-sm bg-[#46347F] py-4 relative px-2 items-stretch shadow-[4px_0_24px_rgba(0,0,0,0.18)] overflow-hidden",
           isReady && "transition-all duration-300 ease-in-out"
         )}
       >
@@ -141,6 +145,10 @@ export function Sidebar() {
                     : "text-white hover:bg-white/15 px-3"
                 )}
               >
+                {/* Active indicator bar - yellow */}
+                {isActive && (
+                  <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
+                )}
                 <Icon className="h-4 w-4 text-white shrink-0" />
                 <span className="text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
                   {item.label}
