@@ -1,20 +1,18 @@
 /**
- * Vertical KPI Card Component - Estilo Salesforce
- * Valor grande em destaque, igual ao 18B, 267, 7.8B
+ * Vertical KPI Card Component - Cards Quadrados Compactos 1:1
+ * Proporção quadrada com tamanho reduzido
  */
 
-import { LucideIcon } from 'lucide-react'
-import { Card } from '@/components/ui/card'
+import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface VerticalKpiCardProps {
   label: string
-  value: string
-  change: string
-  icon: LucideIcon
+  value: string | number
+  change?: string | number
+  icon?: LucideIcon
   suffix?: string
   isNegativeGood?: boolean
-  size?: 'default' | 'large'
 }
 
 export function VerticalKpiCard({
@@ -24,58 +22,58 @@ export function VerticalKpiCard({
   icon: Icon,
   suffix = '',
   isNegativeGood = false,
-  size = 'default',
 }: VerticalKpiCardProps) {
-  // Determina se a mudança é positiva ou negativa
+  // Parse change value
   const changeString = String(change || '0%')
-  const changeValue = parseFloat(changeString.replace(/[^-0-9.]/g, ''))
+  const changeValue = parseFloat(changeString.replace(/[^-0-9.,]/g, '').replace(',', '.'))
   const isPositive = isNegativeGood ? changeValue < 0 : changeValue > 0
+  const isNeutral = changeValue === 0
 
   return (
-    <Card className="group rounded-sm shadow-sm p-2.5 transition-all hover:shadow-md">
-      {/* Icon e Change Badge no topo */}
-      <div className="mb-2 flex items-center justify-between">
-        <div className="bg-gradient-to-br from-[#8B7DB8] to-[#8B7DB8] p-1.5 rounded-sm">
-          <Icon className="h-3.5 w-3.5 text-white" />
-        </div>
-        <div
-          className={cn(
-            'rounded-sm px-1.5 py-0 text-[10px] font-bold',
-            isPositive
-              ? 'bg-[#027E46]/10 text-[#027E46]'
-              : 'bg-[#C23934]/10 text-[#C23934]'
-          )}
-        >
-          {changeString}
-        </div>
-      </div>
-
-      {/* Label */}
-      <h3 className="mb-1 text-xs font-medium text-gray-900 leading-tight">{label}</h3>
-
-      {/* Value em destaque - fonte responsiva */}
-      <div className="flex items-baseline gap-1 min-w-0">
-        <p className={cn(
-          "font-bold text-[#8B7DB8] tracking-tight truncate",
-          size === 'large' ? 'text-2xl' : 'text-lg'
-        )}>{value}</p>
-        {suffix && (
-          <span className="text-sm font-semibold text-gray-500 flex-shrink-0">{suffix}</span>
+    <div
+      className={cn(
+        'flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-2.5',
+        'transition-colors hover:border-slate-300 w-[220px] h-[145px]'
+      )}
+    >
+      {/* Top: Label e Icon */}
+      <div className="flex items-start justify-between gap-1">
+        <p className="text-[12px] font-medium text-slate-500 uppercase tracking-wider leading-tight line-clamp-2 flex-1">
+          {label}
+        </p>
+        {Icon && (
+          <Icon className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
         )}
       </div>
 
-      {/* Progress Indicator sutil */}
-      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
+      {/* Center: Value */}
+      <div className="flex items-center justify-center flex-1">
+        <span className="text-xl font-bold text-slate-900">
+          {value}{suffix}
+        </span>
+      </div>
+
+      {/* Bottom: Change/Trend */}
+      {change !== undefined && (
         <div
           className={cn(
-            'h-full transition-all duration-500',
-            isPositive
-              ? 'bg-gradient-to-r from-[#8B7DB8] to-[#8B7DB8]'
-              : 'bg-gradient-to-r from-[#C23934] to-[#C23934]/70'
+            'flex items-center gap-0.5 text-[15px]',
+            isNeutral && 'text-slate-500',
+            !isNeutral && isPositive && 'text-emerald-600',
+            !isNeutral && !isPositive && 'text-red-600'
           )}
-          style={{ width: `${Math.min(Math.abs(changeValue) * 5, 100)}%` }}
-        />
-      </div>
-    </Card>
+        >
+          {!isNeutral && isPositive && <TrendingUp className="h-3 w-3" />}
+          {!isNeutral && !isPositive && <TrendingDown className="h-3 w-3" />}
+          <span className="font-semibold">
+            {changeString.startsWith('+') || changeString.startsWith('-') 
+              ? changeString 
+              : `${isPositive ? '+' : ''}${changeString}`}
+          </span>
+        </div>
+      )}
+    </div>
   )
 }
+
+export default VerticalKpiCard

@@ -138,10 +138,8 @@ export function SidebarDropdownGroup({
           isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
         )}
       >
-        {/* Tree container with vertical line */}
+        {/* Tree container */}
         <div className="relative ml-[22px] pl-0">
-          {/* Main vertical line */}
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-white/15" />
           
           {groupedChildren.map(({ section, items }, sectionIndex) => (
             <div key={section || `section-${sectionIndex}`} className="relative">

@@ -9,6 +9,7 @@ export type TranscriptionSource = 'WHATSAPP_CALL' | 'WHATSAPP_AUDIO' | 'PHONE_CA
 export interface Transcription {
   id: string
   contactId?: string
+  scheduleId?: string
   conversationId?: string
   source: TranscriptionSource
   sourceId?: string
@@ -27,6 +28,7 @@ export interface Transcription {
   audioUrl?: string
   audioSize?: number
   audioFormat?: string
+  language?: string
   recordedAt?: string
   processedAt?: string
   createdAt: string

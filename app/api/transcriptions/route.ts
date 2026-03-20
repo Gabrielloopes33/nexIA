@@ -11,7 +11,11 @@ import { requireAuth } from '@/lib/auth/server';
 // GET /api/transcriptions?contactId=&status=&limit=20
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const user = authResult;
     const { searchParams } = new URL(request.url);
 
     const contactId = searchParams.get('contactId');
@@ -23,7 +27,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const where: any = {
-      organizationId: user.organization.id,
+      organizationId: user.organizationId,
     };
 
     if (contactId) where.contactId = contactId;
@@ -66,10 +70,12 @@ export async function GET(request: NextRequest) {
         hasMore: offset + transcriptions.length < total,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Transcriptions GET Error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch transcriptions' },
+      { success: false, error: 'Failed to fetch transcriptions', details: error.message },
       { status: 500 }
     );
   }
@@ -78,7 +84,11 @@ export async function GET(request: NextRequest) {
 // POST /api/transcriptions - Criar transcrição
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+    const user = authResult;
     const body = await request.json();
 
     const {
@@ -106,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     const transcription = await prisma.transcription.create({
       data: {
-        organizationId: user.organization.id,
+        organizationId: user.organizationId,
         contactId,
         conversationId,
         source,

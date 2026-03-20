@@ -21,6 +21,7 @@
     "typecheck": "tsc --noEmit",
     "create-admin": "tsx scripts/create-admin.ts",
     "db:seed:templates": "tsx scripts/seed-pipeline-templates.ts",
+    "db:seed:reunioes": "tsx prisma/seed-reunioes.ts",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
