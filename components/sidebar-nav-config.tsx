@@ -103,8 +103,8 @@ export const topNavItems: SidebarNavItem[] = [
     children: [
       { label: "Visão Geral", href: "/agendamentos", section: "Principal" },
       { label: "Fila de Atendimento", href: "/agendamentos/fila", section: "Principal", badge: 0 },
-      { label: "Histórico de Calls", href: "/agendamentos/calls", section: "Principal" },
-      { label: "Concluídas", href: "/agendamentos/concluidas", section: "Principal", badge: 0 },
+      { label: "Histórico de Reuniões", href: "/agendamentos/reunioes", section: "Principal" },
+
       { label: "Ligações", href: "/agendamentos/ligacoes", section: "Tipos" },
       { label: "Reuniões", href: "/agendamentos/reunioes", section: "Tipos" },
       { label: "Tarefas", href: "/agendamentos/tarefas", section: "Tipos" },

@@ -298,6 +298,7 @@ model Transcription {
   id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId   String              @map("organization_id") @db.Uuid
   contactId        String?             @map("contact_id") @db.Uuid
+  scheduleId       String?             @map("schedule_id") @db.Uuid
   conversationId   String?             @map("conversation_id") @db.Uuid
   source           TranscriptionSource
   sourceId         String?             @map("source_id")
@@ -318,11 +319,13 @@ model Transcription {
   audioFormat      String?             @map("audio_format")
   recordedAt       DateTime?           @map("recorded_at")
   processedAt      DateTime?           @map("processed_at")
+  language         String?             @default("pt-BR")
   createdAt        DateTime            @default(now()) @map("created_at")
   updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at")
 
   @@index([organizationId])
   @@index([contactId])
+  @@index([scheduleId])
   @@index([status])
   @@index([source])
   @@map("transcriptions")
