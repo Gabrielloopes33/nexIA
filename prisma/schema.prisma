@@ -85,6 +85,43 @@ model WhatsAppInstance {
   @@map("whatsapp_cloud_instances")
 }
 
+/// EvolutionInstance - Instância WhatsApp via Evolution API (não oficial)
+/// Armazena instâncias conectadas via Evolution API para WhatsApp não oficial
+model EvolutionInstance {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId    String   @map("organization_id") @db.Uuid
+  name              String   @db.VarChar(255)
+  instanceName      String   @unique @map("instance_name") @db.VarChar(255)
+
+  // Connection Info
+  status            String   @default("DISCONNECTED") @map("status") @db.VarChar(50)
+  phoneNumber       String?  @map("phone_number") @db.VarChar(50)
+  profilePictureUrl String?  @map("profile_picture_url")
+  profileName       String?  @map("profile_name") @db.VarChar(255)
+
+  // Evolution API Config
+  apiKey            String?  @map("api_key") @db.VarChar(255)
+
+  // Webhook Config
+  webhookEnabled    Boolean  @default(true) @map("webhook_enabled")
+  webhookUrl        String?  @map("webhook_url")
+
+  // Statistics
+  messagesSent      Int      @default(0) @map("messages_sent")
+  messagesReceived  Int      @default(0) @map("messages_received")
+
+  // Timestamps
+  connectedAt       DateTime? @map("connected_at")
+  disconnectedAt    DateTime? @map("disconnected_at")
+  lastActivityAt    DateTime? @map("last_activity_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("evolution_instances")
+}
+
 /// Contact - Contatos unificados (WhatsApp, Instagram, etc)
 model Contact {
   id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -560,6 +597,13 @@ enum WhatsAppInstanceStatus {
   ERROR
   SUSPENDED
   PENDING_SETUP
+}
+
+enum EvolutionConnectionStatus {
+  DISCONNECTED
+  CONNECTING
+  CONNECTED
+  ERROR
 }
 
 enum QualityRating {

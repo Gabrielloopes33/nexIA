@@ -11,6 +11,12 @@ export { useLists, type List } from './use-lists'
 
 // WhatsApp Hooks
 export { useWhatsAppInstances, type WhatsAppInstance } from './use-whatsapp-instances'
+
+// Evolution API Hooks (WhatsApp não oficial)
+export {
+  useEvolution,
+  type UseEvolutionReturn,
+} from './use-evolution'
 export { useWhatsAppTemplatesSync } from './use-whatsapp-templates-sync'
 export { useWhatsAppTemplates } from './use-whatsapp-templates'
 export { useWhatsApp } from './use-whatsapp'
