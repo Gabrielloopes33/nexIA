@@ -6,12 +6,9 @@ import {
   Building2,
   Users,
   Shield,
-  MessageSquare,
-  Mail,
-  Bell,
+  Webhook,
   Smartphone,
   Instagram,
-  Webhook,
   CreditCard,
   FileText,
   Wallet,
@@ -23,6 +20,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useOrganization } from "@/lib/contexts/organization-context"
 
 const PRIMARY_COLOR = "#46347F"
 
@@ -37,7 +35,7 @@ interface ConfigSection {
   }[]
 }
 
-const configSections: ConfigSection[] = [
+const configSections = (isOwner: boolean): ConfigSection[] => [
   {
     title: "Conta",
     icon: User,
@@ -49,15 +47,7 @@ const configSections: ConfigSection[] = [
       { label: "Permissões", href: "#", icon: Shield, description: "Controle de acesso" },
     ],
   },
-  {
-    title: "Comunicação",
-    icon: MessageSquare,
-    items: [
-      { label: "Canais", href: "/configuracoes/canais", icon: MessageSquare, description: "WhatsApp, email e mais" },
-      { label: "Templates", href: "#", icon: Mail, description: "Mensagens pré-definidas" },
-      { label: "Notificações", href: "/configuracoes/notificacoes", icon: Bell, description: "Preferências de alerta" },
-    ],
-  },
+  // Seção Comunicação removida - funcionalidades migradas para outras áreas
   {
     title: "Integrações",
     icon: Webhook,
@@ -67,15 +57,18 @@ const configSections: ConfigSection[] = [
       { label: "API", href: "#", icon: Webhook, description: "Chaves e documentação" },
     ],
   },
-  {
-    title: "Assinaturas",
-    icon: CreditCard,
-    items: [
-      { label: "Planos", href: "#", icon: CreditCard, description: "Seu plano atual e upgrade" },
-      { label: "Faturas", href: "#", icon: FileText, description: "Histórico de cobranças" },
-      { label: "Pagamento", href: "#", icon: Wallet, description: "Métodos de pagamento" },
-    ],
-  },
+  // Somente OWNER vê a seção de Assinaturas
+  ...(isOwner ? [
+    {
+      title: "Assinaturas",
+      icon: CreditCard,
+      items: [
+        { label: "Planos", href: "/configuracoes/assinaturas/planos", icon: CreditCard, description: "Seu plano atual e upgrade" },
+        { label: "Faturas", href: "/configuracoes/assinaturas/faturas", icon: FileText, description: "Histórico de cobranças" },
+        { label: "Pagamento", href: "/configuracoes/assinaturas/pagamentos", icon: Wallet, description: "Métodos de pagamento" },
+      ],
+    },
+  ] : []),
   {
     title: "Sistema",
     icon: Settings,
@@ -144,6 +137,24 @@ function ConfigCard({ section }: { section: ConfigSection }) {
 }
 
 export default function ConfiguracoesPage() {
+  const { role, isLoading } = useOrganization()
+  const isOwner = role === "OWNER"
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: PRIMARY_COLOR }}>
+            Configurações
+          </h1>
+          <p className="text-sm text-gray-500">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const sections = configSections(isOwner)
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -158,7 +169,7 @@ export default function ConfiguracoesPage() {
 
       {/* Grid de Configurações */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {configSections.map((section) => (
+        {sections.map((section) => (
           <ConfigCard key={section.title} section={section} />
         ))}
       </div>

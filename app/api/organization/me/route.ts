@@ -21,7 +21,7 @@ export async function GET() {
       )
     }
 
-    // Busca detalhes da organização via Prisma
+    // Busca detalhes da organização e a role do membro via Prisma
     const org = await prisma.organization.findUnique({
       where: { id: user.organizationId },
       select: {
@@ -29,6 +29,11 @@ export async function GET() {
         name: true,
         slug: true,
         status: true,
+        members: {
+          where: { userId: user.userId },
+          select: { role: true },
+          take: 1,
+        },
       },
     })
 
@@ -39,6 +44,7 @@ export async function GET() {
         name: '',
         slug: '',
         status: 'ACTIVE',
+        role: null,
       })
     }
 
@@ -47,6 +53,7 @@ export async function GET() {
       name: org.name,
       slug: org.slug,
       status: org.status,
+      role: org.members[0]?.role || null,
     })
   } catch (error) {
     console.error('[API] Erro ao buscar organização:', error)

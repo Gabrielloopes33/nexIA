@@ -7,6 +7,7 @@ interface Organization {
   name: string
   slug: string
   status: string
+  role?: string | null
 }
 
 interface OrganizationContextType {
@@ -14,6 +15,7 @@ interface OrganizationContextType {
   isLoading: boolean
   error: Error | null
   refreshOrganization: () => Promise<void>
+  role: string | null
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined)
@@ -122,6 +124,7 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         isLoading,
         error,
         refreshOrganization: () => fetchOrganization(),
+        role: organization?.role || null,
       }}
     >
       {children}
@@ -145,6 +148,7 @@ export function useOrganization() {
         isLoading: true,
         error: null,
         refreshOrganization: async () => {},
+        role: null,
       }
     }
     throw new Error("useOrganization deve ser usado dentro de OrganizationProvider")

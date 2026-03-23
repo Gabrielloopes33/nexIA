@@ -17,12 +17,14 @@ import {
   Download,
   Loader2,
   AlertCircle,
+  Lock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { useSubscriptions } from "@/hooks/use-subscriptions"
 import { useInvoices } from "@/hooks/use-invoices"
 import { usePlans } from "@/hooks/use-plans"
+import { useOrganization } from "@/lib/contexts/organization-context"
 
 function formatCurrency(cents: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -46,6 +48,32 @@ export default function AssinaturasPage() {
   const { subscriptions, isLoading: isLoadingSubscriptions, error: errorSubscriptions, refetch: refetchSubscriptions } = useSubscriptions()
   const { invoices, isLoading: isLoadingInvoices, error: errorInvoices } = useInvoices()
   const { plans, isLoading: isLoadingPlans, error: errorPlans } = usePlans()
+  const { role, isLoading: isLoadingRole } = useOrganization()
+  
+  const isOwner = role === "OWNER"
+  
+  // Redirecionar ou mostrar mensagem de acesso negado se não for OWNER
+  if (!isLoadingRole && !isOwner) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md">
+          <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
+            <Lock className="h-8 w-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-semibold">Acesso Restrito</h3>
+          <p className="text-muted-foreground">
+            Apenas proprietários podem acessar a área de assinaturas.
+            Entre em contato com o administrador da organização.
+          </p>
+          <Link href="/configuracoes">
+            <Button variant="outline">
+              Voltar para Configurações
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const isLoading = isLoadingSubscriptions || isLoadingInvoices || isLoadingPlans
   const hasError = errorSubscriptions || errorInvoices || errorPlans

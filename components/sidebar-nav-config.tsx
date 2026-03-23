@@ -19,6 +19,7 @@ export interface SidebarNavChild {
   badge?: number
   section?: string
   disabled?: boolean
+  requiredRole?: 'OWNER' | 'ADMIN' | 'MANAGER'
 }
 
 // Type for custom icon component
@@ -30,6 +31,7 @@ export interface SidebarNavItem {
   href?: string
   icon: LucideIcon | CustomIconComponent
   children?: SidebarNavChild[]
+  requiredRole?: 'OWNER' | 'ADMIN' | 'MANAGER'
 }
 
 export function isGroupActive(item: SidebarNavItem, pathname: string): boolean {
@@ -151,21 +153,19 @@ export const topNavItems: SidebarNavItem[] = [
       { label: "Empresa", href: "/configuracoes/empresa", section: "Conta" },
       { label: "Usuários", href: "/configuracoes/usuarios", section: "Conta" },
       { label: "Organizações", href: "/configuracoes/organizacoes", section: "Conta" },
-      // Assinaturas (antiga Cobranças)
-      { label: "Visão Geral", href: "/configuracoes/assinaturas", section: "Assinaturas" },
-      { label: "Assinaturas", href: "/configuracoes/assinaturas/assinaturas", section: "Assinaturas" },
-      { label: "Faturas", href: "/configuracoes/assinaturas/faturas", section: "Assinaturas" },
-      { label: "Clientes", href: "/configuracoes/assinaturas/clientes", section: "Assinaturas" },
-      { label: "Métodos", href: "/configuracoes/assinaturas/pagamentos", section: "Assinaturas" },
-      { label: "Histórico", href: "/configuracoes/assinaturas/historico", section: "Assinaturas" },
-      { label: "Reembolsos", href: "/configuracoes/assinaturas/reembolsos", section: "Assinaturas" },
-      { label: "Descontos", href: "/configuracoes/assinaturas/cupons", section: "Assinaturas" },
-      { label: "Planos", href: "/configuracoes/assinaturas/planos", section: "Assinaturas" },
-      { label: "Taxas", href: "/configuracoes/assinaturas/taxas", section: "Assinaturas" },
-      { label: "Config", href: "/configuracoes/assinaturas/configuracoes", section: "Assinaturas" },
-      // Comunicação
-      { label: "Canais", href: "/configuracoes/canais", section: "Comunicação" },
-      { label: "Notificações", href: "/configuracoes/notificacoes", section: "Comunicação" },
+      // Assinaturas - Apenas OWNER
+      { label: "Visão Geral", href: "/configuracoes/assinaturas", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Assinaturas", href: "/configuracoes/assinaturas/assinaturas", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Faturas", href: "/configuracoes/assinaturas/faturas", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Clientes", href: "/configuracoes/assinaturas/clientes", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Métodos", href: "/configuracoes/assinaturas/pagamentos", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Histórico", href: "/configuracoes/assinaturas/historico", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Reembolsos", href: "/configuracoes/assinaturas/reembolsos", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Descontos", href: "/configuracoes/assinaturas/cupons", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Planos", href: "/configuracoes/assinaturas/planos", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Taxas", href: "/configuracoes/assinaturas/taxas", section: "Assinaturas", requiredRole: "OWNER" },
+      { label: "Config", href: "/configuracoes/assinaturas/configuracoes", section: "Assinaturas", requiredRole: "OWNER" },
+      // Seção Comunicação removida da configurações
     ],
   },
 ]

@@ -3,17 +3,20 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState, useEffect, useCallback, memo } from "react"
+import { useState, useEffect, useCallback, memo, useMemo } from "react"
 import { User, LogOut } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useMainSidebar } from "@/hooks/use-main-sidebar"
 import { useSidebarDropdowns } from "@/hooks/use-sidebar-dropdowns"
+import { useOrganization } from "@/lib/contexts/organization-context"
 import { SidebarDropdownGroup } from "@/components/sidebar-dropdown-group"
 import {
   topNavItems,
   bottomNavItems,
   navItems,
+  SidebarNavItem,
+  SidebarNavChild,
 } from "@/components/sidebar-nav-config"
 
 // Simple Nav Link Component (for items without children)
@@ -70,13 +73,50 @@ const NavItemWithDropdown = memo(function NavItemWithDropdown({
   )
 })
 
+// Função para filtrar itens baseado na role
+function filterNavItemsByRole(items: SidebarNavItem[], userRole: string | null): SidebarNavItem[] {
+  if (!userRole) return items
+  
+  return items.map(item => {
+    // Se o item pai tem requiredRole e o usuário não tem permissão, remove o item
+    if (item.requiredRole && userRole !== item.requiredRole) {
+      return null
+    }
+    
+    // Filtra children se existirem
+    if (item.children) {
+      const filteredChildren = item.children.filter((child: SidebarNavChild) => {
+        if (child.requiredRole && userRole !== child.requiredRole) {
+          return false
+        }
+        return true
+      })
+      
+      // Se todos os children foram filtrados, retorna null
+      if (filteredChildren.length === 0) {
+        return null
+      }
+      
+      return { ...item, children: filteredChildren }
+    }
+    
+    return item
+  }).filter((item): item is SidebarNavItem => item !== null)
+}
+
 // Memoized sidebar to prevent unnecessary re-renders when parent state changes
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { isReady } = useMainSidebar()
+  const { role } = useOrganization()
   const [mounted, setMounted] = useState(false)
-  const { openGroups, toggleGroup, isGroupOpen } = useSidebarDropdowns(navItems)
+  
+  // Filtra os itens baseado na role do usuário
+  const filteredNavItems = useMemo(() => filterNavItemsByRole(navItems, role), [role])
+  const filteredTopNavItems = useMemo(() => filterNavItemsByRole(topNavItems, role), [role])
+  
+  const { openGroups, toggleGroup, isGroupOpen } = useSidebarDropdowns(filteredNavItems)
 
   const handleLogout = async () => {
     try {
@@ -127,7 +167,7 @@ export const Sidebar = memo(function Sidebar() {
       >
         {/* Top navigation */}
         <nav className="flex flex-1 flex-col gap-1 w-full items-stretch overflow-y-auto sidebar-scroll">
-          {topNavItems.map((item) => {
+          {filteredTopNavItems.map((item) => {
             const isItemActive =
               pathname === item.href ||
               (item.href && pathname.startsWith(item.href + "/"))
