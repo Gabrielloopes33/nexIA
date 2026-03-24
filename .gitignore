@@ -27,4 +27,47 @@ lighthouse-reports/
 .netlify
 
 # Claude
+.claude/
 .claude/settings.local.json
+
+# Copilot
+.copilot/skills/
+
+# Backups
+backups/migracao/
+
+# Documentation (local only)
+docs/
+
+# E2E tests
+e2e/dashboard/
+
+# Database migrations (local/dev only)
+migrations/
+
+# Supabase (local/dev only)
+supabase/
+
+# Docker files (local/dev only)
+.dockerignore
+Dockerfile.easypanel
+docker-compose.portainer.yml
+docker-compose.prod.yml
+docker-compose.supabase.yml
+DOCKER-SETUP.md
+
+# Deployment docs (local only)
+EASYPANEL.md
+SUPABASE-EASYPANEL.md
+SUPABASE-SELFHOSTED-GUIDE.md
+MIGRATION_PLANO_EXECUCAO.md
+easypanel.json
+
+# SQL scripts (local/dev only)
+*.sql
+add-color-to-lists.sql
+fix-enum.sql
+supabase-migration-pipeline.sql
+supabase-register-migration.sql
+supabase-schema-complete.sql
+update-schema.sql
