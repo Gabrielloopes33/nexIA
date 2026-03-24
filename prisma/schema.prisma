@@ -835,3 +835,35 @@ enum dealstatus {
   WON
   LOST
 }
+
+/// Notification - Notificações do sistema para usuários
+model Notification {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  userId         String?          @map("user_id") @db.Uuid
+  type           NotificationType
+  title          String           @db.VarChar(255)
+  message        String
+  link           String?          @db.VarChar(500)
+  metadata       Json?
+  read           Boolean          @default(false)
+  readAt         DateTime?        @map("read_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  LEAD
+  DEAL
+  TASK
+  MESSAGE
+  SYSTEM
+  WARNING
+  SUCCESS
+}

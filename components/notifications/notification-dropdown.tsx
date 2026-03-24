@@ -1,74 +1,34 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Bell, Check, CheckCheck } from "lucide-react"
+import { Bell, Check, CheckCheck, Loader2 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useNotifications, Notification } from "@/hooks/use-notifications"
+import { NotificationType } from "@prisma/client"
 
-interface Notification {
-  id: string
-  type: 'lead' | 'system' | 'warning' | 'success'
-  title: string
-  message: string
-  timestamp: string
-  read: boolean
-  link?: string
+const TYPE_COLORS: Record<NotificationType, string> = {
+  LEAD: "bg-blue-500",
+  DEAL: "bg-purple-500",
+  TASK: "bg-orange-500",
+  MESSAGE: "bg-cyan-500",
+  SYSTEM: "bg-slate-500",
+  WARNING: "bg-amber-500",
+  SUCCESS: "bg-emerald-500",
 }
 
-const INITIAL_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    type: "lead",
-    title: "Novo lead recebido",
-    message: "Carlos Eduardo entrou em contato via Instagram",
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    read: false,
-    link: "/contatos"
-  },
-  {
-    id: "2",
-    type: "success",
-    title: "Meta de vendas atingida!",
-    message: "Você atingiu 110% da meta deste mês",
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    read: false,
-  },
-  {
-    id: "3",
-    type: "warning",
-    title: "Lead quente sem resposta",
-    message: "Ana Maria (Score: 85) está aguardando há 4 horas",
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    read: false,
-    link: "/conversas"
-  },
-  {
-    id: "4",
-    type: "system",
-    title: "Backup completado",
-    message: "Backup automático realizado com sucesso",
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    read: true,
-  },
-  {
-    id: "5",
-    type: "lead",
-    title: "Novo comentário",
-    message: "João Silva comentou no lead 'Maria Santos'",
-    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    read: false,
-  },
-]
-
-const TYPE_COLORS = {
-  lead: "bg-blue-500",
-  success: "bg-emerald-500",
-  warning: "bg-amber-500",
-  system: "bg-slate-500",
+const TYPE_LABELS: Record<NotificationType, string> = {
+  LEAD: "Lead",
+  DEAL: "Negócio",
+  TASK: "Tarefa",
+  MESSAGE: "Mensagem",
+  SYSTEM: "Sistema",
+  WARNING: "Alerta",
+  SUCCESS: "Sucesso",
 }
 
 function formatRelativeTime(timestamp: string): string {
@@ -140,9 +100,14 @@ function NotificationItem({ notification, onMarkAsRead }: NotificationItemProps)
           )}
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2">{notification.message}</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          {formatRelativeTime(notification.timestamp)}
-        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs text-muted-foreground">
+            {formatRelativeTime(notification.createdAt)}
+          </span>
+          <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            {TYPE_LABELS[notification.type]}
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -159,13 +124,15 @@ function NotificationItem({ notification, onMarkAsRead }: NotificationItemProps)
 }
 
 export function NotificationDropdown() {
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS)
   const [open, setOpen] = useState(false)
-
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications]
-  )
+  const { 
+    notifications, 
+    unreadCount, 
+    isLoading, 
+    markAsRead, 
+    markAllAsRead,
+    refresh 
+  } = useNotifications(undefined, { limit: 50 })
 
   const groupedNotifications = useMemo(() => {
     const groups: Record<string, Notification[]> = {
@@ -175,27 +142,33 @@ export function NotificationDropdown() {
     }
 
     notifications.forEach((notification) => {
-      const group = getDayGroup(notification.timestamp)
+      const group = getDayGroup(notification.createdAt)
       groups[group].push(notification)
     })
 
     return groups
   }, [notifications])
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    )
+  const handleMarkAsRead = async (id: string) => {
+    await markAsRead(id)
   }
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead()
   }
 
   const hasNotifications = notifications.length > 0
 
+  // Refresh notifications when dropdown opens
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen)
+    if (isOpen) {
+      refresh()
+    }
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -218,14 +191,24 @@ export function NotificationDropdown() {
               size="sm"
               className="h-auto py-1 px-2 text-xs"
               onClick={handleMarkAllAsRead}
+              disabled={isLoading}
             >
-              <CheckCheck className="h-3 w-3 mr-1" />
+              {isLoading ? (
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              ) : (
+                <CheckCheck className="h-3 w-3 mr-1" />
+              )}
               Marcar todas
             </Button>
           )}
         </div>
 
-        {hasNotifications ? (
+        {isLoading && notifications.length === 0 ? (
+          <div className="py-8 text-center">
+            <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-2 animate-spin" />
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          </div>
+        ) : hasNotifications ? (
           <ScrollArea className="h-[300px]">
             {groupedNotifications.Hoje.length > 0 && (
               <div>
