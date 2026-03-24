@@ -70,6 +70,10 @@ export class EvolutionAPIService {
       ...options.headers as Record<string, string>,
     };
 
+    // Debug log (remover em produção)
+    console.log(`[Evolution API] ${options.method || 'GET'} ${url}`);
+    console.log(`[Evolution API] Headers:`, { 'apikey': this.apiKey ? '***' + this.apiKey.slice(-4) : 'MISSING' });
+
     const response = await fetch(url, {
       ...options,
       headers,
@@ -77,6 +81,7 @@ export class EvolutionAPIService {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`[Evolution API] Error ${response.status}:`, errorText);
       throw new Error(`Evolution API error: ${response.status} - ${errorText}`);
     }
 
@@ -100,8 +105,8 @@ export class EvolutionAPIService {
       method: 'POST',
       body: JSON.stringify({
         instanceName: name,
-        token: this.apiKey,
         qrcode: true,
+        integration: 'WHATSAPP-BAILEYS',
       }),
     }) as Promise<CreateInstanceResponse>;
   }
