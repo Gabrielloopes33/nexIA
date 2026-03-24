@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Contact } from '@/hooks/use-contacts'
 import { useTags, Tag } from '@/hooks/use-tags'
+import { useSchedules } from '@/hooks/use-schedules'
+import { useContactTimeline, TimelineEvent } from '@/hooks/use-contact-timeline'
 
 interface ContactDetailPanelProps {
   contact?: Contact
@@ -21,111 +23,13 @@ interface ContactDetailPanelProps {
 
 type TabKey = 'home' | 'timeline' | 'tasks'
 
-interface TimelineEvent {
-  id: string
-  type: 'note' | 'call' | 'meeting' | 'task' | 'deal' | 'whatsapp'
-  title: string
-  description?: string
-  date: string
-  author: string
-  authorAvatar?: string
-}
-
-interface Task {
+interface TaskItem {
   id: string
   title: string
   completed: boolean
   dueDate: string
   priority: 'alta' | 'media' | 'baixa'
   type: 'call' | 'meeting' | 'followup' | 'proposal'
-}
-
-// Mock data generator
-function generateTimelineEvents(contactName: string): TimelineEvent[] {
-  const baseDate = new Date()
-  return [
-    {
-      id: '1',
-      type: 'deal',
-      title: 'Negócio criado',
-      description: 'Oportunidade de R$ 45.000 registrada no pipeline',
-      date: new Date(baseDate.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      author: 'Sistema',
-    },
-    {
-      id: '2',
-      type: 'call',
-      title: 'Ligação realizada',
-      description: 'Proposta comercial apresentada',
-      date: new Date(baseDate.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      author: 'Ana Silva',
-      authorAvatar: 'AS',
-    },
-    {
-      id: '3',
-      type: 'call',
-      title: 'Ligação realizada',
-      description: 'Conversa sobre necessidades específicas do projeto',
-      date: new Date(baseDate.getTime() - 20 * 60 * 60 * 1000).toISOString(),
-      author: 'Ana Silva',
-      authorAvatar: 'AS',
-    },
-    {
-      id: '4',
-      type: 'whatsapp',
-      title: 'Mensagem WhatsApp',
-      description: 'Cliente confirmou recebimento da proposta',
-      date: new Date(baseDate.getTime() - 4 * 60 * 60 * 1000).toISOString(),
-      author: 'Sistema',
-    },
-    {
-      id: '5',
-      type: 'note',
-      title: 'Nota adicionada',
-      description: 'Cliente demonstra interesse em fechar ainda esta semana. Prioridade alta.',
-      date: new Date(baseDate.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-      author: 'Carlos Mendes',
-      authorAvatar: 'CM',
-    },
-  ]
-}
-
-function generateTasks(): Task[] {
-  const baseDate = new Date()
-  return [
-    {
-      id: '1',
-      title: 'Enviar contrato atualizado',
-      completed: false,
-      dueDate: new Date(baseDate.getTime() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-      priority: 'alta',
-      type: 'proposal',
-    },
-    {
-      id: '2',
-      title: 'Ligar para confirmar reunião',
-      completed: false,
-      dueDate: new Date(baseDate.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      priority: 'media',
-      type: 'call',
-    },
-    {
-      id: '3',
-      title: 'Preparar apresentação customizada',
-      completed: true,
-      dueDate: new Date(baseDate.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      priority: 'alta',
-      type: 'meeting',
-    },
-    {
-      id: '4',
-      title: 'Follow-up sobre proposta enviada',
-      completed: false,
-      dueDate: new Date(baseDate.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      priority: 'baixa',
-      type: 'followup',
-    },
-  ]
 }
 
 const EVENT_ICONS = {
@@ -135,6 +39,7 @@ const EVENT_ICONS = {
   task: CheckCircle2,
   deal: Star,
   whatsapp: MessageSquare,
+  message: MessageSquare,
 }
 
 const EVENT_COLORS = {
@@ -144,6 +49,7 @@ const EVENT_COLORS = {
   task: 'bg-orange-100 text-orange-600',
   deal: 'bg-yellow-100 text-yellow-600',
   whatsapp: 'bg-emerald-100 text-emerald-600',
+  message: 'bg-blue-100 text-blue-600',
 }
 
 const TASK_TYPE_ICONS = {
@@ -155,7 +61,6 @@ const TASK_TYPE_ICONS = {
 
 export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, onClose: propOnClose }: ContactDetailPanelProps = {}) {
   const [activeTab, setActiveTab] = useState<TabKey>('home')
-  const [tasks, setTasks] = useState<Task[]>(generateTasks())
   const [newNote, setNewNote] = useState('')
   const [showAddTask, setShowAddTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -177,6 +82,15 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
 
   // Get real tags from hook
   const { tags: availableTags } = useTags(contact?.organizationId)
+
+  // Get real schedules (tasks) for this contact
+  const { schedules, isLoading: isLoadingSchedules, refreshSchedules } = useSchedules(
+    contact?.organizationId,
+    contact ? { contactId: contact.id } : undefined
+  )
+
+  // Get real timeline events
+  const { events: timelineEvents, isLoading: isLoadingTimeline, refresh: refreshTimeline } = useContactTimeline(contact?.id)
 
   // Helper functions - precisam estar antes de serem usadas
   const getDisplayName = (contact: Contact): string => {
@@ -206,27 +120,64 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
     }
   }, [contact?.id])
 
-  const timelineEvents = contact ? generateTimelineEvents(getDisplayName(contact)) : []
+  // Convert schedules to tasks format
+  const tasks: TaskItem[] = schedules.map(schedule => ({
+    id: schedule.id,
+    title: schedule.title,
+    completed: schedule.status === 'completed',
+    dueDate: schedule.endTime || schedule.startTime,
+    priority: schedule.type === 'call' ? 'alta' : schedule.type === 'meeting' ? 'media' : 'baixa',
+    type: schedule.type === 'call' ? 'call' : schedule.type === 'meeting' ? 'meeting' : 'task',
+  }))
 
-  const toggleTask = (taskId: string) => {
-    setTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, completed: !t.completed } : t
-    ))
+  const toggleTask = async (taskId: string) => {
+    // Find the schedule
+    const schedule = schedules.find(s => s.id === taskId)
+    if (!schedule) return
+
+    // Toggle via API
+    try {
+      const response = await fetch(`/api/schedules/${taskId}/complete`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (response.ok) {
+        await refreshSchedules()
+      }
+    } catch (error) {
+      console.error('Error toggling task:', error)
+    }
   }
 
-  const addTask = () => {
-    if (!newTaskTitle.trim()) return
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: newTaskTitle,
-      completed: false,
-      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      priority: 'media',
-      type: 'followup',
+  const addTask = async () => {
+    if (!newTaskTitle.trim() || !contact?.organizationId) return
+    
+    const now = new Date()
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    
+    try {
+      const response = await fetch('/api/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: contact.organizationId,
+          contactId: contact.id,
+          type: 'task',
+          title: newTaskTitle,
+          startTime: now.toISOString(),
+          endTime: tomorrow.toISOString(),
+        }),
+      })
+      
+      if (response.ok) {
+        await refreshSchedules()
+        setNewTaskTitle('')
+        setShowAddTask(false)
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
     }
-    setTasks([newTask, ...tasks])
-    setNewTaskTitle('')
-    setShowAddTask(false)
   }
 
   const addNote = () => {
@@ -748,12 +699,22 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
 
               {/* Timeline Events */}
               <div className="flex-1 overflow-y-auto p-4">
+                {isLoadingTimeline ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin h-5 w-5 border-2 border-[#46347F] border-t-transparent rounded-full" />
+                    <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
+                  </div>
+                ) : timelineEvents.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    Nenhum evento na timeline ainda.
+                  </div>
+                ) : (
                 <div className="relative">
                   {/* Timeline line */}
                   <div className="absolute left-4 top-0 bottom-0 w-px bg-muted" />
                   
                   <div className="space-y-4">
-                    {timelineEvents.map((event, index) => {
+                    {timelineEvents.map((event) => {
                       const Icon = EVENT_ICONS[event.type]
                       return (
                         <div key={event.id} className="relative pl-10">
@@ -792,6 +753,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                     })}
                   </div>
                 </div>
+                )}
               </div>
             </div>
           )}
@@ -847,6 +809,16 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
 
               {/* Tasks List */}
               <div className="flex-1 overflow-y-auto p-4">
+                {isLoadingSchedules ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin h-5 w-5 border-2 border-[#46347F] border-t-transparent rounded-full" />
+                    <span className="ml-2 text-sm text-muted-foreground">Carregando tarefas...</span>
+                  </div>
+                ) : tasks.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    Nenhuma tarefa ainda.
+                  </div>
+                ) : (
                 <div className="space-y-2">
                   {/* Pending Tasks */}
                   {pendingTasks.length > 0 && (
@@ -929,6 +901,7 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
                     </div>
                   )}
                 </div>
+                )}
               </div>
             </div>
           )}

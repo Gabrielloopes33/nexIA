@@ -42,6 +42,7 @@ export interface ScheduleFilters {
   status?: ScheduleStatus
   startDate?: string
   endDate?: string
+  contactId?: string
 }
 
 interface UseSchedulesReturn {
@@ -95,6 +96,9 @@ export function useSchedules(
     const params = new URLSearchParams()
     if (effectiveOrgId) {
       params.append('organizationId', effectiveOrgId)
+    }
+    if (filters?.contactId) {
+      params.append('contactId', filters.contactId)
     }
     if (filters?.type) {
       params.append('type', filters.type)

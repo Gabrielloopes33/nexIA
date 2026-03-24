@@ -132,6 +132,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get('organizationId');
+    const contactId = searchParams.get('contactId');
     const type = searchParams.get('type') as ScheduleType | null;
     const status = searchParams.get('status') as ScheduleStatus | null;
     const startDate = searchParams.get('startDate');
@@ -149,6 +150,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const where: Record<string, unknown> = { 
       organizationId,
     };
+
+    if (contactId) {
+      where.contactId = contactId;
+    }
 
     if (type) {
       where.type = type;
