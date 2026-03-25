@@ -43,10 +43,11 @@ export function ChatWindow({ conversation }: Props) {
     messagesLimit: 100
   })
 
-  // Scroll para o final quando novas mensagens chegam
+  // Scroll para o final apenas quando uma nova mensagem é adicionada
+  const lastMessageId = messages[messages.length - 1]?.id
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [lastMessageId])
 
   // Mostra erro se houver
   useEffect(() => {

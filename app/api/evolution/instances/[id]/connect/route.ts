@@ -38,7 +38,9 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
 
     // Try to configure webhook (in case it failed during creation)
-    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'https://app.nexialab.com.br'}/api/evolution/webhook`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
+      `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
+    const webhookUrl = `${appUrl}/api/evolution/webhook`;
     try {
       await evolutionService.setWebhook(instance.instanceName, webhookUrl);
       console.log(`[Evolution Connect] Webhook configured for ${instance.instanceName}`);
