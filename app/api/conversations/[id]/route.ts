@@ -58,7 +58,7 @@ async function enrichConversation(conv: any, organizationId: string) {
     } : null,
     messages: messages.map(m => ({
       ...m,
-      direction: m.contactId === conv.contactId ? 'INBOUND' : 'OUTBOUND',
+      direction: m.direction || 'OUTBOUND',
     })),
     messageCount,
     lastMessageAt: messages[messages.length - 1]?.createdAt || conv.createdAt,

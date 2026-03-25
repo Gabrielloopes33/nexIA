@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth/server';
+import { evolutionService } from '@/lib/services/evolution-api';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -133,15 +134,40 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
-    // Cria a mensagem
+    // Busca dados do contato para obter o telefone
+    const contact = await prisma.contact.findUnique({
+      where: { id: conversation.contactId },
+      select: { phone: true },
+    });
+
+    // Busca instância Evolution conectada da organização
+    const evolutionInstance = await prisma.evolutionInstance.findFirst({
+      where: { organizationId, status: 'CONNECTED' },
+      select: { instanceName: true },
+    });
+
+    // Cria a mensagem no banco
     const message = await prisma.message.create({
       data: {
         conversationId: id,
         contactId: conversation.contactId,
         content,
-        status: 'sent',
+        direction: 'OUTBOUND',
+        status: 'SENT',
       },
     });
+
+    // Envia via Evolution API se disponível
+    if (evolutionInstance && contact?.phone) {
+      try {
+        await evolutionService.sendText(evolutionInstance.instanceName, contact.phone, content);
+      } catch (sendError) {
+        console.error('Messages POST: Evolution API send failed:', sendError);
+        // Mensagem já salva no banco; falha silenciosa no envio não derruba a resposta
+      }
+    } else {
+      console.warn('Messages POST: No connected Evolution instance found for org', organizationId);
+    }
 
     // Atualiza a conversa
     await prisma.conversation.update({

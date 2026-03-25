@@ -231,9 +231,10 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
 
     // Find or create conversation
     let conversation = await prisma.conversation.findFirst({
-      where: { 
-        contactId: contact.id, 
-        status: 'ACTIVE',
+      where: {
+        contactId: contact.id,
+        organizationId,
+        status: 'active',
       },
     });
 
@@ -242,8 +243,7 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
         data: {
           organizationId,
           contactId: contact.id,
-          status: 'ACTIVE',
-          channel: 'WHATSAPP',
+          status: 'active',
         },
       });
       console.log('[Evolution Webhook] Created new conversation:', conversation.id);
