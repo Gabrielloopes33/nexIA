@@ -211,21 +211,21 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
 
     // Find or create contact
     const contact = await prisma.contact.upsert({
-      where: { 
-        organizationId_phone: { 
-          organizationId, 
-          phone 
-        } 
+      where: {
+        organizationId_phone: {
+          organizationId,
+          phone,
+        },
       },
       update: {
-        lastContactAt: new Date(),
+        lastInteractionAt: new Date(),
       },
       create: {
         organizationId,
         phone,
         name: phone,
         status: 'ACTIVE',
-        lastContactAt: new Date(),
+        lastInteractionAt: new Date(),
       },
     });
 

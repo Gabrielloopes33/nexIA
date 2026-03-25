@@ -99,7 +99,7 @@ export function ChatWindow({ conversation }: Props) {
   // Mapeia mensagens da API para o formato do componente
   const mappedMessages = messages.map((msg) => ({
     id: msg.id,
-    from: msg.direction === 'OUTBOUND' ? 'agent' : 'user' as 'agent' | 'user' | 'bot',
+    from: msg.direction === 'OUTBOUND' ? 'user' : 'agent' as 'agent' | 'user' | 'bot',
     text: msg.content,
     time: new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     status: msg.status,

@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
           instance,
           messages: messages.map(m => ({
             ...m,
-            direction: m.contactId === conv.contactId ? 'INBOUND' : 'OUTBOUND',
+            direction: m.direction || 'OUTBOUND',
           })),
           messageCount,
           lastMessageAt: messages[0]?.createdAt || conv.createdAt,
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
           instance,
           messages: messages.map(m => ({
             ...m,
-            direction: m.contactId === existingConversation.contactId ? 'INBOUND' : 'OUTBOUND',
+            direction: m.direction || 'OUTBOUND',
           })),
           messageCount: await prisma.message.count({
             where: { conversationId: existingConversation.id },
