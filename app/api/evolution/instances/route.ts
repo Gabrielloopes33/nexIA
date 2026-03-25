@@ -65,6 +65,16 @@ export async function POST(request: NextRequest) {
     // Create instance in Evolution API
     await evolutionService.createInstance(instanceName);
 
+    // Configure webhook for the instance
+    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'https://app.nexialab.com.br'}/api/evolution/webhook`;
+    try {
+      await evolutionService.setWebhook(instanceName, webhookUrl);
+      console.log(`[Evolution] Webhook configured for instance: ${instanceName}`);
+    } catch (webhookError) {
+      console.error(`[Evolution] Failed to configure webhook for ${instanceName}:`, webhookError);
+      // Continue even if webhook setup fails - can be configured manually later
+    }
+
     // Create instance in database
     const instance = await prisma.evolutionInstance.create({
       data: {
@@ -72,6 +82,8 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         instanceName,
         status: 'DISCONNECTED',
+        webhookUrl,
+        webhookEnabled: true,
       },
       select: {
         id: true,

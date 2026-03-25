@@ -60,6 +60,7 @@ function ConversasPageShellContent({
     selectedConversationData,
     isLoading,
     error,
+    deleteConversation,
   } = useConversasPage({ filterFn, basePath })
   
   const [isNewConversationOpen, setIsNewConversationOpen] = useState(false)
@@ -79,6 +80,7 @@ function ConversasPageShellContent({
           selectedId={selectedConversation}
           onSelect={handleSelectConversation}
           onNewConversation={() => setIsNewConversationOpen(true)}
+          onDeleteConversation={deleteConversation}
         />
         
         {/* New Conversation Modal */}

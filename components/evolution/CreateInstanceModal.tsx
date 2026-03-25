@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 
 interface CreateInstanceModalProps {
-  onCreate: (name: string) => Promise<void>;
+  onCreate: (name: string) => Promise<unknown>;
   children?: React.ReactNode;
 }
 

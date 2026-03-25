@@ -5,6 +5,7 @@ import { Smartphone, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEvolution } from "@/hooks/use-evolution";
+import { useOrganizationId } from "@/lib/contexts/organization-context";
 import { InstanceCard } from "./InstanceCard";
 import { CreateInstanceModal } from "./CreateInstanceModal";
 import { QRCodeModal } from "./QRCodeModal";
@@ -22,6 +23,7 @@ export function EvolutionManager() {
     disconnectInstance,
     getInstanceStatus,
   } = useEvolution();
+  const organizationId = useOrganizationId();
 
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrData, setQrData] = useState<EvolutionQRCodeResponse | null>(null);
@@ -50,6 +52,11 @@ export function EvolutionManager() {
     if (data) {
       setQrData(data);
     }
+  };
+
+  const handleConnected = () => {
+    // Refresh the instances list to show the updated status
+    refreshInstances();
   };
 
   if (isLoading && instances.length === 0) {
@@ -160,7 +167,10 @@ export function EvolutionManager() {
         qrCode={qrData?.qrCode || null}
         pairingCode={qrData?.pairingCode || null}
         instanceName={selectedInstanceName}
+        instanceId={selectedInstanceId || undefined}
+        organizationId={organizationId || undefined}
         onRefresh={handleRefreshQR}
+        onConnected={handleConnected}
       />
     </div>
   );

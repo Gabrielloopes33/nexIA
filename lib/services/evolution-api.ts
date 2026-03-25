@@ -20,9 +20,12 @@ interface CreateInstanceResponse {
 }
 
 interface ConnectionStateResponse {
-  instance: string;
-  state: 'open' | 'connecting' | 'close';
+  instance?: string;
+  instanceName?: string;
+  state?: string;
   status?: string;
+  wuid?: string;
+  qrcode?: string;
 }
 
 interface QRCodeResponse {
@@ -124,7 +127,9 @@ export class EvolutionAPIService {
    * Obtém o estado da conexão de uma instância
    */
   async getConnectionState(instanceName: string): Promise<ConnectionStateResponse> {
-    return this.fetch(`/instance/connectionState/${instanceName}`) as Promise<ConnectionStateResponse>;
+    const response = await this.fetch(`/instance/connectionState/${instanceName}`);
+    console.log(`[Evolution API] Connection state for ${instanceName}:`, JSON.stringify(response));
+    return response as ConnectionStateResponse;
   }
 
   /**
@@ -158,12 +163,20 @@ export class EvolutionAPIService {
    * Configura o webhook para uma instância
    */
   async setWebhook(instanceName: string, webhookUrl: string): Promise<void> {
+    // Evolution API v2 usa formato diferente para webhook
+    const payload = {
+      webhook: {
+        url: webhookUrl,
+        enabled: true,
+        events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED'],
+      }
+    };
+    
+    console.log(`[Evolution API] Configuring webhook for ${instanceName}:`, JSON.stringify(payload));
+    
     await this.fetch(`/webhook/set/${instanceName}`, {
       method: 'POST',
-      body: JSON.stringify({
-        url: webhookUrl,
-        events: ['messages.upsert', 'connection.update', 'qrcode.updated'],
-      }),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -177,17 +190,23 @@ export class EvolutionAPIService {
   async sendText(instanceName: string, phone: string, message: string): Promise<SendMessageResponse> {
     // Format phone number
     const formattedPhone = phone.replace(/\D/g, '');
+    
+    // Evolution API v2 usa formato diferente
+    const endpoint = `/message/sendText/${instanceName}`;
+    const payload = {
+      number: formattedPhone,
+      text: message,
+      options: {
+        delay: 1200,
+        presence: 'composing',
+      },
+    };
+    
+    console.log(`[Evolution Service] POST ${endpoint}`, JSON.stringify(payload));
 
-    return this.fetch(`/message/sendText/${instanceName}`, {
+    return this.fetch(endpoint, {
       method: 'POST',
-      body: JSON.stringify({
-        number: formattedPhone,
-        text: message,
-        options: {
-          delay: 1200,
-          presence: 'composing',
-        },
-      }),
+      body: JSON.stringify(payload),
     }) as Promise<SendMessageResponse>;
   }
 

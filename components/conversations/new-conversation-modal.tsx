@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Loader2, MessageSquarePlus, Phone, User, MessageCircle, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { Loader2, MessageSquarePlus, Phone, User, MessageCircle, AlertTriangle, CheckCircle2, BadgeCheck, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useOrganizationId } from "@/lib/contexts/organization-context"
@@ -157,6 +157,7 @@ export function NewConversationModal({ open, onOpenChange, onSuccess }: NewConve
           contactId,
           instanceId: formData.instanceId,
           type: "BUSINESS_INITIATED",
+          organizationId,
         }),
       })
 
@@ -166,16 +167,32 @@ export function NewConversationModal({ open, onOpenChange, onSuccess }: NewConve
         throw new Error(conversationData.error || "Erro ao criar conversa")
       }
 
-      // 3. Enviar mensagem
-      const sendResponse = await fetch("/api/whatsapp/messages/send", {
+      // 3. Enviar mensagem (usa endpoint correto baseado no tipo de instância)
+      const selectedInstance = connectedInstances.find(i => i.id === formData.instanceId)
+      const isEvolution = selectedInstance?.type === 'EVOLUTION'
+      const sendEndpoint = isEvolution
+        ? "/api/evolution/messages/send" 
+        : "/api/whatsapp/messages/send"
+      
+      // Payload diferente para cada tipo de API
+      const sendPayload = isEvolution
+        ? {
+            instanceId: formData.instanceId,
+            phone: phoneFormatted,
+            message: formData.message,
+            organizationId,
+          }
+        : {
+            instanceId: formData.instanceId,
+            to: phoneFormatted,
+            type: "text",
+            text: formData.message,
+          }
+      
+      const sendResponse = await fetch(sendEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instanceId: formData.instanceId,
-          to: phoneFormatted,
-          type: "text",
-          text: formData.message,
-        }),
+        body: JSON.stringify(sendPayload),
       })
 
       const sendData = await sendResponse.json()
@@ -292,7 +309,20 @@ export function NewConversationModal({ open, onOpenChange, onSuccess }: NewConve
                     <SelectItem key={instance.id} value={instance.id}>
                       <div className="flex items-center gap-2">
                         <span className="text-green-500">●</span>
-                        {instance.name || instance.displayPhoneNumber || instance.phoneNumber}
+                        <span className="flex-1 truncate">
+                          {instance.name || instance.displayPhoneNumber || instance.phoneNumber}
+                        </span>
+                        {instance.type === 'OFFICIAL' ? (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                            <BadgeCheck className="h-3 w-3" />
+                            Oficial
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+                            <Zap className="h-3 w-3" />
+                            Evolution
+                          </span>
+                        )}
                       </div>
                     </SelectItem>
                   ))}
@@ -304,7 +334,7 @@ export function NewConversationModal({ open, onOpenChange, onSuccess }: NewConve
               {!hasChannels && !loadingInstances && (
                 <p className="text-xs text-amber-600">
                   Nenhum canal WhatsApp conectado.{" "}
-                  <a href="/integracoes/whatsapp-oficial" className="underline hover:text-amber-700">
+                  <a href="/configuracoes/canais" className="underline hover:text-amber-700">
                     Conectar agora
                   </a>
                 </p>

@@ -1,7 +1,7 @@
 /**
  * Conversation Individual API
  * GET: Detalhes da conversa com mensagens
- * PATCH: Atualizar conversa (status, janela)
+ * PATCH: Atualizar conversa (status)
  * DELETE: Fechar/deletar conversa
  */
 
@@ -13,52 +13,86 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
+// Helper para enriquecer conversa
+async function enrichConversation(conv: any, organizationId: string) {
+  const [contact, messages, messageCount, instance] = await Promise.all([
+    prisma.contact.findUnique({
+      where: { id: conv.contactId },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        avatarUrl: true,
+        status: true,
+      },
+    }),
+    prisma.message.findMany({
+      where: { conversationId: conv.id },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.message.count({
+      where: { conversationId: conv.id },
+    }),
+    prisma.whatsAppInstance.findFirst({
+      where: { organizationId },
+      select: { id: true, name: true, phoneNumber: true },
+    }),
+  ]);
+
+  const now = new Date();
+  const windowEnd = new Date(conv.createdAt.getTime() + 24 * 60 * 60 * 1000);
+  const isWindowActive = windowEnd > now;
+
+  return {
+    ...conv,
+    contact: contact || {
+      id: conv.contactId,
+      name: 'Desconhecido',
+      phone: '',
+      status: 'active',
+    },
+    instance: instance ? {
+      id: instance.id,
+      name: instance.name,
+      displayPhoneNumber: instance.phoneNumber,
+    } : null,
+    messages: messages.map(m => ({
+      ...m,
+      direction: m.contactId === conv.contactId ? 'INBOUND' : 'OUTBOUND',
+    })),
+    messageCount,
+    lastMessageAt: messages[messages.length - 1]?.createdAt || conv.createdAt,
+    windowStart: conv.createdAt,
+    windowEnd,
+    isWindowActive,
+    timeUntilWindowExpires: Math.max(0, windowEnd.getTime() - now.getTime()),
+  };
+}
+
 // GET /api/conversations/[id]?messagesLimit=50
 export async function GET(request: NextRequest, { params }: Params) {
   try {
     const user = await requireAuth(request);
+    
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const messagesLimit = Math.min(parseInt(searchParams.get('messagesLimit') || '50'), 100);
+
+    const organizationId = user.organizationId;
+    
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'No organization selected' },
+        { status: 400 }
+      );
+    }
 
     const conversation = await prisma.conversation.findFirst({
       where: {
         id,
-        organizationId: user.organization.id,
-      },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-            status: true,
-            metadata: true,
-          },
-        },
-        instance: {
-          select: {
-            id: true,
-            name: true,
-            displayPhoneNumber: true,
-            verifiedName: true,
-            status: true,
-          },
-        },
-        messages: {
-          orderBy: { createdAt: 'asc' },
-          take: messagesLimit,
-          include: {
-            template: {
-              select: {
-                id: true,
-                name: true,
-                category: true,
-              },
-            },
-          },
-        },
+        organizationId,
       },
     });
 
@@ -69,17 +103,11 @@ export async function GET(request: NextRequest, { params }: Params) {
       );
     }
 
-    // Adicionar flag se a janela está ativa
-    const now = new Date();
-    const conversationWithWindowStatus = {
-      ...conversation,
-      isWindowActive: conversation.windowEnd > now,
-      timeUntilWindowExpires: Math.max(0, conversation.windowEnd.getTime() - now.getTime()),
-    };
+    const enriched = await enrichConversation(conversation, organizationId);
 
     return NextResponse.json({
       success: true,
-      data: conversationWithWindowStatus,
+      data: enriched,
     });
   } catch (error) {
     console.error('Conversation GET Error:', error);
@@ -90,18 +118,33 @@ export async function GET(request: NextRequest, { params }: Params) {
   }
 }
 
-// PATCH /api/conversations/[id]
+// PATCH /api/conversations/[id] - Atualizar conversa
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const user = await requireAuth(request);
+    
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
     const { id } = await params;
     const body = await request.json();
+    const { status, unread_count } = body;
 
-    // Verifica se existe
+    const organizationId = user.organizationId;
+    
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'No organization selected' },
+        { status: 400 }
+      );
+    }
+
+    // Verifica se conversa existe
     const existing = await prisma.conversation.findFirst({
       where: {
         id,
-        organizationId: user.organization.id,
+        organizationId,
       },
     });
 
@@ -112,31 +155,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       );
     }
 
-    const { status, windowStart, windowEnd } = body;
-
-    const updateData: any = {};
-    if (status) updateData.status = status;
-    if (windowStart) updateData.windowStart = new Date(windowStart);
-    if (windowEnd) updateData.windowEnd = new Date(windowEnd);
+    // Atualiza
+    const data: any = {};
+    if (status) data.status = status;
+    if (typeof unread_count === 'number') data.unread_count = unread_count;
 
     const conversation = await prisma.conversation.update({
       where: { id },
-      data: updateData,
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
-        },
-      },
+      data,
     });
+
+    const enriched = await enrichConversation(conversation, organizationId);
 
     return NextResponse.json({
       success: true,
-      data: conversation,
+      data: enriched,
     });
   } catch (error) {
     console.error('Conversation PATCH Error:', error);
@@ -147,17 +180,31 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 }
 
-// DELETE /api/conversations/[id]
+// DELETE /api/conversations/[id] - Deletar conversa
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     const user = await requireAuth(request);
+    
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
     const { id } = await params;
 
-    // Verifica se existe
+    const organizationId = user.organizationId;
+    
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'No organization selected' },
+        { status: 400 }
+      );
+    }
+
+    // Verifica se conversa existe
     const existing = await prisma.conversation.findFirst({
       where: {
         id,
-        organizationId: user.organization.id,
+        organizationId,
       },
     });
 
@@ -174,7 +221,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     return NextResponse.json({
       success: true,
-      message: 'Conversation deleted successfully',
+      message: 'Conversation deleted',
     });
   } catch (error) {
     console.error('Conversation DELETE Error:', error);

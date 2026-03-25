@@ -12,33 +12,50 @@ import { requireAuth } from '@/lib/auth/server';
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
+    
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
     const { searchParams } = new URL(request.url);
 
     const contactId = searchParams.get('contactId');
-    const instanceId = searchParams.get('instanceId');
     const status = searchParams.get('status') as any;
-    const type = searchParams.get('type') as any;
-    const active = searchParams.get('active'); // Conversas com janela ativa
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const offset = parseInt(searchParams.get('offset') || '0');
 
+    const organizationId = user.organizationId;
+    
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'No organization selected' },
+        { status: 400 }
+      );
+    }
+
     const where: any = {
-      organizationId: user.organization.id,
+      organizationId,
     };
 
     if (contactId) where.contactId = contactId;
-    if (instanceId) where.instanceId = instanceId;
     if (status) where.status = status;
-    if (type) where.type = type;
-    if (active === 'true') {
-      where.windowEnd = { gte: new Date() };
-    }
 
     const [conversations, total] = await Promise.all([
       prisma.conversation.findMany({
         where,
-        include: {
-          contact: {
+        orderBy: { updatedAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.conversation.count({ where }),
+    ]);
+
+    // Buscar contatos, instâncias e mensagens para enriquecer as conversas
+    const enrichedConversations = await Promise.all(
+      conversations.map(async (conv) => {
+        const [contact, messages, messageCount] = await Promise.all([
+          prisma.contact.findUnique({
+            where: { id: conv.contactId },
             select: {
               id: true,
               name: true,
@@ -46,46 +63,69 @@ export async function GET(request: NextRequest) {
               avatarUrl: true,
               status: true,
             },
-          },
-          instance: {
-            select: {
-              id: true,
-              name: true,
-              displayPhoneNumber: true,
-              verifiedName: true,
-            },
-          },
-          messages: {
+          }),
+          prisma.message.findMany({
+            where: { conversationId: conv.id },
             orderBy: { createdAt: 'desc' },
             take: 1,
-            select: {
-              id: true,
-              content: true,
-              type: true,
-              direction: true,
-              status: true,
-              createdAt: true,
-            },
-          },
-        },
-        orderBy: { lastMessageAt: 'desc' },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.conversation.count({ where }),
-    ]);
+          }),
+          prisma.message.count({
+            where: { conversationId: conv.id },
+          }),
+        ]);
+        
+        // Buscar instância do WhatsApp (se existir)
+        let instance = null;
+        // Tenta buscar em ambas as tabelas
+        const waInstance = await prisma.whatsAppInstance.findFirst({
+          where: { organizationId },
+          select: { id: true, name: true, phoneNumber: true },
+        });
+        const evoInstance = await prisma.evolutionInstance.findFirst({
+          where: { organizationId, status: 'CONNECTED' },
+          select: { id: true, name: true, phoneNumber: true, profileName: true },
+        });
+        instance = waInstance ? {
+          id: waInstance.id,
+          name: waInstance.name,
+          displayPhoneNumber: waInstance.phoneNumber,
+        } : (evoInstance ? {
+          id: evoInstance.id,
+          name: evoInstance.name,
+          displayPhoneNumber: evoInstance.phoneNumber,
+        } : null);
 
-    // Adicionar flag se a janela está ativa
-    const now = new Date();
-    const conversationsWithWindowStatus = conversations.map(conv => ({
-      ...conv,
-      isWindowActive: conv.windowEnd > now,
-      timeUntilWindowExpires: Math.max(0, conv.windowEnd.getTime() - now.getTime()),
-    }));
+        const now = new Date();
+        // Janela de 24h para WhatsApp
+        const windowEnd = new Date(conv.createdAt.getTime() + 24 * 60 * 60 * 1000);
+        const isWindowActive = windowEnd > now;
+
+        return {
+          ...conv,
+          contact: contact || {
+            id: conv.contactId,
+            name: 'Desconhecido',
+            phone: '',
+            status: 'active',
+          },
+          instance,
+          messages: messages.map(m => ({
+            ...m,
+            direction: m.contactId === conv.contactId ? 'INBOUND' : 'OUTBOUND',
+          })),
+          messageCount,
+          lastMessageAt: messages[0]?.createdAt || conv.createdAt,
+          windowStart: conv.createdAt,
+          windowEnd,
+          isWindowActive,
+          timeUntilWindowExpires: Math.max(0, windowEnd.getTime() - now.getTime()),
+        };
+      })
+    );
 
     return NextResponse.json({
       success: true,
-      data: conversationsWithWindowStatus,
+      data: enrichedConversations,
       meta: {
         total,
         limit,
@@ -106,21 +146,34 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
+    
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
     const body = await request.json();
 
     const {
       contactId,
       instanceId,
       type,
-      conversationId,
-      windowStart,
-      windowEnd,
+      organizationId: bodyOrgId,
     } = body;
 
     // Validações
-    if (!contactId || !instanceId) {
+    if (!contactId) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields: contactId, instanceId' },
+        { success: false, error: 'Missing required field: contactId' },
+        { status: 400 }
+      );
+    }
+
+    // Busca organizationId do body (fallback para compatibilidade) ou sessão
+    const organizationId = user.organizationId || bodyOrgId;
+    
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'No organization selected' },
         { status: 400 }
       );
     }
@@ -129,7 +182,7 @@ export async function POST(request: NextRequest) {
     const contact = await prisma.contact.findFirst({
       where: {
         id: contactId,
-        organizationId: user.organization.id,
+        organizationId,
       },
     });
 
@@ -144,54 +197,100 @@ export async function POST(request: NextRequest) {
     const existingConversation = await prisma.conversation.findFirst({
       where: {
         contactId,
-        instanceId,
-        status: 'ACTIVE',
+        organizationId,
+        status: 'active',
       },
     });
 
     if (existingConversation) {
+      // Enriquece a conversa existente
+      const [messages, instance] = await Promise.all([
+        prisma.message.findMany({
+          where: { conversationId: existingConversation.id },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        }),
+        prisma.whatsAppInstance.findFirst({
+          where: { organizationId },
+          select: { id: true, name: true, phoneNumber: true },
+        }),
+      ]);
+      
+      const now = new Date();
+      const windowEnd = new Date(existingConversation.createdAt.getTime() + 24 * 60 * 60 * 1000);
+      
       return NextResponse.json({
         success: true,
-        data: existingConversation,
+        data: {
+          ...existingConversation,
+          contact: {
+            id: contact.id,
+            name: contact.name,
+            phone: contact.phone,
+            avatarUrl: contact.avatarUrl,
+            status: contact.status,
+          },
+          instance,
+          messages: messages.map(m => ({
+            ...m,
+            direction: m.contactId === existingConversation.contactId ? 'INBOUND' : 'OUTBOUND',
+          })),
+          messageCount: await prisma.message.count({
+            where: { conversationId: existingConversation.id },
+          }),
+          lastMessageAt: messages[0]?.createdAt || existingConversation.createdAt,
+          windowStart: existingConversation.createdAt,
+          windowEnd,
+          isWindowActive: windowEnd > now,
+          timeUntilWindowExpires: Math.max(0, windowEnd.getTime() - now.getTime()),
+        },
         message: 'Existing active conversation found',
       });
     }
 
     // Cria nova conversa
-    const now = new Date();
     const conversation = await prisma.conversation.create({
       data: {
-        organizationId: user.organization.id,
+        organizationId,
         contactId,
-        instanceId,
-        type: type || 'USER_INITIATED',
-        conversationId,
-        windowStart: windowStart ? new Date(windowStart) : now,
-        windowEnd: windowEnd ? new Date(windowEnd) : new Date(now.getTime() + 24 * 60 * 60 * 1000),
-        status: 'ACTIVE',
-      },
-      include: {
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            avatarUrl: true,
-          },
-        },
-        instance: {
-          select: {
-            id: true,
-            name: true,
-            displayPhoneNumber: true,
-          },
-        },
+        status: 'active',
       },
     });
 
+    const [instance] = await Promise.all([
+      prisma.whatsAppInstance.findFirst({
+        where: { organizationId },
+        select: { id: true, name: true, phoneNumber: true },
+      }),
+    ]);
+
+    const now = new Date();
+    const windowEnd = new Date(conversation.createdAt.getTime() + 24 * 60 * 60 * 1000);
+
     return NextResponse.json({
       success: true,
-      data: conversation,
+      data: {
+        ...conversation,
+        contact: {
+          id: contact.id,
+          name: contact.name,
+          phone: contact.phone,
+          avatarUrl: contact.avatarUrl,
+          status: contact.status,
+        },
+        instance: instance ? {
+          id: instance.id,
+          name: instance.name,
+          displayPhoneNumber: instance.phoneNumber,
+        } : null,
+        messages: [],
+        messageCount: 0,
+        lastMessageAt: conversation.createdAt,
+        windowStart: conversation.createdAt,
+        windowEnd,
+        isWindowActive: true,
+        timeUntilWindowExpires: windowEnd.getTime() - now.getTime(),
+      },
     }, { status: 201 });
   } catch (error) {
     console.error('Conversations POST Error:', error);

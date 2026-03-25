@@ -16,17 +16,31 @@ interface Params {
 export async function GET(request: NextRequest, { params }: Params) {
   try {
     const user = await requireAuth(request);
+    
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
-    const before = searchParams.get('before'); // Cursor para paginação
+    const before = searchParams.get('before');
+
+    const organizationId = user.organizationId;
+    
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'No organization selected' },
+        { status: 400 }
+      );
+    }
 
     // Verifica se conversa existe e pertence à organização
     const conversation = await prisma.conversation.findFirst({
       where: {
         id,
-        organizationId: user.organization.id,
+        organizationId,
       },
     });
 
@@ -51,23 +65,6 @@ export async function GET(request: NextRequest, { params }: Params) {
       where,
       orderBy: { createdAt: 'desc' },
       take: limit,
-      include: {
-        template: {
-          select: {
-            id: true,
-            name: true,
-            category: true,
-            language: true,
-          },
-        },
-        contact: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-          },
-        },
-      },
     });
 
     // Reverte para ordem cronológica
@@ -94,27 +91,30 @@ export async function GET(request: NextRequest, { params }: Params) {
 export async function POST(request: NextRequest, { params }: Params) {
   try {
     const user = await requireAuth(request);
+    
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
     const { id } = await params;
     const body = await request.json();
 
-    const {
-      content,
-      type,
-      mediaUrl,
-      caption,
-      templateId,
-      metadata,
-    } = body;
+    const { content } = body;
+
+    const organizationId = user.organizationId;
+    
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'No organization selected' },
+        { status: 400 }
+      );
+    }
 
     // Verifica se conversa existe
     const conversation = await prisma.conversation.findFirst({
       where: {
         id,
-        organizationId: user.organization.id,
-      },
-      include: {
-        contact: true,
-        instance: true,
+        organizationId,
       },
     });
 
@@ -125,25 +125,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
-    // Verifica se a janela de 24h está ativa
-    const now = new Date();
-    const isWindowActive = conversation.windowEnd > now;
-
-    if (!isWindowActive && !templateId) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Conversation window has expired. Use a template to reinitiate.',
-          code: 'WINDOW_EXPIRED',
-        },
-        { status: 400 }
-      );
-    }
-
     // Validações
-    if (!content && !templateId) {
+    if (!content) {
       return NextResponse.json(
-        { success: false, error: 'Missing required field: content or templateId' },
+        { success: false, error: 'Missing required field: content' },
         { status: 400 }
       );
     }
@@ -153,24 +138,8 @@ export async function POST(request: NextRequest, { params }: Params) {
       data: {
         conversationId: id,
         contactId: conversation.contactId,
-        content: content || '',
-        type: type || 'TEXT',
-        direction: 'OUTBOUND',
-        mediaUrl,
-        caption,
-        templateId,
-        metadata,
-        status: 'SENT',
-        sentAt: now,
-      },
-      include: {
-        template: {
-          select: {
-            id: true,
-            name: true,
-            category: true,
-          },
-        },
+        content,
+        status: 'sent',
       },
     });
 
@@ -178,10 +147,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     await prisma.conversation.update({
       where: { id },
       data: {
-        lastMessageAt: now,
-        messageCount: {
-          increment: 1,
-        },
+        updatedAt: new Date(),
       },
     });
 

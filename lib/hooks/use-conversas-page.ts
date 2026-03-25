@@ -11,7 +11,7 @@
 
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Conversation as ApiConversation, useConversations } from "@/hooks/use-conversations"
 import { Conversation, ConversationStatus, Channel, Priority } from "@/lib/types/conversation"
@@ -95,6 +95,8 @@ export interface UseConversasPageReturn {
   isLoading: boolean
   /** Erro se houver */
   error: Error | null
+  /** Função para deletar uma conversa */
+  deleteConversation: (id: string) => Promise<void>
 }
 
 /**
@@ -171,6 +173,27 @@ export function useConversasPage(options: UseConversasPageOptions): UseConversas
     return conversations.find((c) => c.id === selectedConversation) || null
   }, [conversations, selectedConversation])
 
+  // Função para deletar conversa
+  const deleteConversation = useCallback(async (id: string) => {
+    const response = await fetch(`/api/conversations/${id}`, {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Erro ao excluir conversa')
+    }
+
+    // Se a conversa deletada estava selecionada, limpa a seleção
+    if (selectedConversation === id) {
+      handleSelectConversation(null)
+    }
+
+    // Recarrega a lista
+    // Aqui você pode chamar mutate() se estiver usando SWR
+    window.location.reload()
+  }, [selectedConversation, handleSelectConversation])
+
   return {
     conversations,
     selectedConversation,
@@ -180,5 +203,6 @@ export function useConversasPage(options: UseConversasPageOptions): UseConversas
     hasSelection: selectedConversation !== null,
     isLoading,
     error,
+    deleteConversation,
   }
 }

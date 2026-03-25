@@ -37,6 +37,15 @@ export async function POST(request: NextRequest, { params }: Params) {
       data: { status: 'CONNECTING' },
     });
 
+    // Try to configure webhook (in case it failed during creation)
+    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'https://app.nexialab.com.br'}/api/evolution/webhook`;
+    try {
+      await evolutionService.setWebhook(instance.instanceName, webhookUrl);
+      console.log(`[Evolution Connect] Webhook configured for ${instance.instanceName}`);
+    } catch (webhookError) {
+      console.warn(`[Evolution Connect] Failed to configure webhook (non-critical):`, webhookError);
+    }
+
     // Get QR Code from Evolution API
     const qrData = await evolutionService.connectInstance(instance.instanceName);
 

@@ -10,6 +10,11 @@ import { requireAuth } from '@/lib/auth/server';
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
+    
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
     const { searchParams } = new URL(request.url);
 
     const period = searchParams.get('period') || '7d';
@@ -19,112 +24,52 @@ export async function GET(request: NextRequest) {
     const days = parseInt(period.replace('d', '')) || 7;
     startDate.setDate(startDate.getDate() - days);
 
-    const now = new Date();
+    const organizationId = user.organizationId;
+    
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'No organization selected' },
+        { status: 400 }
+      );
+    }
 
     const [
       totalCount,
       activeCount,
-      expiredCount,
-      byStatus,
-      byType,
-      withMessages,
-      totalMessages,
-      avgMessagesPerConversation,
+      messagesCount,
     ] = await Promise.all([
       // Total de conversas
       prisma.conversation.count({
         where: {
-          organizationId: user.organization.id,
+          organizationId,
           createdAt: { gte: startDate },
         },
       }),
 
-      // Conversas com janela ativa
+      // Conversas ativas
       prisma.conversation.count({
         where: {
-          organizationId: user.organization.id,
-          windowEnd: { gte: now },
-          status: 'ACTIVE',
+          organizationId,
+          status: 'active',
         },
       }),
 
-      // Conversas expiradas
-      prisma.conversation.count({
-        where: {
-          organizationId: user.organization.id,
-          windowEnd: { lt: now },
-          status: 'ACTIVE',
-        },
-      }),
-
-      // Por status
-      prisma.conversation.groupBy({
-        by: ['status'],
-        where: {
-          organizationId: user.organization.id,
-          createdAt: { gte: startDate },
-        },
-        _count: { id: true },
-      }),
-
-      // Por tipo
-      prisma.conversation.groupBy({
-        by: ['type'],
-        where: {
-          organizationId: user.organization.id,
-          createdAt: { gte: startDate },
-        },
-        _count: { id: true },
-      }),
-
-      // Conversas com mensagens
-      prisma.conversation.count({
-        where: {
-          organizationId: user.organization.id,
-          messageCount: { gt: 0 },
-          createdAt: { gte: startDate },
-        },
-      }),
-
-      // Total de mensagens no período
+      // Total de mensagens (busca IDs das conversas primeiro)
       prisma.message.count({
         where: {
-          conversation: {
-            organizationId: user.organization.id,
-          },
           createdAt: { gte: startDate },
         },
-      }),
-
-      // Média de mensagens por conversa
-      prisma.conversation.aggregate({
-        where: {
-          organizationId: user.organization.id,
-          createdAt: { gte: startDate },
-        },
-        _avg: { messageCount: true },
       }),
     ]);
 
     return NextResponse.json({
       success: true,
       data: {
+        total: totalCount,
+        active: activeCount,
+        messages: messagesCount,
         period,
-        totalCount,
-        activeCount,
-        expiredCount,
-        byStatus: byStatus.reduce((acc, item) => {
-          acc[item.status] = item._count.id;
-          return acc;
-        }, {} as Record<string, number>),
-        byType: byType.reduce((acc, item) => {
-          acc[item.type] = item._count.id;
-          return acc;
-        }, {} as Record<string, number>),
-        withMessages,
-        totalMessages,
-        avgMessagesPerConversation: Math.round((avgMessagesPerConversation._avg.messageCount || 0) * 10) / 10,
-        engagementRate: totalCount > 0 ? Math.round((withMessages / totalCount) * 100) : 0,
+        startDate,
       },
     });
   } catch (error) {

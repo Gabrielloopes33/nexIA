@@ -19,10 +19,10 @@ import type { EvolutionInstanceResponse } from "@/lib/types/evolution";
 
 interface InstanceCardProps {
   instance: EvolutionInstanceResponse;
-  onConnect: (id: string) => void;
-  onDisconnect: (id: string) => void;
-  onDelete: (id: string) => void;
-  onRefreshStatus: (id: string) => void;
+  onConnect: (id: string) => Promise<unknown>;
+  onDisconnect: (id: string) => Promise<unknown>;
+  onDelete: (id: string) => Promise<unknown>;
+  onRefreshStatus: (id: string) => Promise<unknown>;
 }
 
 export function InstanceCard({
@@ -35,7 +35,7 @@ export function InstanceCard({
   const [isLoading, setIsLoading] = useState(false);
   const statusConfig = getStatusConfig(instance.status);
 
-  const handleAction = async (action: () => Promise<void>) => {
+  const handleAction = async (action: () => Promise<unknown>) => {
     setIsLoading(true);
     try {
       await action();

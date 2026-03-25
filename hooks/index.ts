@@ -17,6 +17,10 @@ export {
   useEvolution,
   type UseEvolutionReturn,
 } from './use-evolution'
+export {
+  useConnectedInstances,
+  type UseConnectedInstancesReturn,
+} from './use-connected-instances'
 export { useWhatsAppTemplatesSync } from './use-whatsapp-templates-sync'
 export { useWhatsAppTemplates } from './use-whatsapp-templates'
 export { useWhatsApp } from './use-whatsapp'

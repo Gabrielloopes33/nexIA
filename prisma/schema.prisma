@@ -167,6 +167,8 @@ model Message {
   contactId      String   @map("contact_id") @db.Uuid
   content        String?
   status         String   @default("sent") @db.VarChar(50)
+  messageId      String?  @map("message_id") @db.VarChar(255) // ID externo da mensagem (Evolution/Meta)
+  direction      String   @default("OUTBOUND") @db.VarChar(20) // INBOUND ou OUTBOUND
   createdAt      DateTime @default(now()) @map("created_at")
   updated_at     DateTime @default(now())
 

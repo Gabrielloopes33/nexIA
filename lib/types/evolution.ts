@@ -3,7 +3,7 @@ export interface EvolutionInstance {
   organizationId: string;
   name: string;
   instanceName: string;
-  status: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
+  status: string;
   phoneNumber: string | null;
   profilePictureUrl: string | null;
   profileName: string | null;
