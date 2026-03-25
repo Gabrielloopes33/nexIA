@@ -414,9 +414,10 @@ export function useConversation(
     id ? `/api/conversations/${id}?${buildQueryString()}` : null,
     fetcher,
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      dedupingInterval: 2000,
+      dedupingInterval: 5000,
+      refreshInterval: 3000, // Poll every 3 seconds for new messages
     }
   )
 

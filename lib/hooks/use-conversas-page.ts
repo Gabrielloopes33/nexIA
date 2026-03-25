@@ -188,10 +188,6 @@ export function useConversasPage(options: UseConversasPageOptions): UseConversas
     if (selectedConversation === id) {
       handleSelectConversation(null)
     }
-
-    // Recarrega a lista
-    // Aqui você pode chamar mutate() se estiver usando SWR
-    window.location.reload()
   }, [selectedConversation, handleSelectConversation])
 
   return {
