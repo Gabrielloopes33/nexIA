@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   '/api/whatsapp/webhooks',
   '/api/instagram/webhooks',
   '/api/stripe/webhook',
+  '/api/evolution/webhook',
 ]
 
 const PUBLIC_PREFIXES = ['/_next/', '/images/', '/fonts/', '/favicon']
