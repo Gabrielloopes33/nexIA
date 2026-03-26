@@ -36,20 +36,33 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             probability: true,
           },
         },
-        assignedUser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
       },
       orderBy: { createdAt: "desc" },
     });
 
+    // Buscar informações dos usuários atribuídos separadamente
+    const assignedToIds = deals
+      .map(d => d.assignedTo)
+      .filter((id): id is string => id !== null && id !== undefined);
+    
+    const users = assignedToIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: assignedToIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    // Adicionar assignedUser aos deals
+    const dealsWithUsers = deals.map(deal => ({
+      ...deal,
+      assignedUser: deal.assignedTo ? userMap.get(deal.assignedTo) || null : null,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: deals,
+      data: dealsWithUsers,
     });
   } catch (error) {
     console.error("[Contact Deals] Error:", error);

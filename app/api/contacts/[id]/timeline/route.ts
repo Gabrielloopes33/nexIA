@@ -42,15 +42,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           contactId: id,
           organizationId,
         },
-        include: {
-          assignedUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
         orderBy: { createdAt: "desc" },
         take: limit,
       }),
@@ -67,13 +58,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               id: true,
               name: true,
               color: true,
-            },
-          },
-          assignedUser: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
             },
           },
         },
@@ -97,6 +81,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         take: 10,
       }),
     ]);
+
+    // Buscar usuários atribuídos para schedules e deals
+    const userIds = [
+      ...schedules.map(s => s.assignedTo).filter((id): id is string => !!id),
+      ...deals.map(d => d.assignedTo).filter((id): id is string => !!id),
+    ];
+
+    const uniqueUserIds = [...new Set(userIds)];
+    
+    const users = uniqueUserIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: uniqueUserIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+
+    const userMap = new Map(users.map(u => [u.id, u]));
 
     // Buscar atividades dos deals
     const dealIds = deals.map(d => d.id);
@@ -122,14 +123,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         'deadline': 'task',
       };
 
+      const assignedUser = schedule.assignedTo ? userMap.get(schedule.assignedTo) : null;
+
       timeline.push({
         id: `schedule-${schedule.id}`,
         type: typeMap[schedule.type] || 'task',
         title: schedule.title,
         description: schedule.description || undefined,
         date: schedule.createdAt.toISOString(),
-        author: schedule.assignedUser?.name || 'Sistema',
-        authorAvatar: schedule.assignedUser?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+        author: assignedUser?.name || 'Sistema',
+        authorAvatar: assignedUser?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
         metadata: {
           scheduleId: schedule.id,
           status: schedule.status,
@@ -141,6 +144,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Adicionar deals como eventos
     deals.forEach(deal => {
+      const assignedUser = deal.assignedTo ? userMap.get(deal.assignedTo) : null;
+
       timeline.push({
         id: `deal-${deal.id}`,
         type: 'deal',
@@ -149,8 +154,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           ? `Valor: R$ ${Number(deal.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
           : undefined,
         date: deal.createdAt.toISOString(),
-        author: deal.assignedUser?.name || 'Sistema',
-        authorAvatar: deal.assignedUser?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+        author: assignedUser?.name || 'Sistema',
+        authorAvatar: assignedUser?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
         metadata: {
           dealId: deal.id,
           stage: deal.stage?.name,
@@ -167,7 +172,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           title: `Negócio atualizado: ${deal.title}`,
           description: `Estágio: ${deal.stage?.name || 'N/A'}`,
           date: deal.updatedAt.toISOString(),
-          author: deal.assignedUser?.name || 'Sistema',
+          author: assignedUser?.name || 'Sistema',
           metadata: {
             dealId: deal.id,
             stage: deal.stage?.name,
