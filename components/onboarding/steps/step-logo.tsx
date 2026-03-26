@@ -138,7 +138,7 @@ export function StepLogo({
             </button>
           </div>
         ) : (
-          <div
+          <label
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -165,13 +165,8 @@ export function StepLogo({
               accept="image/*"
               onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
               className="hidden"
-              id="logo-upload"
             />
-            <label
-              htmlFor="logo-upload"
-              className="absolute inset-0 cursor-pointer"
-            />
-          </div>
+          </label>
         )}
 
         {/* Botões */}
