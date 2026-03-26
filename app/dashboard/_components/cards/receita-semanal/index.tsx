@@ -23,14 +23,15 @@ import { TrendingUp } from 'lucide-react'
  */
 export function ReceitaSemanalCard() {
   const { data, isLoading, error, refetch } = useRevenue(8)
+  const icon = <TrendingUp className="h-4 w-4" />
 
   // Estado de loading
   if (isLoading) {
     return (
       <DashboardCard 
         title="Receita Semanal" 
-        icon={<TrendingUp className="h-4 w-4" />}
-        className="h-[200px]"
+        action={icon}
+        className="h-50"
       >
         <ReceitaSemanalSkeleton />
       </DashboardCard>
@@ -42,8 +43,8 @@ export function ReceitaSemanalCard() {
     return (
       <DashboardCard 
         title="Receita Semanal" 
-        icon={<TrendingUp className="h-4 w-4" />}
-        className="h-[200px]"
+        action={icon}
+        className="h-50"
       >
         <DashboardError onRetry={refetch} />
       </DashboardCard>
@@ -55,8 +56,8 @@ export function ReceitaSemanalCard() {
     return (
       <DashboardCard 
         title="Receita Semanal" 
-        icon={<TrendingUp className="h-4 w-4" />}
-        className="h-[200px]"
+        action={icon}
+        className="h-50"
       >
         <div className="text-center text-muted-foreground py-8">
           Nenhum dado de receita
@@ -69,8 +70,8 @@ export function ReceitaSemanalCard() {
   return (
     <DashboardCard 
       title="Receita Semanal" 
-      icon={<TrendingUp className="h-4 w-4" />}
-      className="h-[200px]"
+      action={icon}
+      className="h-50"
     >
       <ReceitaSemanalChart data={data.weeks} />
     </DashboardCard>
