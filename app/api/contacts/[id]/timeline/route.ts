@@ -68,17 +68,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         take: limit,
       }),
 
-      // Conversas e mensagens
+      // Conversas do contato
       prisma.conversation.findMany({
         where: { 
           contactId: id,
           organizationId,
-        },
-        include: {
-          messages: {
-            orderBy: { createdAt: "desc" },
-            take: 5,
-          },
         },
         orderBy: { updatedAt: "desc" },
         take: 10,
@@ -90,6 +84,28 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       dealsCount: deals.length, 
       conversationsCount: conversations.length 
     });
+
+    // Buscar mensagens das conversas separadamente (schema nao tem relacao messages)
+    const conversationIds = conversations.map(c => c.id);
+    let messages: Array<{
+      id: string;
+      conversationId: string;
+      content: string;
+      direction: string;
+      status: string;
+      createdAt: Date;
+    }> = [];
+    
+    if (conversationIds.length > 0) {
+      messages = await prisma.message.findMany({
+        where: {
+          conversationId: { in: conversationIds },
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+      });
+      console.log('[Timeline API] Messages found:', messages.length);
+    }
 
     // Buscar usuários atribuídos para schedules e deals
     const userIds = [
@@ -198,7 +214,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     // Adicionar atividades dos deals
-    // ActivityType enum: CALL, MEETING, EMAIL, TASK, NOTE, WHATSAPP, STAGE_CHANGE, DEAL_CREATED, DEAL_CLOSED
     dealActivities.forEach(activity => {
       const typeMap: Record<string, TimelineEvent['type']> = {
         'NOTE': 'note',
@@ -226,25 +241,27 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       });
     });
 
-    // Adicionar mensagens das conversas
-    conversations.forEach(conversation => {
-      conversation.messages.forEach(message => {
-        const isWhatsApp = conversation.channel === 'whatsapp' || conversation.channel === 'WHATSAPP';
-        
-        timeline.push({
-          id: `message-${message.id}`,
-          type: isWhatsApp ? 'whatsapp' : 'message',
-          title: isWhatsApp ? 'Mensagem WhatsApp' : 'Mensagem',
-          description: message.content.substring(0, 200) + (message.content.length > 200 ? '...' : ''),
-          date: message.createdAt.toISOString(),
-          author: message.direction === 'inbound' ? 'Cliente' : 'Agente',
-          metadata: {
-            messageId: message.id,
-            conversationId: conversation.id,
-            direction: message.direction,
-            status: message.status,
-          },
-        });
+    // Criar mapa de conversas para canal
+    const conversationMap = new Map(conversations.map(c => [c.id, c]));
+
+    // Adicionar mensagens
+    messages.forEach(message => {
+      const conversation = conversationMap.get(message.conversationId);
+      const isWhatsApp = true; // Assume WhatsApp por padrao
+      
+      timeline.push({
+        id: `message-${message.id}`,
+        type: isWhatsApp ? 'whatsapp' : 'message',
+        title: isWhatsApp ? 'Mensagem WhatsApp' : 'Mensagem',
+        description: message.content?.substring(0, 200) + (message.content && message.content.length > 200 ? '...' : '') || '[Sem conteúdo]',
+        date: message.createdAt.toISOString(),
+        author: message.direction === 'INBOUND' ? 'Cliente' : 'Agente',
+        metadata: {
+          messageId: message.id,
+          conversationId: message.conversationId,
+          direction: message.direction,
+          status: message.status,
+        },
       });
     });
 
