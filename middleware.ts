@@ -16,7 +16,7 @@ const PUBLIC_PATHS = [
   '/api/evolution/webhook',
 ]
 
-const PUBLIC_PREFIXES = ['/_next/', '/images/', '/fonts/', '/favicon']
+const PUBLIC_PREFIXES = ['/_next/', '/images/', '/fonts/', '/favicon', '/api/']
 
 interface SessionPayload {
   userId: string
