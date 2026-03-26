@@ -19,17 +19,33 @@ import {
   PhoneCall,
   Users,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Trash2,
+  Edit3
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { formatDate, formatCurrency } from "@/lib/utils"
 import type { Conversation } from "@/lib/types/conversation"
 import { useState } from "react"
-import { useContactDeals } from "@/hooks/use-contact-deals"
+import { useContactDeals, ContactDeal } from "@/hooks/use-contact-deals"
 import { useContactTimeline, TimelineEvent } from "@/hooks/use-contact-timeline"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 
 interface Props {
   conversation: Conversation | null
@@ -50,6 +66,17 @@ export function CustomerContextPanel({ conversation }: Props) {
   const [showAllActivities, setShowAllActivities] = useState(false)
   const [dealsExpanded, setDealsExpanded] = useState(true)
   const [activitiesExpanded, setActivitiesExpanded] = useState(true)
+  const [isCreateDealOpen, setIsCreateDealOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Form state for new deal
+  const [dealForm, setDealForm] = useState({
+    title: '',
+    value: '',
+    description: '',
+  })
+
+  const organizationId = useOrganizationId()
 
   // Buscar dados reais do backend
   const { 
@@ -77,7 +104,94 @@ export function CustomerContextPanel({ conversation }: Props) {
   const displayedActivities = showAllActivities ? activities : activities.slice(0, 5)
 
   const isLoading = isLoadingDeals || isLoadingTimeline
-  const hasError = dealsError || timelineError
+
+  // Buscar estágio padrão do pipeline
+  const fetchDefaultStage = async () => {
+    try {
+      const response = await fetch('/api/pipeline/stages')
+      const data = await response.json()
+      if (data.success && data.data.length > 0) {
+        // Retorna o primeiro estágio ou o que tem isDefault = true
+        const defaultStage = data.data.find((s: any) => s.isDefault) || data.data[0]
+        return defaultStage.id
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  // Criar novo negócio
+  const handleCreateDeal = async () => {
+    if (!conversation?.contactId || !organizationId) {
+      toast.error('Informações incompletas')
+      return
+    }
+
+    if (!dealForm.title.trim()) {
+      toast.error('Título do negócio é obrigatório')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      // Busca o estágio padrão
+      const stageId = await fetchDefaultStage()
+      if (!stageId) {
+        throw new Error('Nenhum estágio encontrado no pipeline. Configure o pipeline primeiro.')
+      }
+
+      const response = await fetch('/api/pipeline/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: dealForm.title,
+          value: parseFloat(dealForm.value) || 0,
+          description: dealForm.description,
+          contactId: conversation.contactId,
+          stageId,
+          channel: 'whatsapp',
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Erro ao criar negócio')
+      }
+
+      toast.success('Negócio criado com sucesso!')
+      setDealForm({ title: '', value: '', description: '' })
+      setIsCreateDealOpen(false)
+      refreshDeals()
+      refreshTimeline()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar negócio')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Deletar negócio
+  const handleDeleteDeal = async (dealId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este negócio?')) return
+
+    try {
+      const response = await fetch(`/api/pipeline/deals/${dealId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao excluir negócio')
+      }
+
+      toast.success('Negócio excluído com sucesso!')
+      refreshDeals()
+      refreshTimeline()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao excluir negócio')
+    }
+  }
 
   if (!conversation) {
     return (
@@ -206,11 +320,80 @@ export function CustomerContextPanel({ conversation }: Props) {
                 {isLoadingDeals ? '...' : deals.length}
               </Badge>
             </div>
-            {dealsExpanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
+            <div className="flex items-center gap-1">
+              {/* Botão Novo Negócio */}
+              <Dialog open={isCreateDealOpen} onOpenChange={setIsCreateDealOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Novo Negócio</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="title">Título *</Label>
+                      <Input
+                        id="title"
+                        value={dealForm.title}
+                        onChange={(e) => setDealForm({ ...dealForm, title: e.target.value })}
+                        placeholder="Ex: Contrato Anual - Plano Pro"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="value">Valor (R$)</Label>
+                      <Input
+                        id="value"
+                        type="number"
+                        value={dealForm.value}
+                        onChange={(e) => setDealForm({ ...dealForm, value: e.target.value })}
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="description">Descrição</Label>
+                      <Input
+                        id="description"
+                        value={dealForm.description}
+                        onChange={(e) => setDealForm({ ...dealForm, description: e.target.value })}
+                        placeholder="Detalhes do negócio..."
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancelar</Button>
+                    </DialogClose>
+                    <Button 
+                      onClick={handleCreateDeal}
+                      disabled={isSubmitting}
+                      className="bg-[#46347F] hover:bg-[#46347F]/90"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Criando...
+                        </>
+                      ) : (
+                        'Criar Negócio'
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              {dealsExpanded ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
           </button>
 
           {dealsExpanded && (
@@ -232,23 +415,33 @@ export function CustomerContextPanel({ conversation }: Props) {
                 deals.map((deal) => (
                   <div
                     key={deal.id}
-                    className="rounded-lg border border-border bg-background p-3 hover:bg-muted/30 transition-colors cursor-pointer"
+                    className="rounded-lg border border-border bg-background p-3 hover:bg-muted/30 transition-colors group"
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <p className="text-xs font-semibold text-foreground line-clamp-2">{deal.title}</p>
-                      <Badge 
-                        variant="outline" 
-                        className="text-[9px] shrink-0"
-                        style={{ 
-                          borderColor: deal.status === 'OPEN' ? deal.stage.color : undefined,
-                          color: deal.status === 'OPEN' ? deal.stage.color : undefined 
-                        }}
-                      >
-                        {deal.status === 'OPEN' ? deal.stage.name : 
-                         deal.status === 'WON' ? 'Ganho' :
-                         deal.status === 'LOST' ? 'Perdido' :
-                         deal.status === 'PAUSED' ? 'Pausado' : deal.status}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge 
+                          variant="outline" 
+                          className="text-[9px] shrink-0"
+                          style={{ 
+                            borderColor: deal.status === 'OPEN' ? deal.stage.color : undefined,
+                            color: deal.status === 'OPEN' ? deal.stage.color : undefined 
+                          }}
+                        >
+                          {deal.status === 'OPEN' ? deal.stage.name : 
+                           deal.status === 'WON' ? 'Ganho' :
+                           deal.status === 'LOST' ? 'Perdido' :
+                           deal.status === 'PAUSED' ? 'Pausado' : deal.status}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteDeal(deal.id)}
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-bold text-[#46347F]">
