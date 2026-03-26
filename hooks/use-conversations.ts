@@ -419,7 +419,7 @@ export function useConversation(
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 5000,
-      refreshInterval: 15000, // Poll every 15 seconds for new messages
+      refreshInterval: 30000, // Backup poll — SSE cuida do tempo real
     }
   )
 

@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
 
       case 'MESSAGES_UPSERT':
       case 'messages.upsert': {
-        // Evolution API pode enviar data como objeto único ou array de mensagens
         const rawData = event.data;
         if (Array.isArray(rawData)) {
           for (const msg of rawData) {
@@ -65,6 +64,16 @@ export async function POST(request: NextRequest) {
         }
         break;
       }
+
+      case 'MESSAGES_UPDATE':
+      case 'messages.update':
+        await handleMessageUpdate(instance.id, event.data as Record<string, unknown>);
+        break;
+
+      case 'PRESENCE_UPDATE':
+      case 'presence.update':
+        await handlePresenceUpdate(instance.id, event.data as Record<string, unknown>);
+        break;
 
       case 'QRCODE_UPDATED':
       case 'qrcode.updated':
@@ -277,5 +286,87 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
   } catch (error) {
     console.error('[Evolution Webhook] Error saving inbound message:', error);
     throw error;
+  }
+}
+
+async function handlePresenceUpdate(instanceId: string, data: Record<string, unknown>) {
+  // Formatos possíveis da Evolution API:
+  // { id: "phone@s.whatsapp.net", presences: { "phone@s.whatsapp.net": { lastKnownPresence: "composing" } } }
+  // { remoteJid: "phone@s.whatsapp.net", presence: "composing" }
+  const instance = await prisma.evolutionInstance.findUnique({ where: { id: instanceId } });
+  if (!instance) return;
+
+  let phone: string | null = null;
+  let presence: string | null = null;
+
+  if (data.presences && typeof data.presences === 'object') {
+    // Formato: { id, presences: { phone: { lastKnownPresence } } }
+    const jid = (data.id as string) || Object.keys(data.presences as object)[0];
+    phone = jid?.split('@')[0] || null;
+    const presenceObj = (data.presences as Record<string, Record<string, string>>)[jid];
+    presence = presenceObj?.lastKnownPresence || null;
+  } else if (data.remoteJid) {
+    phone = (data.remoteJid as string).split('@')[0];
+    presence = data.presence as string;
+  }
+
+  if (!phone) return;
+
+  const isTyping = presence === 'composing' || presence === 'recording';
+  const typingUntil = isTyping ? new Date(Date.now() + 10_000) : new Date(0); // 10s TTL
+
+  console.log(`[Evolution Webhook] Presence update: ${phone} → ${presence}`);
+
+  try {
+    const contact = await prisma.contact.findFirst({
+      where: { organizationId: instance.organizationId, phone },
+    });
+    if (!contact) return;
+
+    const conversation = await prisma.conversation.findFirst({
+      where: { contactId: contact.id, organizationId: instance.organizationId, status: 'active' },
+    });
+    if (!conversation) return;
+
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: { typingUntil, typingPhone: isTyping ? phone : null },
+    });
+  } catch (error) {
+    console.error('[Evolution Webhook] Error handling presence update:', error);
+  }
+}
+
+async function handleMessageUpdate(instanceId: string, data: Record<string, unknown>) {
+  // data pode ser array ou objeto com { key: { id }, update: { status } }
+  const updates = Array.isArray(data) ? data : [data];
+
+  const statusMap: Record<number, string> = {
+    0: 'ERROR',
+    1: 'SENT',
+    2: 'DELIVERED',
+    3: 'READ',
+    4: 'READ', // played (áudio)
+  };
+
+  for (const update of updates) {
+    const u = update as Record<string, unknown>;
+    const key = u.key as Record<string, unknown> | undefined;
+    const upd = u.update as Record<string, unknown> | undefined;
+    if (!key?.id || upd?.status === undefined) continue;
+
+    const statusCode = Number(upd.status);
+    const newStatus = statusMap[statusCode];
+    if (!newStatus) continue;
+
+    try {
+      await prisma.message.updateMany({
+        where: { messageId: key.id as string },
+        data: { status: newStatus },
+      });
+      console.log(`[Evolution Webhook] Message ${key.id} status → ${newStatus}`);
+    } catch (error) {
+      console.error('[Evolution Webhook] Error updating message status:', error);
+    }
   }
 }

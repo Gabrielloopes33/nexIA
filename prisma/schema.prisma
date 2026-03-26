@@ -149,13 +149,15 @@ model Contact {
 
 /// Conversation - Conversas (janela de 24h)
 model Conversation {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
-  contactId      String   @map("contact_id") @db.Uuid
-  status         String   @default("active") @db.VarChar(50)
-  unread_count   Int      @default(0)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  contactId      String    @map("contact_id") @db.Uuid
+  status         String    @default("active") @db.VarChar(50)
+  unread_count   Int       @default(0)
+  typingUntil    DateTime? @map("typing_until")  // quando o contato para de "estar digitando"
+  typingPhone    String?   @map("typing_phone") @db.VarChar(50)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@map("conversations")
 }

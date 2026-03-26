@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AssignConversationDialog } from "@/components/conversations/assign-conversation-dialog"
 import { useConversation } from "@/hooks/use-conversations"
+import { useConversationStream } from "@/hooks/use-conversation-stream"
 import { toast } from "sonner"
 
 const STATUS_CONFIG = {
@@ -43,6 +44,9 @@ export function ChatWindow({ conversation }: Props) {
   } = useConversation(conversation?.id || null, {
     messagesLimit: 100
   })
+
+  // Stream SSE para mensagens em tempo real e indicador de digitação
+  const { isTyping } = useConversationStream(conversation?.id || null)
 
   // Scroll para o final apenas quando uma nova mensagem é adicionada
   const lastMessageId = messages[messages.length - 1]?.id
@@ -258,6 +262,21 @@ export function ChatWindow({ conversation }: Props) {
                 </div>
               )
             })}
+            {/* Indicador de digitação */}
+            {isTyping && (
+              <div className="flex items-end gap-2 justify-start">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#46347F]/20 text-[#46347F]">
+                  <User className="h-3.5 w-3.5" />
+                </div>
+                <div className="rounded-2xl rounded-bl-sm bg-[#F3F2F2] px-4 py-2.5">
+                  <div className="flex gap-1 items-center h-4">
+                    <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" />
+                  </div>
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </>
         )}
