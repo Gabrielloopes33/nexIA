@@ -27,6 +27,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const organizationId = searchParams.get('organizationId');
     const limit = parseInt(searchParams.get('limit') || '50');
 
+    console.log('[Timeline API] Request:', { contactId: id, organizationId, limit });
+
     if (!organizationId) {
       return NextResponse.json(
         { success: false, error: "Organization ID is required" },
@@ -35,6 +37,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Buscar dados em paralelo
+    console.log('[Timeline API] Fetching schedules, deals, conversations...');
     const [schedules, deals, conversations] = await Promise.all([
       // Schedules (tarefas, ligações, reuniões)
       prisma.schedule.findMany({
@@ -82,6 +85,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }),
     ]);
 
+    console.log('[Timeline API] Fetched:', { 
+      schedulesCount: schedules.length, 
+      dealsCount: deals.length, 
+      conversationsCount: conversations.length 
+    });
+
     // Buscar usuários atribuídos para schedules e deals
     const userIds = [
       ...schedules.map(s => s.assignedTo).filter((id): id is string => !!id),
@@ -89,6 +98,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     ];
 
     const uniqueUserIds = [...new Set(userIds)];
+    
+    console.log('[Timeline API] Fetching users:', uniqueUserIds);
     
     const users = uniqueUserIds.length > 0
       ? await prisma.user.findMany({
@@ -98,9 +109,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       : [];
 
     const userMap = new Map(users.map(u => [u.id, u]));
+    console.log('[Timeline API] Users found:', users.length);
 
     // Buscar atividades dos deals
     const dealIds = deals.map(d => d.id);
+    console.log('[Timeline API] Deal IDs for activities:', dealIds);
+    
     const dealActivities = dealIds.length > 0 
       ? await prisma.dealActivity.findMany({
           where: { 
@@ -110,6 +124,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           take: limit,
         })
       : [];
+    
+    console.log('[Timeline API] Activities found:', dealActivities.length);
 
     // Construir timeline
     const timeline: TimelineEvent[] = [];
@@ -182,14 +198,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     // Adicionar atividades dos deals
+    // ActivityType enum: CALL, MEETING, EMAIL, TASK, NOTE, WHATSAPP, STAGE_CHANGE, DEAL_CREATED, DEAL_CLOSED
     dealActivities.forEach(activity => {
       const typeMap: Record<string, TimelineEvent['type']> = {
-        'note': 'note',
-        'call': 'call',
-        'email': 'message',
-        'meeting': 'meeting',
-        'stage_change': 'deal',
-        'task': 'task',
+        'NOTE': 'note',
+        'CALL': 'call',
+        'EMAIL': 'message',
+        'MEETING': 'meeting',
+        'STAGE_CHANGE': 'deal',
+        'TASK': 'task',
+        'WHATSAPP': 'whatsapp',
+        'DEAL_CREATED': 'deal',
+        'DEAL_CLOSED': 'deal',
       };
 
       timeline.push({
@@ -233,6 +253,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Limitar resultados
     const limitedTimeline = timeline.slice(0, limit);
+    
+    console.log('[Timeline API] Returning timeline with', limitedTimeline.length, 'events');
 
     return NextResponse.json({
       success: true,
@@ -244,7 +266,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error("[Contact Timeline] Error:", error);
+    console.error("[Timeline API] Error:", error);
     return NextResponse.json(
       { 
         success: false, 
