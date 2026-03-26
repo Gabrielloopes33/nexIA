@@ -10,7 +10,6 @@ import { StepDadosEmpresa } from '@/components/onboarding/steps/step-dados-empre
 import { StepLogo } from '@/components/onboarding/steps/step-logo'
 import { StepConvites } from '@/components/onboarding/steps/step-convites'
 import { useOnboarding } from '@/hooks/use-onboarding'
-import { useOrganization } from '@/lib/contexts/organization-context'
 import { Spinner } from '@/components/ui/spinner'
 
 const steps = [
@@ -18,6 +17,17 @@ const steps = [
   { label: 'Logo' },
   { label: 'Convites' },
 ]
+
+interface Organization {
+  id: string
+  name: string
+  slug: string
+  status: string
+  setupComplete: boolean
+  logoUrl: string | null
+  segment: string | null
+  role: string | null
+}
 
 /**
  * Página de Onboarding da Organização
@@ -29,8 +39,35 @@ const steps = [
  */
 export default function OnboardingOrganizacaoPage() {
   const router = useRouter()
-  const { organization, isLoading: isLoadingOrg } = useOrganization()
+  const [organization, setOrganization] = useState<Organization | null>(null)
+  const [isLoadingOrg, setIsLoadingOrg] = useState(true)
   const [hasChecked, setHasChecked] = useState(false)
+
+  // Busca a organização atual da sessão
+  useEffect(() => {
+    const fetchCurrentOrg = async () => {
+      try {
+        const response = await fetch('/api/user/current-organization')
+        if (response.ok) {
+          const data = await response.json()
+          setOrganization(data)
+        } else if (response.status === 401) {
+          setOrganization(null)
+        } else {
+          console.error('Erro ao buscar organização:', await response.text())
+          setOrganization(null)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar organização:', error)
+        setOrganization(null)
+      } finally {
+        setIsLoadingOrg(false)
+        setHasChecked(true)
+      }
+    }
+
+    fetchCurrentOrg()
+  }, [])
 
   const handleComplete = useCallback(() => {
     router.push('/onboarding/bem-vindo')
@@ -49,13 +86,10 @@ export default function OnboardingOrganizacaoPage() {
     onComplete: handleComplete,
   })
 
-  // Redireciona apenas após confirmar que não tem organização (não durante loading)
+  // Redireciona se não tiver organização ou se setup já estiver completo
   useEffect(() => {
-    if (!isLoadingOrg && !hasChecked) {
-      setHasChecked(true)
-      
+    if (hasChecked && !isLoadingOrg) {
       if (!organization) {
-        // Aguarda um pouco para evitar flash de redirecionamento
         const timer = setTimeout(() => {
           toast.error('Você precisa estar logado para acessar esta página')
           router.push('/login?from=/onboarding/organizacao')
@@ -64,7 +98,7 @@ export default function OnboardingOrganizacaoPage() {
       }
 
       // Redireciona se o setup já estiver completo
-      if ((organization as any).setupComplete) {
+      if (organization.setupComplete) {
         router.push('/dashboard')
       }
     }
