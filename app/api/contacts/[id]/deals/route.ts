@@ -33,6 +33,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             id: true,
             name: true,
             color: true,
+            probability: true,
           },
         },
         assignedUser: {

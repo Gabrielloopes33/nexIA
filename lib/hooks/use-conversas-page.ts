@@ -28,7 +28,33 @@ function mapStatus(status: ApiConversation['status']): ConversationStatus {
 
 // Mapeia conversa da API para o formato do componente
 function mapConversation(apiConv: ApiConversation): Conversation {
-  const contactName = apiConv.contact?.name || apiConv.contact?.phone || 'Desconhecido'
+  // Formata o nome do contato - usa nome ou formata o telefone
+  const rawName = apiConv.contact?.name
+  const rawPhone = apiConv.contact?.phone
+  let contactName: string
+  
+  if (rawName && rawName.trim()) {
+    contactName = rawName
+  } else if (rawPhone) {
+    // Extrai apenas os números do telefone (remove @c.us, @s.whatsapp.net, etc)
+    const cleanPhone = rawPhone.replace(/\D/g, '')
+    // Formata como número de telefone brasileiro se possível
+    if (cleanPhone.length >= 11) {
+      const ddd = cleanPhone.slice(-11, -9)
+      const prefix = cleanPhone.slice(-9, -5)
+      const suffix = cleanPhone.slice(-5)
+      contactName = `(${ddd}) ${prefix}-${suffix}`
+    } else if (cleanPhone.length >= 10) {
+      const ddd = cleanPhone.slice(-10, -8)
+      const prefix = cleanPhone.slice(-8, -4)
+      const suffix = cleanPhone.slice(-4)
+      contactName = `(${ddd}) ${prefix}-${suffix}`
+    } else {
+      contactName = cleanPhone
+    }
+  } else {
+    contactName = 'Desconhecido'
+  }
   const contactAvatar = contactName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   
   // Determina o canal baseado no instance ou valor padrão

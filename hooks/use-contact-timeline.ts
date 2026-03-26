@@ -35,13 +35,16 @@ export function useContactTimeline(
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(
-        `/api/contacts/${contactId}/timeline?organizationId=${organizationId}&limit=50`
-      )
+      const url = `/api/contacts/${contactId}/timeline?organizationId=${organizationId}&limit=50`
+      console.log('[useContactTimeline] Fetching:', url)
+      
+      const response = await fetch(url)
       const data = await response.json()
+      
+      console.log('[useContactTimeline] Response:', { status: response.status, success: data.success, error: data.error, details: data.details })
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Erro ao carregar timeline')
+        throw new Error(data.error || data.details || 'Erro ao carregar timeline')
       }
 
       setEvents(data.data || [])

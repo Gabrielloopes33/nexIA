@@ -53,13 +53,16 @@ export function useContactDeals(
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(
-        `/api/contacts/${contactId}/deals?organizationId=${organizationId}`
-      )
+      const url = `/api/contacts/${contactId}/deals?organizationId=${organizationId}`
+      console.log('[useContactDeals] Fetching:', url)
+      
+      const response = await fetch(url)
       const data = await response.json()
+      
+      console.log('[useContactDeals] Response:', { status: response.status, success: data.success, error: data.error, details: data.details })
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Erro ao carregar negócios')
+        throw new Error(data.error || data.details || 'Erro ao carregar negócios')
       }
 
       // Transformar os deals para o formato esperado
