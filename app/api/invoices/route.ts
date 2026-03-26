@@ -113,10 +113,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           charges: {
             select: {
               id: true,
-              amountCents: true,
+              amount: true,
               status: true,
               paidAt: true,
-              paymentMethod: true,
             },
           },
           _count: {
@@ -129,9 +128,27 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       prisma.invoice.count({ where }),
     ]);
 
+    // Transforma os dados para o formato esperado pelo frontend
+    const transformedInvoices = invoices.map(inv => ({
+      ...inv,
+      amountCents: Math.round(Number(inv.amount) * 100),
+      subscription: inv.subscription ? {
+        ...inv.subscription,
+        plan: inv.subscription.plan ? {
+          ...inv.subscription.plan,
+          priceCents: Math.round(Number(inv.subscription.plan.price) * 100),
+          status: inv.subscription.plan.is_active ? 'active' : 'inactive',
+        } : null,
+      } : null,
+      charges: inv.charges ? inv.charges.map(charge => ({
+        ...charge,
+        amountCents: Math.round(Number(charge.amount) * 100),
+      })) : [],
+    }));
+
     return NextResponse.json({
       success: true,
-      data: invoices,
+      data: transformedInvoices,
       pagination: {
         total,
         limit,

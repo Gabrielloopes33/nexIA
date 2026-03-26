@@ -140,9 +140,10 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
     orgId ? `/api/conversations?${buildQueryString()}` : null,
     fetcher,
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 5000,
+      refreshInterval: 30000, // Atualiza lista a cada 30 segundos
     }
   )
 
@@ -389,6 +390,7 @@ interface UseConversationReturn {
   conversation: Conversation | null
   messages: Message[]
   isLoading: boolean
+  isSending: boolean
   error: Error | null
   mutate: () => Promise<void>
   sendMessage: (data: SendMessageRequest) => Promise<Message | null>
@@ -417,7 +419,7 @@ export function useConversation(
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 5000,
-      refreshInterval: 3000, // Poll every 3 seconds for new messages
+      refreshInterval: 15000, // Poll every 15 seconds for new messages
     }
   )
 
@@ -539,7 +541,8 @@ export function useConversation(
   return {
     conversation,
     messages,
-    isLoading: isLoading || isMutating,
+    isLoading,
+    isSending: isMutating,
     error: error || null,
     mutate,
     sendMessage,

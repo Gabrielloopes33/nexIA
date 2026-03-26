@@ -13,6 +13,22 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
+// Helper para buscar instância (WhatsApp oficial ou Evolution)
+async function getInstanceForOrg(organizationId: string) {
+  const [waInstance, evoInstance] = await Promise.all([
+    prisma.whatsAppInstance.findFirst({
+      where: { organizationId },
+      select: { id: true, name: true, phoneNumber: true },
+    }),
+    prisma.evolutionInstance.findFirst({
+      where: { organizationId, status: 'CONNECTED' },
+      select: { id: true, name: true, phoneNumber: true },
+    }),
+  ]);
+  const src = waInstance || evoInstance;
+  return src ? { id: src.id, name: src.name, displayPhoneNumber: src.phoneNumber } : null;
+}
+
 // Helper para enriquecer conversa
 async function enrichConversation(conv: any, organizationId: string) {
   const [contact, messages, messageCount, instance] = await Promise.all([
@@ -33,10 +49,7 @@ async function enrichConversation(conv: any, organizationId: string) {
     prisma.message.count({
       where: { conversationId: conv.id },
     }),
-    prisma.whatsAppInstance.findFirst({
-      where: { organizationId },
-      select: { id: true, name: true, phoneNumber: true },
-    }),
+    getInstanceForOrg(organizationId),
   ]);
 
   const now = new Date();
@@ -51,11 +64,7 @@ async function enrichConversation(conv: any, organizationId: string) {
       phone: '',
       status: 'active',
     },
-    instance: instance ? {
-      id: instance.id,
-      name: instance.name,
-      displayPhoneNumber: instance.phoneNumber,
-    } : null,
+    instance,
     messages: messages.map(m => ({
       ...m,
       direction: m.direction || 'OUTBOUND',

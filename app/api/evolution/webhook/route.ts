@@ -24,12 +24,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const event: WebhookEvent = await request.json();
+    const body = await request.text();
+    console.log('[Evolution Webhook] Raw body:', body.substring(0, 1000));
+
+    const event: WebhookEvent = JSON.parse(body);
 
     console.log('[Evolution Webhook] Received:', {
       event: event.event,
       instance: event.instance,
-      data: JSON.stringify(event.data).substring(0, 500), // Limit log size
+      data: JSON.stringify(event.data).substring(0, 500),
     });
 
     // Find instance by name
@@ -50,9 +53,18 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'MESSAGES_UPSERT':
-      case 'messages.upsert':
-        await handleMessageReceived(instance.id, event.data as Record<string, unknown>);
+      case 'messages.upsert': {
+        // Evolution API pode enviar data como objeto único ou array de mensagens
+        const rawData = event.data;
+        if (Array.isArray(rawData)) {
+          for (const msg of rawData) {
+            await handleMessageReceived(instance.id, msg as Record<string, unknown>);
+          }
+        } else {
+          await handleMessageReceived(instance.id, rawData as Record<string, unknown>);
+        }
         break;
+      }
 
       case 'QRCODE_UPDATED':
       case 'qrcode.updated':

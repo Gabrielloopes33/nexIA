@@ -474,15 +474,18 @@ model Segment {
 
 /// Plan - Planos de assinatura
 model Plan {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @db.VarChar(255)
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  interval    String   @default("month") @db.VarChar(50)
-  features    Json?
-  is_active   Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String         @db.VarChar(255)
+  description   String?
+  price         Decimal        @db.Decimal(10, 2)
+  interval      String         @default("month") @db.VarChar(50)
+  features      Json?
+  is_active     Boolean        @default(true)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at")
+  
+  // Relações
+  subscriptions Subscription[]
 
   @@map("plans")
 }
@@ -499,6 +502,10 @@ model Subscription {
   cancelled_at       DateTime?
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at")
+  
+  // Relações
+  plan               Plan               @relation(fields: [planId], references: [id])
+  invoices           Invoice[]
 
   @@map("subscriptions")
 }
@@ -516,6 +523,10 @@ model Invoice {
   metadata       Json?
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+  
+  // Relações
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  charges        Charge[]
 
   @@map("invoices")
 }
@@ -534,6 +545,9 @@ model Charge {
   metadata       Json?
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+  
+  // Relações
+  invoice        Invoice?     @relation(fields: [invoiceId], references: [id])
 
   @@map("charges")
 }

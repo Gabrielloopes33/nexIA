@@ -365,6 +365,11 @@ export default function AssinaturasPage() {
               </div>
             </CardHeader>
             <CardContent className="p-4 pt-0 space-y-4">
+              <div className="rounded-sm bg-[#46347F]/10 p-3">
+                <p className="text-xs text-muted-foreground mb-1">Plano Ativo</p>
+                <p className="text-lg font-bold text-foreground">Nexia Chat</p>
+                <p className="text-sm text-muted-foreground">R$ 300,00 / 3 meses</p>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-sm bg-secondary/50 p-3">
                   <p className="text-xs text-muted-foreground">Taxa Stripe</p>
@@ -381,11 +386,6 @@ export default function AssinaturasPage() {
                   /api/stripe/webhook
                 </code>
               </div>
-              <Link href="/configuracoes/assinaturas/configuracoes">
-                <Button className="w-full bg-[#46347F] hover:bg-[#46347F]">
-                  Configurar Stripe
-                </Button>
-              </Link>
             </CardContent>
           </Card>
         </div>

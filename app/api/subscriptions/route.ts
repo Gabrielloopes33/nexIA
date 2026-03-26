@@ -144,9 +144,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       prisma.subscription.count({ where }),
     ]);
 
+    // Transforma os dados para o formato esperado pelo frontend
+    const transformedSubscriptions = subscriptions.map(sub => ({
+      ...sub,
+      plan: sub.plan ? {
+        ...sub.plan,
+        priceCents: Math.round(Number(sub.plan.price) * 100),
+        status: sub.plan.is_active ? 'active' : 'inactive',
+      } : null,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: subscriptions,
+      data: transformedSubscriptions,
       pagination: {
         total,
         limit,
@@ -238,9 +248,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
 
+    // Transforma o resultado para o formato esperado pelo frontend
+    const transformedSubscription = {
+      ...subscription,
+      plan: subscription.plan ? {
+        ...subscription.plan,
+        priceCents: Math.round(Number(subscription.plan.price) * 100),
+        status: subscription.plan.is_active ? 'active' : 'inactive',
+      } : null,
+    };
+
     return NextResponse.json({
       success: true,
-      data: subscription,
+      data: transformedSubscription,
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating subscription:', error);

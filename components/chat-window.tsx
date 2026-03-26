@@ -33,12 +33,13 @@ export function ChatWindow({ conversation }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
   // Busca mensagens reais da API
-  const { 
-    messages, 
-    isLoading, 
-    error, 
+  const {
+    messages,
+    isLoading,
+    isSending,
+    error,
     sendMessage,
-    conversation: convData 
+    conversation: convData
   } = useConversation(conversation?.id || null, {
     messagesLimit: 100
   })
@@ -187,7 +188,7 @@ export function ChatWindow({ conversation }: Props) {
 
       {/* Messages area */}
       <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-        {isLoading ? (
+        {isLoading && messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-8 w-8 animate-spin text-[#46347F]" />
           </div>
@@ -270,20 +271,20 @@ export function ChatWindow({ conversation }: Props) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Digite sua mensagem..."
-            disabled={isLoading}
+            disabled={isSending}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isSending}
             className={cn(
               "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-2",
-              input.trim() && !isLoading
+              input.trim() && !isSending
                 ? "bg-[#46347F] text-white hover:bg-[#3a2c6b]"
                 : "cursor-not-allowed text-muted-foreground bg-gray-100"
             )}
           >
-            {isLoading ? (
+            {isSending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <>

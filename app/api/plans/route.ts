@@ -93,7 +93,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const where: Record<string, unknown> = {
-      status: 'active',
+      is_active: true,
     };
 
     if (interval) {
@@ -103,16 +103,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const [plans, total] = await Promise.all([
       prisma.plan.findMany({
         where,
-        orderBy: { priceCents: 'asc' },
+        orderBy: { price: 'asc' },
         take: limit,
         skip: offset,
       }),
       prisma.plan.count({ where }),
     ]);
 
+    // Transforma os dados para o formato esperado pelo frontend
+    const transformedPlans = plans.map(plan => ({
+      ...plan,
+      priceCents: Math.round(Number(plan.price) * 100),
+      status: plan.is_active ? 'active' : 'inactive',
+    }));
+
     return NextResponse.json({
       success: true,
-      data: plans,
+      data: transformedPlans,
       pagination: {
         total,
         limit,
@@ -173,17 +180,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        priceCents,
+        price: priceCents / 100, // Converte centavos para decimal
         interval,
         features: features || {},
-        limits: limits || {},
-        status: 'active',
       },
     });
 
+    // Transforma o resultado para o formato esperado pelo frontend
+    const transformedPlan = {
+      ...plan,
+      priceCents: Math.round(Number(plan.price) * 100),
+      status: plan.is_active ? 'active' : 'inactive',
+    };
+
     return NextResponse.json({
       success: true,
-      data: plan,
+      data: transformedPlan,
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating plan:', error);

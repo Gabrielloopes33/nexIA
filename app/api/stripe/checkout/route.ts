@@ -2,19 +2,22 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   // Dynamic import to avoid build-time issues
-  const { stripe, isStripeConfigured } = await import('@/lib/stripe/config')
+  const { stripe, isStripeConfigured, STRIPE_PRICE_ID } = await import('@/lib/stripe/config')
   
   // Verifica se o Stripe está configurado
   if (!isStripeConfigured()) {
     return NextResponse.json(
-      { error: 'Stripe não configurado. Configure as variáveis de ambiente STRIPE_SECRET_KEY.' },
+      { error: 'Stripe não configurado. Configure as variáveis de ambiente STRIPE_SECRET_KEY e STRIPE_PRICE_ID.' },
       { status: 503 }
     )
   }
 
   try {
     const body = await req.json()
-    const { priceId, customerId, customerEmail, metadata = {} } = body
+    const { customerEmail, metadata = {} } = body
+
+    // Usa o priceId do body ou o padrão configurado
+    const priceId = body.priceId || STRIPE_PRICE_ID
 
     // Validações
     if (!priceId) {
@@ -48,10 +51,8 @@ export async function POST(req: Request) {
       },
     }
 
-    // Adiciona cliente existente ou email
-    if (customerId) {
-      sessionConfig.customer = customerId
-    } else if (customerEmail) {
+    // Adiciona email do cliente se fornecido
+    if (customerEmail) {
       sessionConfig.customer_email = customerEmail
     }
 
@@ -59,10 +60,10 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create(sessionConfig)
 
     return NextResponse.json({ sessionId: session.id, url: session.url })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar sessão de checkout:', error)
     return NextResponse.json(
-      { error: 'Erro ao criar sessão de checkout' },
+      { error: error.message || 'Erro ao criar sessão de checkout' },
       { status: 500 }
     )
   }

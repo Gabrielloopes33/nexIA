@@ -31,9 +31,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchOrganization = useCallback(async (attemptRefresh = true): Promise<void> => {
+  const fetchOrganization = useCallback(async (attemptRefresh = true, silent = false): Promise<void> => {
     try {
-      setIsLoading(true)
+      if (!silent) setIsLoading(true)
       setError(null)
 
       // Busca a organização via API (o cookie httpOnly é enviado automaticamente)
@@ -90,26 +90,26 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       setError(err instanceof Error ? err : new Error("Erro desconhecido"))
       setOrganization(null)
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
     fetchOrganization()
 
-    // Atualiza quando a aba ganha foco (pode ter mudado em outra aba)
+    // Atualiza quando a aba ganha foco (silent para não piscar)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchOrganization()
+        fetchOrganization(true, true)
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     
-    // Também verifica periodicamente
+    // Também verifica periodicamente (silent = sem re-render de loading)
     const interval = setInterval(() => {
-      fetchOrganization()
-    }, 30000) // Verifica a cada 30 segundos
+      fetchOrganization(true, true)
+    }, 60000) // Verifica a cada 60 segundos
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)

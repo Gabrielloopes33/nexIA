@@ -11,37 +11,17 @@ export const stripe = stripeKey
     })
   : (null as any)
 
-// Preços dos planos (em centavos)
-export const PLAN_PRICES = {
-  starter: {
-    monthly: 9900,  // R$ 99,00
-    yearly: 95040,  // R$ 950,40 (20% desconto)
-  },
-  pro: {
-    monthly: 19900, // R$ 199,00
-    yearly: 191040, // R$ 1.910,40 (20% desconto)
-  },
-  business: {
-    monthly: 29900, // R$ 299,00
-    yearly: 287040, // R$ 2.870,40 (20% desconto)
-  },
-  enterprise: {
-    monthly: 49900, // R$ 499,00
-    yearly: 479040, // R$ 4.790,40 (20% desconto)
-  },
+// Preço do plano Nexia Chat (em centavos)
+// R$ 300,00 a cada 3 meses (trimestral)
+export const PLAN_PRICE = {
+  name: 'Nexia Chat',
+  priceCents: 30000,
+  interval: '3 months' as const,
+  intervalCount: 3,
 }
 
-// IDs dos produtos/planos no Stripe (substituir pelos IDs reais quando criados)
-export const STRIPE_PRICE_IDS = {
-  starter_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || '',
-  starter_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID || '',
-  pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || '',
-  pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || '',
-  business_monthly: process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID || '',
-  business_yearly: process.env.STRIPE_BUSINESS_YEARLY_PRICE_ID || '',
-  enterprise_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || '',
-  enterprise_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || '',
-}
+// ID do preço do plano no Stripe
+export const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || ''
 
 // Configurações de webhook
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ''
@@ -51,5 +31,5 @@ export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000
 
 // Helper para verificar se o Stripe está configurado
 export const isStripeConfigured = (): boolean => {
-  return !!stripeKey && !!STRIPE_WEBHOOK_SECRET
+  return !!stripeKey && !!STRIPE_WEBHOOK_SECRET && !!STRIPE_PRICE_ID
 }

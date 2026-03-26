@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
 
     if (existingConversation) {
       // Enriquece a conversa existente
-      const [messages, instance] = await Promise.all([
+      const [messages, waInstance, evoInstance] = await Promise.all([
         prisma.message.findMany({
           where: { conversationId: existingConversation.id },
           orderBy: { createdAt: 'desc' },
@@ -214,7 +214,13 @@ export async function POST(request: NextRequest) {
           where: { organizationId },
           select: { id: true, name: true, phoneNumber: true },
         }),
+        prisma.evolutionInstance.findFirst({
+          where: { organizationId, status: 'CONNECTED' },
+          select: { id: true, name: true, phoneNumber: true },
+        }),
       ]);
+      const instanceSrc = waInstance || evoInstance;
+      const instance = instanceSrc ? { id: instanceSrc.id, name: instanceSrc.name, displayPhoneNumber: instanceSrc.phoneNumber } : null;
       
       const now = new Date();
       const windowEnd = new Date(existingConversation.createdAt.getTime() + 24 * 60 * 60 * 1000);
@@ -257,12 +263,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const [instance] = await Promise.all([
+    const [waInst, evoInst] = await Promise.all([
       prisma.whatsAppInstance.findFirst({
         where: { organizationId },
         select: { id: true, name: true, phoneNumber: true },
       }),
+      prisma.evolutionInstance.findFirst({
+        where: { organizationId, status: 'CONNECTED' },
+        select: { id: true, name: true, phoneNumber: true },
+      }),
     ]);
+    const instSrc = waInst || evoInst;
+    const instance = instSrc ? { id: instSrc.id, name: instSrc.name, displayPhoneNumber: instSrc.phoneNumber } : null;
 
     const now = new Date();
     const windowEnd = new Date(conversation.createdAt.getTime() + 24 * 60 * 60 * 1000);
@@ -278,11 +290,7 @@ export async function POST(request: NextRequest) {
           avatarUrl: contact.avatarUrl,
           status: contact.status,
         },
-        instance: instance ? {
-          id: instance.id,
-          name: instance.name,
-          displayPhoneNumber: instance.phoneNumber,
-        } : null,
+        instance,
         messages: [],
         messageCount: 0,
         lastMessageAt: conversation.createdAt,
