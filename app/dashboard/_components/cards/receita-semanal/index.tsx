@@ -31,7 +31,7 @@ export function ReceitaSemanalCard() {
       <DashboardCard 
         title="Receita Semanal" 
         action={icon}
-        className="h-50"
+        className="h-64"
       >
         <ReceitaSemanalSkeleton />
       </DashboardCard>
@@ -44,7 +44,7 @@ export function ReceitaSemanalCard() {
       <DashboardCard 
         title="Receita Semanal" 
         action={icon}
-        className="h-50"
+        className="h-64"
       >
         <DashboardError onRetry={refetch} />
       </DashboardCard>
@@ -57,7 +57,7 @@ export function ReceitaSemanalCard() {
       <DashboardCard 
         title="Receita Semanal" 
         action={icon}
-        className="h-50"
+        className="h-64"
       >
         <div className="text-center text-muted-foreground py-8">
           Nenhum dado de receita
@@ -71,7 +71,7 @@ export function ReceitaSemanalCard() {
     <DashboardCard 
       title="Receita Semanal" 
       action={icon}
-      className="h-50"
+      className="h-64"
     >
       <ReceitaSemanalChart data={data.weeks} />
     </DashboardCard>

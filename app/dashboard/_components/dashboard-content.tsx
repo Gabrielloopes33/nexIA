@@ -46,8 +46,8 @@ export function DashboardContent() {
         </DashboardRow>
 
         {/* Row 3: Receita alinhado com sidebar + Health Score */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-5 h-[200px]">
-          <div className="xl:-ml-[176px] h-[200px]"> {/* Puxa para alinhar com sidebar (160px + gap-5) */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-5 h-64">
+          <div className="xl:-ml-[176px] h-64"> {/* Puxa para alinhar com sidebar (160px + gap-5) */}
             <ReceitaSemanalCard />
           </div>
           <HealthScoreCard compact />

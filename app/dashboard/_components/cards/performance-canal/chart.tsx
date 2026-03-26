@@ -53,8 +53,10 @@ interface ChartDataItem {
  * @param channels - Dados de performance dos canais
  */
 export function PerformanceCanalChart({ channels }: PerformanceCanalChartProps) {
-  // Formatar dados para o Recharts
-  const chartData: ChartDataItem[] = channels.map((channel) => ({
+  // Formatar dados para o Recharts (excluindo Email)
+  const chartData: ChartDataItem[] = channels
+    .filter((channel) => channel.channel !== 'EMAIL')
+    .map((channel) => ({
     name: CHANNEL_LABELS[channel.channel] || channel.channel,
     leads: channel.leadsGenerated,
     deals: channel.dealsWon,
@@ -62,10 +64,10 @@ export function PerformanceCanalChart({ channels }: PerformanceCanalChartProps) 
   }))
 
   return (
+    <div className="-mt-8 h-52 w-full" data-testid="canais-chart">
     <ResponsiveContainer 
       width="100%" 
-      height="90%"
-      data-testid="canais-chart"
+      height="100%"
     >
       <BarChart 
         data={chartData} 
@@ -138,6 +140,7 @@ export function PerformanceCanalChart({ channels }: PerformanceCanalChartProps) 
         />
       </BarChart>
     </ResponsiveContainer>
+    </div>
   )
 }
 

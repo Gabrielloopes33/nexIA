@@ -22,6 +22,7 @@ COPY . .
 # Set build environment
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV ENABLE_STANDALONE=1
 
 # Generate Prisma Client
 RUN npx prisma generate

@@ -40,7 +40,7 @@ export function MotivosPerdaChart({ data }: MotivosPerdaChartProps) {
   const sortedData = [...chartData].sort((a, b) => b.value - a.value)
 
   return (
-    <div className="flex items-center h-full" data-testid="motivos-perda-chart">
+    <div className="flex items-center h-full -mt-4" data-testid="motivos-perda-chart">
       <div className="flex-1 h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

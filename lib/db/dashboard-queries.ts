@@ -148,12 +148,15 @@ export async function getLostDealsWithRecoveryPotential(
 
 // 3. Performance por Canal
 export interface ChannelMetrics {
-  name: string
-  leads: number
-  deals: number
+  channel: string
+  leadsGenerated: number
+  dealsWon: number
+  revenueWon: number
   conversionRate: number
-  avgResponseTime: number // minutos
-  revenue: number
+  messagesSent: number
+  messagesReceived: number
+  responseRate: number
+  avgFirstResponseSecs: number
 }
 
 export async function getChannelPerformance(
@@ -197,17 +200,20 @@ export async function getChannelPerformance(
       ])
       
       return {
-        name: channel,
-        leads,
-        deals,
+        channel: channel as ChannelType,
+        leadsGenerated: leads,
+        dealsWon: deals,
+        revenueWon: Number(revenue._sum.value) || 0,
         conversionRate: leads > 0 ? (deals / leads) * 100 : 0,
-        avgResponseTime: 0, // Implementar com base em activities
-        revenue: Number(revenue._sum.value) || 0,
+        messagesSent: 0,
+        messagesReceived: 0,
+        responseRate: 0,
+        avgFirstResponseSecs: 0,
       }
     })
   )
   
-  return metrics.filter(m => m.leads > 0)
+  return metrics.filter(m => m.leadsGenerated > 0)
 }
 
 // 4. Motivos de Perda

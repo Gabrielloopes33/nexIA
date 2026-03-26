@@ -13,6 +13,7 @@ import { prisma } from '@/lib/prisma'
 
 // Cache por 5 minutos (300 segundos)
 export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {

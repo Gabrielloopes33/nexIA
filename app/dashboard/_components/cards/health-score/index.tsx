@@ -87,7 +87,7 @@ export function HealthScoreCard({ compact = true }: { compact?: boolean }) {
         icon={<Activity className="h-4 w-4" />}
         className="h-full min-h-[200px] flex flex-col"
       >
-        <div className="flex-1 flex flex-col items-center justify-start -mt-14 pt-2">
+        <div className="flex-1 flex flex-col items-center justify-center">
           <HealthScoreGauge score={data.score} status={data.status} size="md" />
           <p className="text-[10px] font-medium text-slate-400 text-center mt-1 uppercase">
             {data.status}
