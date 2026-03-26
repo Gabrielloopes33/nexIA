@@ -12,7 +12,14 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  Tag as TagIcon
+  Tag as TagIcon,
+  Loader2,
+  RefreshCw,
+  FileText,
+  PhoneCall,
+  Users,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,37 +27,57 @@ import { Avatar } from "@/components/ui/avatar"
 import { formatDate, formatCurrency } from "@/lib/utils"
 import type { Conversation } from "@/lib/types/conversation"
 import { useState } from "react"
+import { useContactDeals } from "@/hooks/use-contact-deals"
+import { useContactTimeline, TimelineEvent } from "@/hooks/use-contact-timeline"
+import { cn } from "@/lib/utils"
 
 interface Props {
   conversation: Conversation | null
 }
 
-interface Activity {
-  id: string
-  type: "message" | "note" | "call" | "status_change"
-  description: string
-  date: string
-  user?: string
+// Mapear tipos de atividades do timeline para ícones e cores
+const activityConfig: Record<string, { icon: React.ElementType; color: string; bgColor: string; label: string }> = {
+  message: { icon: MessageSquare, color: "text-blue-500", bgColor: "bg-blue-500", label: "Mensagem" },
+  whatsapp: { icon: MessageSquare, color: "text-green-500", bgColor: "bg-green-500", label: "WhatsApp" },
+  note: { icon: FileText, color: "text-purple-500", bgColor: "bg-purple-500", label: "Nota" },
+  call: { icon: PhoneCall, color: "text-green-500", bgColor: "bg-green-500", label: "Ligação" },
+  meeting: { icon: Users, color: "text-orange-500", bgColor: "bg-orange-500", label: "Reunião" },
+  task: { icon: CheckCircle2, color: "text-yellow-500", bgColor: "bg-yellow-500", label: "Tarefa" },
+  deal: { icon: DollarSign, color: "text-[#46347F]", bgColor: "bg-[#46347F]", label: "Negócio" },
 }
-
-// Mock related deals and activities
-const mockDeals = [
-  { id: "1", name: "Contrato Anual - Plano Pro", value: 12000, stage: "Negociação", probability: 75 },
-  { id: "2", name: "Upgrade Enterprise", value: 48000, stage: "Proposta", probability: 60 },
-]
-
-const mockActivities: Activity[] = [
-  { id: "1", type: "message", description: "Cliente enviou mensagem via WhatsApp", date: "2025-02-26T14:30:00", user: "Sistema" },
-  { id: "2", type: "status_change", description: "Status alterado: Aberto → Pendente", date: "2025-02-26T13:15:00", user: "Carlos Silva" },
-  { id: "3", type: "note", description: "Cliente interessado em upgrade para Enterprise", date: "2025-02-25T16:45:00", user: "Ana Costa" },
-  { id: "4", type: "call", description: "Ligação realizada (15min)", date: "2025-02-25T10:30:00", user: "Carlos Silva" },
-  { id: "5", type: "call", description: "Ligação realizada com proposta comercial", date: "2025-02-24T09:00:00", user: "Ana Costa" },
-]
 
 export function CustomerContextPanel({ conversation }: Props) {
   const [showAllActivities, setShowAllActivities] = useState(false)
   const [dealsExpanded, setDealsExpanded] = useState(true)
   const [activitiesExpanded, setActivitiesExpanded] = useState(true)
+
+  // Buscar dados reais do backend
+  const { 
+    deals, 
+    isLoading: isLoadingDeals, 
+    error: dealsError, 
+    refresh: refreshDeals 
+  } = useContactDeals(conversation?.contactId)
+
+  const { 
+    events: timelineEvents, 
+    isLoading: isLoadingTimeline, 
+    error: timelineError, 
+    refresh: refreshTimeline 
+  } = useContactTimeline(conversation?.contactId)
+
+  // Filtrar apenas deals abertos para exibição principal
+  const openDeals = deals.filter(d => d.status === 'OPEN')
+  const hasDeals = deals.length > 0
+
+  // Preparar atividades para exibição (excluir mensagens duplicadas se necessário)
+  const activities = timelineEvents.filter(event => 
+    ['note', 'call', 'meeting', 'task', 'deal'].includes(event.type)
+  )
+  const displayedActivities = showAllActivities ? activities : activities.slice(0, 5)
+
+  const isLoading = isLoadingDeals || isLoadingTimeline
+  const hasError = dealsError || timelineError
 
   if (!conversation) {
     return (
@@ -68,16 +95,26 @@ export function CustomerContextPanel({ conversation }: Props) {
     )
   }
 
-  const displayedActivities = showAllActivities ? mockActivities : mockActivities.slice(0, 3)
-
   return (
     <div className="flex w-[320px] shrink-0 flex-col bg-background border-l border-border overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
         <h3 className="text-sm font-semibold text-foreground">Contexto do Cliente</h3>
-        <Button variant="ghost" size="icon" className="h-7 w-7">
-          <ExternalLink className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7"
+            onClick={() => {
+              refreshDeals()
+              refreshTimeline()
+            }}
+            disabled={isLoading}
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+          </Button>
+        </div>
       </div>
 
       {/* Scrollable Content */}
@@ -108,7 +145,6 @@ export function CustomerContextPanel({ conversation }: Props) {
 
           {/* Contact Details */}
           <div className="mt-4 space-y-2">
-
             {conversation.contactPhone && (
               <div className="flex items-center gap-2 text-xs">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -167,7 +203,7 @@ export function CustomerContextPanel({ conversation }: Props) {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs font-semibold text-foreground">Negócios Relacionados</span>
               <Badge variant="secondary" className="text-[10px] h-5">
-                {mockDeals.length}
+                {isLoadingDeals ? '...' : deals.length}
               </Badge>
             </div>
             {dealsExpanded ? (
@@ -179,27 +215,57 @@ export function CustomerContextPanel({ conversation }: Props) {
 
           {dealsExpanded && (
             <div className="px-5 pb-4 space-y-2">
-              {mockDeals.map((deal) => (
-                <div
-                  key={deal.id}
-                  className="rounded-lg border border-border bg-background p-3 hover:bg-muted/30 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <p className="text-xs font-semibold text-foreground line-clamp-2">{deal.name}</p>
-                    <Badge variant="outline" className="text-[9px] shrink-0">
-                      {deal.stage}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-[#46347F]">
-                      {formatCurrency(deal.value)}
-                    </p>
-                    <span className="text-[10px] text-muted-foreground">
-                      {deal.probability}% prob.
-                    </span>
-                  </div>
+              {isLoadingDeals ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-              ))}
+              ) : dealsError ? (
+                <div className="flex items-center gap-2 py-3 text-xs text-red-500">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Erro ao carregar negócios</span>
+                </div>
+              ) : !hasDeals ? (
+                <div className="py-3 text-xs text-muted-foreground text-center">
+                  Nenhum negócio encontrado
+                </div>
+              ) : (
+                deals.map((deal) => (
+                  <div
+                    key={deal.id}
+                    className="rounded-lg border border-border bg-background p-3 hover:bg-muted/30 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <p className="text-xs font-semibold text-foreground line-clamp-2">{deal.title}</p>
+                      <Badge 
+                        variant="outline" 
+                        className="text-[9px] shrink-0"
+                        style={{ 
+                          borderColor: deal.status === 'OPEN' ? deal.stage.color : undefined,
+                          color: deal.status === 'OPEN' ? deal.stage.color : undefined 
+                        }}
+                      >
+                        {deal.status === 'OPEN' ? deal.stage.name : 
+                         deal.status === 'WON' ? 'Ganho' :
+                         deal.status === 'LOST' ? 'Perdido' :
+                         deal.status === 'PAUSED' ? 'Pausado' : deal.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-[#46347F]">
+                        {formatCurrency(deal.value)}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">
+                        {deal.stage.probability}% prob.
+                      </span>
+                    </div>
+                    {deal.assignedUser && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Responsável: {deal.assignedUser.name}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>
@@ -213,6 +279,9 @@ export function CustomerContextPanel({ conversation }: Props) {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs font-semibold text-foreground">Histórico de Atividades</span>
+              <Badge variant="secondary" className="text-[10px] h-5">
+                {isLoadingTimeline ? '...' : activities.length}
+              </Badge>
             </div>
             {activitiesExpanded ? (
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -223,50 +292,71 @@ export function CustomerContextPanel({ conversation }: Props) {
 
           {activitiesExpanded && (
             <div className="px-5 pb-4">
-              <div className="relative space-y-4">
-                {/* Timeline line */}
-                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
+              {isLoadingTimeline ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : timelineError ? (
+                <div className="flex items-center gap-2 py-3 text-xs text-red-500">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Erro ao carregar atividades</span>
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="py-3 text-xs text-muted-foreground text-center">
+                  Nenhuma atividade registrada
+                </div>
+              ) : (
+                <div className="relative space-y-4">
+                  {/* Timeline line */}
+                  <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
 
-                {displayedActivities.map((activity, index) => {
-                  const isLast = index === displayedActivities.length - 1
-                  return (
-                    <div key={activity.id} className="relative pl-6">
-                      {/* Timeline dot */}
-                      <div
-                        className={`absolute left-0 top-1 h-4 w-4 rounded-full border-2 border-background ${
-                          activity.type === "message"
-                            ? "bg-blue-500"
-                            : activity.type === "note"
-                            ? "bg-purple-500"
-                            : activity.type === "call"
-                            ? "bg-green-500"
-                            : "bg-gray-500"
-                        }`}
-                      />
+                  {displayedActivities.map((activity, index) => {
+                    const isLast = index === displayedActivities.length - 1
+                    const config = activityConfig[activity.type] || activityConfig.note
+                    const Icon = config.icon
 
-                      {/* Activity content */}
-                      <div className="text-xs">
-                        <p className="text-foreground font-medium leading-snug">
-                          {activity.description}
-                        </p>
-                        <p className="text-muted-foreground text-[10px] mt-0.5">
-                          {formatDate(activity.date)}
-                          {activity.user && ` • ${activity.user}`}
-                        </p>
+                    return (
+                      <div key={activity.id} className="relative pl-6">
+                        {/* Timeline dot */}
+                        <div
+                          className={`absolute left-0 top-1 h-4 w-4 rounded-full border-2 border-background ${config.bgColor}`}
+                        />
+
+                        {/* Activity content */}
+                        <div className="text-xs">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <Icon className={cn("h-3 w-3", config.color)} />
+                            <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                              {config.label}
+                            </span>
+                          </div>
+                          <p className="text-foreground font-medium leading-snug">
+                            {activity.title}
+                          </p>
+                          {activity.description && (
+                            <p className="text-muted-foreground text-[10px] mt-0.5 line-clamp-2">
+                              {activity.description}
+                            </p>
+                          )}
+                          <p className="text-muted-foreground text-[10px] mt-1">
+                            {formatDate(activity.date)}
+                            {activity.author && activity.author !== 'Sistema' && ` • ${activity.author}`}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
 
-              {mockActivities.length > 3 && (
+              {activities.length > 5 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowAllActivities(!showAllActivities)}
                   className="w-full mt-3 text-xs"
                 >
-                  {showAllActivities ? "Ver menos" : `Ver todas (${mockActivities.length})`}
+                  {showAllActivities ? "Ver menos" : `Ver todas (${activities.length})`}
                 </Button>
               )}
             </div>
