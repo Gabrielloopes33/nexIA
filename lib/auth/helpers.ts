@@ -16,6 +16,7 @@ interface SessionPayload {
   email: string
   name: string | null
   organizationId: string | null
+  setupComplete: boolean
   expiresAt: number
 }
 
@@ -82,6 +83,7 @@ export interface AuthResult {
   email: string
   name: string | null
   organizationId: string | null
+  setupComplete: boolean
 }
 
 /**
@@ -136,6 +138,7 @@ export async function getAuthenticatedUser(): Promise<AuthResult> {
     email: payload.email,
     name: payload.name,
     organizationId: payload.organizationId,
+    setupComplete: payload.setupComplete,
   }
 }
 
@@ -164,6 +167,7 @@ export function getAuthenticatedUserFromRequest(req: NextRequest): AuthResult {
     email: payload.email,
     name: payload.name,
     organizationId: payload.organizationId,
+    setupComplete: payload.setupComplete,
   }
 }
 

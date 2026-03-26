@@ -33,6 +33,7 @@ export async function POST() {
       email: dbUser.email,
       name: dbUser.name,
       organizationId,
+      setupComplete: activeMembership?.organization?.setupComplete ?? false,
     })
 
     return NextResponse.json({

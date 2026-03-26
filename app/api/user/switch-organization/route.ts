@@ -43,6 +43,7 @@ export async function POST(req: Request) {
       email: user.email,
       name: user.name,
       organizationId: membership.organization.id,
+      setupComplete: membership.organization.setupComplete ?? false,
     })
 
     return NextResponse.json({

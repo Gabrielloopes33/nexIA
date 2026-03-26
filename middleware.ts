@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 
 const COOKIE_NAME = 'nexia_session'
 const PUBLIC_PATHS = [
@@ -24,6 +23,7 @@ interface SessionPayload {
   email: string
   name: string | null
   organizationId: string | null
+  setupComplete?: boolean
   expiresAt: number
 }
 
@@ -60,23 +60,6 @@ function getSessionFromRequest(req: NextRequest): SessionPayload | null {
   return decodeToken(token)
 }
 
-/**
- * Busca a organização pelo ID
- */
-async function getOrganization(organizationId: string) {
-  return prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      setupComplete: true,
-      logoUrl: true,
-      segment: true,
-    },
-  })
-}
-
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
@@ -105,24 +88,15 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Busca a organização para verificar o status do onboarding
-  const org = await getOrganization(session.organizationId)
-
-  // Se a organização não existe, redireciona para onboarding
-  if (!org) {
-    if (!pathname.startsWith('/onboarding')) {
-      return NextResponse.redirect(new URL('/onboarding/organizacao', req.url))
-    }
-    return NextResponse.next()
-  }
+  const setupComplete = session.setupComplete
 
   // Não completou onboarding e não está na página de onboarding
-  if (!org.setupComplete && !pathname.startsWith('/onboarding')) {
+  if (setupComplete === false && !pathname.startsWith('/onboarding')) {
     return NextResponse.redirect(new URL('/onboarding/organizacao', req.url))
   }
 
   // Já completou onboarding mas está tentando acessar página de onboarding de organização
-  if (org.setupComplete && pathname.startsWith('/onboarding/organizacao')) {
+  if (setupComplete === true && pathname.startsWith('/onboarding/organizacao')) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 

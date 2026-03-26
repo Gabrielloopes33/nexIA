@@ -76,6 +76,7 @@ export async function POST(req: Request) {
       email: user.email,
       name: user.name,
       organizationId: result.organization.id,
+      setupComplete: result.organization.setupComplete ?? false,
     })
 
     return NextResponse.json({

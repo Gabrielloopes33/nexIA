@@ -10,6 +10,7 @@ export interface SessionPayload {
   email: string
   name: string | null
   organizationId: string | null
+  setupComplete: boolean
   expiresAt: number
 }
 

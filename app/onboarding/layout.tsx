@@ -27,7 +27,7 @@ export default function OnboardingLayout({
   return (
     <AuroraBackground>
       {/* Header com Logo */}
-      <header className="w-full py-4 px-6">
+      <header className="w-full py-6 px-6">
         <div className="max-w-7xl mx-auto">
           <Link href="/" className="inline-flex items-center gap-2">
             <Image
@@ -44,12 +44,12 @@ export default function OnboardingLayout({
       </header>
 
       {/* Área central para conteúdo */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-4">
         {children}
       </main>
 
       {/* Footer opcional com links */}
-      <footer className="w-full py-4 px-6">
+      <footer className="w-full py-6 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-6 text-sm text-gray-500">
           <Link href="/" className="hover:text-gray-700 transition-colors">
             Início

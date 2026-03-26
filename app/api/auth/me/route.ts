@@ -9,6 +9,7 @@ export async function GET() {
       email: user.email,
       name: user.name,
       organizationId: user.organizationId,
+      setupComplete: user.setupComplete,
     })
   } catch (error) {
     if (error instanceof AuthError) {

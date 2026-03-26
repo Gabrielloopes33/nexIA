@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       email: normalizedEmail,
       name: displayName,
       organizationId: org.id,
+      setupComplete: org.setupComplete ?? false,
     })
 
     return NextResponse.json({ ok: true, userId })

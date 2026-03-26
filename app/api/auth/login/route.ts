@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
       email: user.email,
       name: user.name,
       organizationId: membership?.organizationId ?? null,
+      setupComplete: membership?.organization?.setupComplete ?? false,
     })
 
     console.log('[Login] Sessão criada com sucesso!')

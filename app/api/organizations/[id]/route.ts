@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, AuthError, createAuthErrorResponse } from '@/lib/auth/helpers'
+import { createSession } from '@/lib/auth/session'
 
 /**
  * GET /api/organizations/[id]
@@ -181,6 +182,16 @@ export async function PATCH(
       where: { id },
       data: updateData,
     })
+
+    if (user.organizationId === updatedOrg.id) {
+      await createSession({
+        userId: user.userId,
+        email: user.email,
+        name: user.name,
+        organizationId: updatedOrg.id,
+        setupComplete: updatedOrg.setupComplete ?? false,
+      })
+    }
 
     return NextResponse.json({
       success: true,

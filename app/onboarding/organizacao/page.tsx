@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 
 import { ProgressSteps } from '@/components/onboarding/progress-steps'
 import { StepDadosEmpresa } from '@/components/onboarding/steps/step-dados-empresa'
@@ -30,6 +30,7 @@ const steps = [
 export default function OnboardingOrganizacaoPage() {
   const router = useRouter()
   const { organization, isLoading: isLoadingOrg } = useOrganization()
+  const [hasChecked, setHasChecked] = useState(false)
 
   const handleComplete = useCallback(() => {
     router.push('/onboarding/bem-vindo')
@@ -48,22 +49,26 @@ export default function OnboardingOrganizacaoPage() {
     onComplete: handleComplete,
   })
 
-  // Redireciona se não tiver organização
+  // Redireciona apenas após confirmar que não tem organização (não durante loading)
   useEffect(() => {
-    if (!isLoadingOrg && !organization) {
-      toast.error('Você precisa estar logado para acessar esta página')
-      router.push('/login?from=/onboarding/organizacao')
-    }
-  }, [organization, isLoadingOrg, router])
+    if (!isLoadingOrg && !hasChecked) {
+      setHasChecked(true)
+      
+      if (!organization) {
+        // Aguarda um pouco para evitar flash de redirecionamento
+        const timer = setTimeout(() => {
+          toast.error('Você precisa estar logado para acessar esta página')
+          router.push('/login?from=/onboarding/organizacao')
+        }, 500)
+        return () => clearTimeout(timer)
+      }
 
-  // Redireciona se o setup já estiver completo
-  useEffect(() => {
-    // Assumindo que a organização tem uma propriedade setupComplete
-    // ou podemos verificar de outra forma
-    if (organization && 'setupComplete' in organization && (organization as any).setupComplete) {
-      router.push('/dashboard')
+      // Redireciona se o setup já estiver completo
+      if ((organization as any).setupComplete) {
+        router.push('/dashboard')
+      }
     }
-  }, [organization, router])
+  }, [organization, isLoadingOrg, hasChecked, router])
 
   const handleStep1Complete = useCallback(async () => {
     await nextStep()
@@ -80,72 +85,110 @@ export default function OnboardingOrganizacaoPage() {
     }
   }, [submitOnboarding])
 
-  // Loading state
-  if (isLoadingOrg) {
+  // Loading state - mostra dentro do card
+  if (isLoadingOrg || !hasChecked) {
     return (
-      <div className="w-full max-w-md mx-auto flex flex-col items-center justify-center py-12">
-        <Spinner className="size-8" />
-        <p className="mt-4 text-sm text-gray-500">Carregando...</p>
+      <div className="w-full max-w-[600px]">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl bg-white/95 backdrop-blur-xl p-8 shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-white/50"
+        >
+          <div className="flex flex-col items-center justify-center py-12">
+            <Spinner className="size-8" />
+            <p className="mt-4 text-sm text-gray-500">Carregando...</p>
+          </div>
+        </motion.div>
       </div>
     )
   }
 
-  // Se não tem organização, não renderiza nada (vai redirecionar)
+  // Se não tem organização, mostra mensagem de erro no card
   if (!organization) {
-    return null
+    return (
+      <div className="w-full max-w-[600px]">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl bg-white/95 backdrop-blur-xl p-8 shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-white/50"
+        >
+          <div className="text-center py-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Acesso Negado
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Você precisa estar logado para acessar esta página.
+            </p>
+            <button
+              onClick={() => router.push('/login')}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Ir para Login
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    )
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Configurar Organização
-        </h1>
-        <p className="text-gray-600">
-          Vamos personalizar sua experiência no NexIA
-        </p>
-      </div>
+    <div className="w-full max-w-[600px]">
+      {/* Card Principal */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-3xl bg-white/95 backdrop-blur-xl p-8 shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-white/50"
+      >
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Configurar Organização
+          </h1>
+          <p className="text-gray-600">
+            Vamos personalizar sua experiência no NexIA
+          </p>
+        </div>
 
-      {/* Progress Steps */}
-      <div className="mb-10">
-        <ProgressSteps
-          currentStep={currentStep}
-          steps={steps}
-        />
-      </div>
-
-      {/* Step Content */}
-      <AnimatePresence mode="wait">
-        {currentStep === 1 && (
-          <StepDadosEmpresa
-            key="step1"
-            data={{ name: data.name, segment: data.segment }}
-            onChange={(newData) => updateData(newData)}
-            onNext={handleStep1Complete}
+        {/* Progress Steps */}
+        <div className="mb-10">
+          <ProgressSteps
+            currentStep={currentStep}
+            steps={steps}
           />
-        )}
+        </div>
 
-        {currentStep === 2 && (
-          <StepLogo
-            key="step2"
-            logoUrl={data.logoUrl}
-            onChange={(logoUrl) => updateData({ logoUrl })}
-            onNext={handleStep2Complete}
-            onBack={previousStep}
-          />
-        )}
+        {/* Step Content */}
+        <AnimatePresence mode="wait">
+          {currentStep === 1 && (
+            <StepDadosEmpresa
+              key="step1"
+              data={{ name: data.name, segment: data.segment }}
+              onChange={(newData) => updateData(newData)}
+              onNext={handleStep1Complete}
+            />
+          )}
 
-        {currentStep === 3 && (
-          <StepConvites
-            key="step3"
-            emails={data.inviteEmails}
-            onChange={(emails) => updateData({ inviteEmails: emails })}
-            onNext={handleStep3Complete}
-            onBack={previousStep}
-          />
-        )}
-      </AnimatePresence>
+          {currentStep === 2 && (
+            <StepLogo
+              key="step2"
+              logoUrl={data.logoUrl}
+              onChange={(logoUrl) => updateData({ logoUrl })}
+              onNext={handleStep2Complete}
+              onBack={previousStep}
+            />
+          )}
+
+          {currentStep === 3 && (
+            <StepConvites
+              key="step3"
+              emails={data.inviteEmails}
+              onChange={(emails) => updateData({ inviteEmails: emails })}
+              onNext={handleStep3Complete}
+              onBack={previousStep}
+            />
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Loading Overlay */}
       {isLoading && (
