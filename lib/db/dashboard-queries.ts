@@ -275,11 +275,13 @@ export async function getLostReasonsStats(
 
 // 5. Receita Semanal
 export interface WeeklyRevenue {
-  week: string // "2024-W01"
-  startDate: Date
+  week: string
+  weekStart: string
+  weekEnd: string
   revenue: number
-  target: number
-  dealsCount: number
+  dealsWon: number
+  goal: number
+  ticketAvg: number
 }
 
 export async function getWeeklyRevenue(
@@ -338,13 +340,19 @@ export async function getWeeklyRevenue(
     date.setDate(date.getDate() - (i * 7))
     const weekKey = getWeekKey(date)
     const weekGoal = getWeeklyTarget(goals, date)
+    const weekStart = getWeekStart(date)
+    const weekEnd = getWeekEnd(date)
+    const weekRevenue = weeklyData[weekKey]?.revenue || 0
+    const weekDealsWon = weeklyData[weekKey]?.deals || 0
     
     result.push({
       week: weekKey,
-      startDate: date,
-      revenue: weeklyData[weekKey]?.revenue || 0,
-      target: weekGoal,
-      dealsCount: weeklyData[weekKey]?.deals || 0,
+      weekStart: weekStart.toISOString(),
+      weekEnd: weekEnd.toISOString(),
+      revenue: weekRevenue,
+      dealsWon: weekDealsWon,
+      goal: weekGoal,
+      ticketAvg: weekDealsWon > 0 ? weekRevenue / weekDealsWon : 0,
     })
   }
   
@@ -547,12 +555,27 @@ function getWeekKey(date: Date): string {
   return `${d.getFullYear()}-W${weekNo.toString().padStart(2, '0')}`
 }
 
+function getWeekStart(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  const day = d.getDay() || 7
+  d.setDate(d.getDate() - day + 1)
+  return d
+}
+
+function getWeekEnd(date: Date): Date {
+  const d = getWeekStart(date)
+  d.setDate(d.getDate() + 6)
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
 function getWeeklyTarget(goals: any[], date: Date): number {
   const monthGoal = goals.find(g => 
     g.month === date.getMonth() + 1 &&
     g.year === date.getFullYear()
   )
-  return monthGoal ? monthGoal.revenueGoal / 4 : 0 // Dividir por 4 semanas
+  return monthGoal ? Number(monthGoal.revenueGoal) / 4 : 0 // Dividir por 4 semanas
 }
 
 async function calculateKPIsForPeriod(

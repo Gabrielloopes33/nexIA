@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Figtree } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/sonner'
 import { ContactPanelProvider } from '@/lib/contexts/contact-panel-context'
 import { OrganizationProviderWrapper } from '@/components/providers/organization-provider-wrapper'
 import { QueryProvider } from '@/components/providers/query-provider'
@@ -38,6 +39,7 @@ export default function RootLayout({
             </ContactPanelProvider>
           </OrganizationProviderWrapper>
         </QueryProvider>
+        <Toaster position="top-right" richColors />
         <Analytics />
       </body>
     </html>

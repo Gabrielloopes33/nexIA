@@ -76,7 +76,8 @@ export async function GET(request: NextRequest, { params }: Params) {
           if (newMessages.length > 0) {
             const latestAt = newMessages[newMessages.length - 1].createdAt;
             lastCheckedAt = latestAt;
-            send('messages', { count: newMessages.length }, latestAt.toISOString());
+            // Envia as mensagens completas para o cliente atualizar o cache sem re-fetch
+            send('messages', { count: newMessages.length, messages: newMessages }, latestAt.toISOString());
           }
 
           // 2. Estado de digitação

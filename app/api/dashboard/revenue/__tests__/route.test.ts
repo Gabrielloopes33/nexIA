@@ -60,17 +60,21 @@ describe('GET /api/dashboard/revenue', () => {
     const mockWeeks = [
       {
         week: '2024-W01',
-        startDate: new Date().toISOString(),
+        weekStart: new Date('2024-01-01T00:00:00.000Z').toISOString(),
+        weekEnd: new Date('2024-01-07T23:59:59.999Z').toISOString(),
         revenue: 50000,
-        target: 60000,
-        dealsCount: 10,
+        dealsWon: 10,
+        goal: 60000,
+        ticketAvg: 5000,
       },
       {
         week: '2024-W02',
-        startDate: new Date().toISOString(),
+        weekStart: new Date('2024-01-08T00:00:00.000Z').toISOString(),
+        weekEnd: new Date('2024-01-14T23:59:59.999Z').toISOString(),
         revenue: 55000,
-        target: 60000,
-        dealsCount: 11,
+        dealsWon: 11,
+        goal: 60000,
+        ticketAvg: 5000,
       },
     ]
 

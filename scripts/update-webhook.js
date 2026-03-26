@@ -81,7 +81,7 @@ async function main() {
             webhook: {
               url: webhookUrl,
               enabled: true,
-              events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED'],
+              events: ['MESSAGES_UPSERT', 'MESSAGES_UPDATE', 'CONNECTION_UPDATE', 'QRCODE_UPDATED', 'PRESENCE_UPDATE'],
             }
           }),
         });

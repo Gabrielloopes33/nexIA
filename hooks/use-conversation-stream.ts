@@ -35,11 +35,31 @@ export function useConversationStream(id: string | null) {
         setState(s => ({ ...s, connected: true }))
       })
 
-      es.addEventListener('messages', () => {
-        // Invalida o cache SWR → re-fetch imediato das mensagens
-        globalMutate(conversationKey)
-        // Também atualiza a lista de conversas
-        globalMutate((key: string) => typeof key === 'string' && key.startsWith('/api/conversations?'), undefined, { revalidate: true })
+      es.addEventListener('messages', (e: MessageEvent) => {
+        const { messages: newMsgs } = JSON.parse(e.data)
+        if (!newMsgs?.length) return
+
+        // Atualiza o cache SWR diretamente — sem re-fetch, sem flicker
+        globalMutate(
+          conversationKey,
+          (current: any) => {
+            if (!current?.data) return current
+            const existing: any[] = current.data.messages || []
+            const existingIds = new Set(existing.map((m: any) => m.id))
+            const toAdd = newMsgs.filter((m: any) => !existingIds.has(m.id))
+            if (toAdd.length === 0) return current
+            return {
+              ...current,
+              data: {
+                ...current.data,
+                messages: [...existing, ...toAdd],
+                messageCount: (current.data.messageCount || 0) + toAdd.length,
+                lastMessageAt: toAdd[toAdd.length - 1].createdAt,
+              },
+            }
+          },
+          { revalidate: false } // não faz re-fetch
+        )
       })
 
       es.addEventListener('typing', (e: MessageEvent) => {

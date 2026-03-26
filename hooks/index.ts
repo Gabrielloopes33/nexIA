@@ -78,3 +78,9 @@ export {
   type DashboardInsight,
   type UseDashboardReturn,
 } from './use-dashboard'
+
+// Onboarding Hooks
+export {
+  useOnboarding,
+  type OnboardingData,
+} from './use-onboarding'

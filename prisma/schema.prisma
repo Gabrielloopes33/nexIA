@@ -16,6 +16,9 @@ model Organization {
   ownerId        String?              @map("owner_id") @db.Uuid
   status         String?              @default("ACTIVE")
   settings       Json?                @default("{}")
+  setupComplete  Boolean              @default(false) @map("setup_complete")
+  segment        String?              @db.VarChar(50)
+  logoUrl        String?              @map("logo_url")
   createdAt      DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   members        OrganizationMember[]
