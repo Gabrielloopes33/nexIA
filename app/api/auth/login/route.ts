@@ -65,12 +65,17 @@ export async function POST(req: NextRequest) {
     console.log('[Login] Membership:', membership?.organizationId || 'Nenhuma')
 
     // Cria sessão JWT custom
+    // Contas existentes (setupComplete null) vão direto para dashboard
+    // Contas novas (setupComplete false) vão para onboarding
+    const orgSetupComplete = membership?.organization?.setupComplete
+    const needsOnboarding = orgSetupComplete === false
+
     await createSession({
       userId: user.id,
       email: user.email,
       name: user.name,
       organizationId: membership?.organizationId ?? null,
-      setupComplete: membership?.organization?.setupComplete ?? false,
+      setupComplete: !needsOnboarding, // true se não precisa de onboarding
     })
 
     console.log('[Login] Sessão criada com sucesso!')

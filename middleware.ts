@@ -88,15 +88,17 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const setupComplete = session.setupComplete
+  // Onboarding: apenas usuários novos (setupComplete === false) precisam completar
+  // Contas existentes (setupComplete === null/undefined/true) vão direto
+  const needsOnboarding = session.setupComplete === false
 
   // Não completou onboarding e não está na página de onboarding
-  if (setupComplete === false && !pathname.startsWith('/onboarding')) {
+  if (needsOnboarding && !pathname.startsWith('/onboarding')) {
     return NextResponse.redirect(new URL('/onboarding/organizacao', req.url))
   }
 
   // Já completou onboarding mas está tentando acessar página de onboarding de organização
-  if (setupComplete === true && pathname.startsWith('/onboarding/organizacao')) {
+  if (!needsOnboarding && pathname.startsWith('/onboarding/organizacao')) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 

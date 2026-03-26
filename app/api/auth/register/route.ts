@@ -24,11 +24,12 @@ export async function POST(req: NextRequest) {
     const userId = randomUUID()
     const passwordHash = await hashPassword(password)
 
-    // Cria organização padrão
+    // Cria organização pendente de onboarding
     const org = await prisma.organization.create({
       data: {
         name: 'Minha Organização',
         slug: `org-${userId.slice(0, 8)}`,
+        setupComplete: false,
       },
     })
 

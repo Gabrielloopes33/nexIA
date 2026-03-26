@@ -28,12 +28,17 @@ export async function POST() {
     const activeMembership = dbUser.memberships[0]
     const organizationId = activeMembership?.organizationId ?? null
 
+    // Contas existentes (setupComplete null) vão direto para dashboard
+    // Contas novas (setupComplete false) vão para onboarding
+    const orgSetupComplete = activeMembership?.organization?.setupComplete
+    const needsOnboarding = orgSetupComplete === false
+
     await createSession({
       userId: dbUser.id,
       email: dbUser.email,
       name: dbUser.name,
       organizationId,
-      setupComplete: activeMembership?.organization?.setupComplete ?? false,
+      setupComplete: !needsOnboarding,
     })
 
     return NextResponse.json({
