@@ -160,6 +160,7 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
   
   const key = data.key as Record<string, unknown> | undefined;
   const messageData = data.message as Record<string, unknown> | undefined;
+  const pushName = data.pushName as string | undefined;
   
   if (key?.fromMe) {
     // Update sent counter for outbound messages
@@ -184,7 +185,7 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
     return;
   }
 
-  // Extract phone from remoteJid (format: "5511999999999@s.whatsapp.net")
+  // Extract phone from remoteJid (format: "5511999999999@s.whatsapp.net" ou "1203630...@g.us" para grupos)
   const remoteJid = key?.remoteJid as string;
   if (!remoteJid) {
     console.warn('[Evolution Webhook] No remoteJid in message key');
@@ -193,6 +194,30 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
   
   const phone = remoteJid.split('@')[0];
   const organizationId = instance.organizationId;
+  
+  // Verifica se é um grupo (grupos geralmente têm IDs começando com 12xxxxxx@g.us)
+  const isGroup = remoteJid.endsWith('@g.us');
+  
+  // Extrai o nome do contato/grupo
+  // 1. Usa pushName se disponível (nome do perfil do WhatsApp)
+  // 2. Se for grupo, tenta pegar o subject do grupo
+  // 3. Se não tiver nome, deixa null para mostrar o telefone formatado
+  let contactName: string | null = null;
+  
+  if (pushName && pushName.trim() && pushName !== phone) {
+    contactName = pushName;
+  } else if (isGroup) {
+    // Para grupos, tenta extrair o nome do grupo dos metadados
+    const groupSubject = (messageData?.groupSubject as string) || 
+                        (data.groupMetadata as Record<string, unknown>)?.subject as string ||
+                        (data as Record<string, unknown>).subject as string;
+    if (groupSubject) {
+      contactName = groupSubject;
+    }
+  }
+  
+  // Se não conseguiu extrair nome e não é grupo, deixa null
+  // A UI vai mostrar o telefone formatado
 
   // Get message content - handle different message types
   let content = '';
@@ -216,6 +241,8 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
 
   console.log('[Evolution Webhook] Processing inbound message:', {
     phone,
+    contactName,
+    isGroup,
     content: content.substring(0, 50),
     messageId,
   });
@@ -240,11 +267,13 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
       },
       update: {
         lastInteractionAt: new Date(),
+        // Atualiza o nome se anteriormente era null e agora temos um nome
+        ...(contactName ? { name: contactName } : {}),
       },
       create: {
         organizationId,
         phone,
-        name: phone,
+        name: contactName, // Pode ser null - a UI vai mostrar telefone formatado
         status: 'ACTIVE',
         lastInteractionAt: new Date(),
       },
@@ -297,76 +326,70 @@ async function handlePresenceUpdate(instanceId: string, data: Record<string, unk
   if (!instance) return;
 
   let phone: string | null = null;
-  let presence: string | null = null;
 
-  if (data.presences && typeof data.presences === 'object') {
-    // Formato: { id, presences: { phone: { lastKnownPresence } } }
-    const jid = (data.id as string) || Object.keys(data.presences as object)[0];
-    phone = jid?.split('@')[0] || null;
-    const presenceObj = (data.presences as Record<string, Record<string, string>>)[jid];
-    presence = presenceObj?.lastKnownPresence || null;
-  } else if (data.remoteJid) {
+  if (data.id && typeof data.id === 'string') {
+    phone = data.id.split('@')[0];
+  } else if (data.remoteJid && typeof data.remoteJid === 'string') {
     phone = (data.remoteJid as string).split('@')[0];
-    presence = data.presence as string;
   }
 
-  if (!phone) return;
-
-  const isTyping = presence === 'composing' || presence === 'recording';
-  const typingUntil = isTyping ? new Date(Date.now() + 10_000) : new Date(0); // 10s TTL
-
-  console.log(`[Evolution Webhook] Presence update: ${phone} → ${presence}`);
-
-  try {
-    const contact = await prisma.contact.findFirst({
-      where: { organizationId: instance.organizationId, phone },
-    });
-    if (!contact) return;
-
-    const conversation = await prisma.conversation.findFirst({
-      where: { contactId: contact.id, organizationId: instance.organizationId, status: 'active' },
-    });
-    if (!conversation) return;
-
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: { typingUntil, typingPhone: isTyping ? phone : null },
-    });
-  } catch (error) {
-    console.error('[Evolution Webhook] Error handling presence update:', error);
+  if (!phone) {
+    console.warn('[Evolution Webhook] Could not extract phone from presence update');
+    return;
   }
+
+  // You can emit this to connected clients via SSE or WebSocket
+  console.log('[Evolution Webhook] Presence update:', { phone, data });
 }
 
 async function handleMessageUpdate(instanceId: string, data: Record<string, unknown>) {
-  // data pode ser array ou objeto com { key: { id }, update: { status } }
-  const updates = Array.isArray(data) ? data : [data];
-
-  const statusMap: Record<number, string> = {
-    0: 'ERROR',
-    1: 'SENT',
-    2: 'DELIVERED',
-    3: 'READ',
-    4: 'READ', // played (áudio)
+  console.log('[Evolution Webhook] Message update received:', {
+    instanceId,
+    data,
+  });
+  
+  // Evolution API v2 format for message updates
+  // data.key.id = message ID
+  // data.status = 'READ' | 'DELIVERY_ACK' | 'PENDING'
+  
+  const key = data.key as Record<string, unknown> | undefined;
+  const status = data.status as string;
+  
+  if (!key?.id) {
+    console.warn('[Evolution Webhook] No message ID in update');
+    return;
+  }
+  
+  const messageId = key.id as string;
+  
+  // Map Evolution status to our status
+  const statusMap: Record<string, string> = {
+    'READ': 'READ',
+    'DELIVERY_ACK': 'DELIVERED',
+    'PENDING': 'SENT',
+    'SERVER_ACK': 'SENT',
   };
-
-  for (const update of updates) {
-    const u = update as Record<string, unknown>;
-    const key = u.key as Record<string, unknown> | undefined;
-    const upd = u.update as Record<string, unknown> | undefined;
-    if (!key?.id || upd?.status === undefined) continue;
-
-    const statusCode = Number(upd.status);
-    const newStatus = statusMap[statusCode];
-    if (!newStatus) continue;
-
-    try {
-      await prisma.message.updateMany({
-        where: { messageId: key.id as string },
-        data: { status: newStatus },
+  
+  const mappedStatus = statusMap[status] || status;
+  
+  try {
+    // Find and update message
+    const message = await prisma.message.findFirst({
+      where: { messageId },
+    });
+    
+    if (message) {
+      await prisma.message.update({
+        where: { id: message.id },
+        data: {
+          status: mappedStatus,
+          ...(mappedStatus === 'READ' ? { readAt: new Date() } : {}),
+          ...(mappedStatus === 'DELIVERED' ? { deliveredAt: new Date() } : {}),
+        },
       });
-      console.log(`[Evolution Webhook] Message ${key.id} status → ${newStatus}`);
-    } catch (error) {
-      console.error('[Evolution Webhook] Error updating message status:', error);
+      console.log(`[Evolution Webhook] Updated message ${messageId} status to ${mappedStatus}`);
     }
+  } catch (error) {
+    console.error('[Evolution Webhook] Error updating message status:', error);
   }
 }
