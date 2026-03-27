@@ -31,26 +31,38 @@
   --color-primary-light: #a88cfb;
   --color-primary-muted: #4f319c;
   
-  /* Fontes */
-  --font-headline: var(--font-jakarta), 'Plus Jakarta Sans', sans-serif;
-  --font-body: var(--font-inter), 'Inter', sans-serif;
+  /* Fontes - definições diretas */
+  --font-headline: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Reset específico para a landing page */
 .landing-page {
   background-color: var(--color-page-bg);
   color: var(--color-text-white);
-  font-family: var(--font-body);
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
 }
 
+/* Aplica fonte headline em todos os títulos */
 .landing-page h1,
 .landing-page h2,
 .landing-page h3,
 .landing-page h4,
 .landing-page h5,
 .landing-page h6 {
-  font-family: var(--font-headline);
+  font-family: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Classes utilitárias de fonte */
+.landing-page .font-headline {
+  font-family: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+.landing-page .font-body {
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 .landing-page .headline-tight {
