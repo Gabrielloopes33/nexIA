@@ -273,13 +273,13 @@ export default function ImportarContatosPage() {
       }, 200)
 
       // Chamar API de importação
+      // O organizationId é obtido automaticamente do token JWT do usuário logado
       const response = await fetch('/api/contatos/import', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          organizationId: 'default_org_id', // Em produção, pegar do contexto
           contacts: validos,
         }),
       })

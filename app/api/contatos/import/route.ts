@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getOrganizationId, AuthError, createAuthErrorResponse } from '@/lib/auth/helpers';
 
 interface ContactImportData {
   nome?: string;
@@ -39,18 +40,13 @@ interface ImportResult {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    // Obtém organizationId do token JWT (não aceita do cliente!)
+    const organizationId = await getOrganizationId();
+    
     const body = await request.json();
-    const { organizationId, contacts } = body;
+    const { contacts } = body;
 
     console.log('[Import Contacts] Iniciando importação:', { organizationId, count: contacts?.length });
-
-    // Validação dos campos obrigatórios
-    if (!organizationId) {
-      return NextResponse.json(
-        { success: false, error: 'Organization ID é obrigatório' },
-        { status: 400 }
-      );
-    }
 
     if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
       return NextResponse.json(
@@ -67,14 +63,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Busca organização válida
-    let orgId = organizationId;
-    if (organizationId === 'default_org_id') {
-      const existingOrg = await prisma.organization.findFirst({ select: { id: true } });
-      if (existingOrg) {
-        orgId = existingOrg.id;
-      }
-    }
+    // Usa o organizationId do usuário autenticado
+    const orgId = organizationId;
 
     const result: ImportResult = {
       success: true,
@@ -195,6 +185,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   } catch (error: any) {
     console.error('[Import Contacts] Erro geral:', error);
+    
+    if (error instanceof AuthError) {
+      return createAuthErrorResponse(error);
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Falha na importação', details: error.message },
       { status: 500 }
