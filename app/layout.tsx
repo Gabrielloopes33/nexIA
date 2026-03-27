@@ -18,9 +18,9 @@ export const metadata: Metadata = {
   title: 'NexIA Chat - Início',
   description: 'CRM Início - NexIA Chat',
   icons: {
-    icon: '/images/nexia-logo.png',
-    shortcut: '/images/nexia-logo.png',
-    apple: '/images/nexia-logo.png',
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
   },
 }
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Fundo branco arredondado -->
+  <rect width="100" height="100" rx="20" fill="white"/>
+  
+  <!-- Balão roxo -->
+  <path d="M20 25 Q20 15 30 15 L70 15 Q80 15 80 25 L80 55 Q80 65 70 65 L35 65 L20 80 L25 65 Q20 65 20 55 Z" 
+        fill="#9333ea" stroke="#9333ea" stroke-width="2"/>
+  
+  <!-- Bolinhas amarelas -->
+  <circle cx="35" cy="40" r="6" fill="#facc15"/>
+  <circle cx="50" cy="40" r="6" fill="#facc15"/>
+  <circle cx="65" cy="40" r="6" fill="#facc15"/>
+</svg>
