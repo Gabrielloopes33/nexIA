@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
+import * as XLSX from "xlsx"
 import {
   Upload,
   FileText,
+  FileSpreadsheet,
   Download,
   Check,
   ChevronLeft,
@@ -100,6 +102,34 @@ function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   return { headers, rows }
 }
 
+// Parser para arquivos Excel (XLSX)
+function parseExcel(data: ArrayBuffer): { headers: string[]; rows: string[][] } {
+  const workbook = XLSX.read(data, { type: 'array' })
+  const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+  const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as unknown[][]
+  
+  if (jsonData.length === 0) {
+    return { headers: [], rows: [] }
+  }
+
+  const headers = (jsonData[0] as string[]).map(h => String(h).toLowerCase().trim())
+  const rows = jsonData.slice(1).map(row => 
+    (row as unknown[]).map(cell => String(cell || ''))
+  )
+
+  return { headers, rows }
+}
+
+// Detecta se é arquivo Excel
+function isExcelFile(filename: string): boolean {
+  return filename.endsWith('.xlsx') || filename.endsWith('.xls')
+}
+
+// Detecta se é arquivo CSV
+function isCSVFile(filename: string): boolean {
+  return filename.endsWith('.csv')
+}
+
 function validateRow(row: Record<string, string>): string[] {
   const errors: string[] = []
   if (!row.nome || row.nome.trim() === "") {
@@ -111,7 +141,7 @@ function validateRow(row: Record<string, string>): string[] {
   return errors
 }
 
-function downloadTemplate() {
+function downloadTemplateCSV() {
   const CSV_HEADERS = ["nome", "sobrenome", "email", "telefone", "cidade", "estado", "empresa", "cargo", "origem", "status"]
   const csv = CSV_HEADERS.join(",") + "\n"
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
@@ -119,6 +149,14 @@ function downloadTemplate() {
   link.href = URL.createObjectURL(blob)
   link.download = "template_contatos.csv"
   link.click()
+}
+
+function downloadTemplateExcel() {
+  const headers = ["nome", "sobrenome", "email", "telefone", "cidade", "estado", "empresa", "cargo", "origem", "status"]
+  const ws = XLSX.utils.aoa_to_sheet([headers])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, "Contatos")
+  XLSX.writeFile(wb, "template_contatos.xlsx")
 }
 
 export default function ImportarContatosPage() {
@@ -138,17 +176,39 @@ export default function ImportarContatosPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = useCallback((file: File) => {
-    if (file && file.name.endsWith(".csv")) {
-      setArquivo(file)
-      
-      // Ler e parsear o arquivo CSV
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const text = e.target?.result as string
-        const { headers, rows } = parseCSV(text)
+    if (!file) return
+
+    // Verificar se é CSV ou Excel
+    if (!isCSVFile(file.name) && !isExcelFile(file.name)) {
+      toast.error("Por favor, selecione um arquivo CSV ou Excel (.xlsx, .xls)")
+      return
+    }
+
+    setArquivo(file)
+    
+    const reader = new FileReader()
+    
+    reader.onload = (e) => {
+      try {
+        let headers: string[] = []
+        let rows: string[][] = []
+
+        if (isExcelFile(file.name)) {
+          // Parse Excel
+          const data = e.target?.result as ArrayBuffer
+          const result = parseExcel(data)
+          headers = result.headers
+          rows = result.rows
+        } else {
+          // Parse CSV
+          const text = e.target?.result as string
+          const result = parseCSV(text)
+          headers = result.headers
+          rows = result.rows
+        }
         
         if (headers.length === 0) {
-          toast.error("Arquivo CSV vazio ou inválido")
+          toast.error("Arquivo vazio ou inválido")
           return
         }
 
@@ -182,14 +242,23 @@ export default function ImportarContatosPage() {
         })
         setMapeamento(autoMap)
         
-        toast.success(`Arquivo carregado: ${parsedData.length} registros encontrados`)
+        const formatName = isExcelFile(file.name) ? 'Excel' : 'CSV'
+        toast.success(`Arquivo ${formatName} carregado: ${parsedData.length} registros encontrados`)
+      } catch (error) {
+        console.error('Erro ao processar arquivo:', error)
+        toast.error("Erro ao processar o arquivo. Verifique se o formato está correto.")
       }
-      reader.onerror = () => {
-        toast.error("Erro ao ler o arquivo")
-      }
-      reader.readAsText(file)
+    }
+    
+    reader.onerror = () => {
+      toast.error("Erro ao ler o arquivo")
+    }
+    
+    // Ler como ArrayBuffer para Excel ou Text para CSV
+    if (isExcelFile(file.name)) {
+      reader.readAsArrayBuffer(file)
     } else {
-      toast.error("Por favor, selecione um arquivo CSV válido")
+      reader.readAsText(file)
     }
   }, [])
 
@@ -342,7 +411,7 @@ export default function ImportarContatosPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Importar Contatos</h1>
           <p className="text-muted-foreground mt-1">
-            Importe contatos em massa através de um arquivo CSV
+            Importe contatos em massa através de um arquivo CSV ou Excel (.xlsx)
           </p>
         </div>
 
@@ -398,13 +467,19 @@ export default function ImportarContatosPage() {
                 <div>
                   <h3 className="text-lg font-semibold">Selecione o arquivo</h3>
                   <p className="text-sm text-muted-foreground">
-                    Faça upload de um arquivo CSV com seus contatos
+                    Faça upload de um arquivo CSV ou Excel (.xlsx) com seus contatos
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={downloadTemplate}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Baixar template CSV
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={downloadTemplateCSV}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Template CSV
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={downloadTemplateExcel}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Template Excel
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div
@@ -423,13 +498,13 @@ export default function ImportarContatosPage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls"
                     className="hidden"
                     onChange={handleInputChange}
                   />
                   <Upload className="mx-auto h-10 w-10 text-[#46347F]/60" />
                   <p className="mt-4 text-sm font-medium">
-                    Arraste e solte seu arquivo CSV aqui
+                    Arraste e solte seu arquivo CSV ou Excel aqui
                   </p>
                   <p className="text-muted-foreground text-sm mt-1">ou</p>
                   <Button variant="outline" className="mt-2">
@@ -439,7 +514,11 @@ export default function ImportarContatosPage() {
 
                 {arquivo && (
                   <div className="flex items-center gap-3 rounded-lg border border-border bg-gray-50 p-4">
-                    <FileText className="h-8 w-8 text-[#46347F]" />
+                    {isExcelFile(arquivo.name) ? (
+                      <FileSpreadsheet className="h-8 w-8 text-[#46347F]" />
+                    ) : (
+                      <FileText className="h-8 w-8 text-[#46347F]" />
+                    )}
                     <div>
                       <p className="font-medium">{arquivo.name}</p>
                       <p className="text-sm text-muted-foreground">
