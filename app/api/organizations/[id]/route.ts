@@ -164,8 +164,8 @@ export async function PATCH(
 
     if (name !== undefined) updateData.name = name.trim()
     if (slug !== undefined) updateData.slug = slug.trim()
-    if (segment !== undefined) updateData.segment = segment.trim() || null
-    if (logoUrl !== undefined) updateData.logoUrl = logoUrl.trim() || null
+    if (segment !== undefined) updateData.segment = segment ? segment.trim() || null : null
+    if (logoUrl !== undefined) updateData.logoUrl = logoUrl ? logoUrl.trim() || null : null
 
     // Verifica se todos os campos obrigatórios estão preenchidos para marcar setup como completo
     const finalName = updateData.name ?? currentOrg.name

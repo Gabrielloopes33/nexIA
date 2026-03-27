@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Tag,
+  List,
 } from "lucide-react"
 
 import { Sidebar } from "@/components/sidebar"
@@ -38,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -173,6 +176,9 @@ export default function ImportarContatosPage() {
     errors: number
     duplicates: number
   } | null>(null)
+  const [nomeImportacao, setNomeImportacao] = useState("")
+  const [criarTag, setCriarTag] = useState(true)
+  const [criarLista, setCriarLista] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = useCallback((file: File) => {
@@ -185,7 +191,10 @@ export default function ImportarContatosPage() {
     }
 
     setArquivo(file)
-    
+    // Auto-preenche o nome da importação com o nome do arquivo sem extensão
+    const nameWithoutExt = file.name.replace(/\.(csv|xlsx|xls)$/i, "")
+    setNomeImportacao(nameWithoutExt)
+
     const reader = new FileReader()
     
     reader.onload = (e) => {
@@ -350,6 +359,9 @@ export default function ImportarContatosPage() {
         },
         body: JSON.stringify({
           contacts: validos,
+          importName: nomeImportacao.trim() || undefined,
+          createTag: criarTag,
+          createList: criarLista,
         }),
       })
 
@@ -401,6 +413,9 @@ export default function ImportarContatosPage() {
     setProgresso(0)
     setImportando(false)
     setImportResult(null)
+    setNomeImportacao("")
+    setCriarTag(true)
+    setCriarLista(true)
   }
 
   return (
@@ -714,6 +729,52 @@ export default function ImportarContatosPage() {
                     </ul>
                   </div>
                 )}
+
+                {/* Opções de tag e lista */}
+                <div className="rounded-lg border border-border p-4 space-y-4">
+                  <div>
+                    <Label htmlFor="nomeImportacao" className="text-sm font-medium">
+                      Nome da importação
+                    </Label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Usado para criar a tag e a lista automaticamente
+                    </p>
+                    <Input
+                      id="nomeImportacao"
+                      value={nomeImportacao}
+                      onChange={(e) => setNomeImportacao(e.target.value)}
+                      placeholder="Ex: Leads Abril 2026"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-[#46347F]" />
+                      <div>
+                        <p className="text-sm font-medium">Criar tag</p>
+                        <p className="text-xs text-muted-foreground">Vincula todos os contatos importados a esta tag</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={criarTag}
+                      onCheckedChange={setCriarTag}
+                      disabled={!nomeImportacao.trim()}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <List className="h-4 w-4 text-[#46347F]" />
+                      <div>
+                        <p className="text-sm font-medium">Criar lista</p>
+                        <p className="text-xs text-muted-foreground">Adiciona todos os contatos importados a esta lista</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={criarLista}
+                      onCheckedChange={setCriarLista}
+                      disabled={!nomeImportacao.trim()}
+                    />
+                  </div>
+                </div>
 
                 <div className="flex justify-between">
                   <Button variant="outline" onClick={() => setStep(2)}>

@@ -18,7 +18,7 @@ export default function Home() {
       <Problem />
       <Features />
       <BentoGrid />
-      <SocialProof />
+      {/* <SocialProof /> */}
       <ValueStack />
       <Bio />
       <FAQ />

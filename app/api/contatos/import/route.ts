@@ -44,7 +44,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const organizationId = await getOrganizationId();
     
     const body = await request.json();
-    const { contacts } = body;
+    const { contacts, importName, createTag, createList } = body;
 
     console.log('[Import Contacts] Iniciando importação:', { organizationId, count: contacts?.length });
 
@@ -72,6 +72,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       errors: [],
       duplicates: [],
     };
+
+    const importedContactIds: string[] = [];
 
     const now = new Date().toISOString();
 
@@ -148,7 +150,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         if (contact.cargo) metadata.cargo = contact.cargo;
 
         // Inserir contato
-        await prisma.contact.create({
+        const createdContact = await prisma.contact.create({
           data: {
             organizationId: orgId,
             phone: normalizedPhone || `sem-telefone-${Date.now()}-${i}`,
@@ -161,6 +163,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           },
         });
 
+        importedContactIds.push(createdContact.id);
         result.imported++;
       } catch (error: any) {
         console.error('[Import Contacts] Erro ao processar contato:', error);
@@ -169,6 +172,59 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           contact,
           error: error.message || 'Erro desconhecido',
         });
+      }
+    }
+
+    // Criar tag e/ou lista se solicitado e houver contatos importados
+    if (importedContactIds.length > 0 && importName) {
+      if (createTag) {
+        try {
+          // Upsert: cria ou reutiliza tag com esse nome
+          const tag = await prisma.tag.upsert({
+            where: { organizationId_name: { organizationId: orgId, name: importName } },
+            update: {},
+            create: {
+              organizationId: orgId,
+              name: importName,
+              color: '#46347F',
+              source: 'import',
+            },
+          });
+
+          await prisma.contactTag.createMany({
+            data: importedContactIds.map(contactId => ({
+              contactId,
+              tagId: tag.id,
+            })),
+            skipDuplicates: true,
+          });
+        } catch (tagError) {
+          console.error('[Import Contacts] Erro ao criar tag:', tagError);
+        }
+      }
+
+      if (createList) {
+        try {
+          const list = await prisma.list.create({
+            data: {
+              organizationId: orgId,
+              name: importName,
+              description: `Importação: ${importName}`,
+              isDynamic: false,
+              contactCount: importedContactIds.length,
+            },
+          });
+
+          await prisma.listContact.createMany({
+            data: importedContactIds.map(contactId => ({
+              listId: list.id,
+              contactId,
+            })),
+            skipDuplicates: true,
+          });
+        } catch (listError) {
+          console.error('[Import Contacts] Erro ao criar lista:', listError);
+        }
       }
     }
 

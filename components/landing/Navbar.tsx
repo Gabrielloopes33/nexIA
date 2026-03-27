@@ -22,12 +22,12 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="text-text-muted font-medium hover:text-text-white transition-colors px-4 py-2 text-sm">
+          <a href="/login" className="text-text-muted font-medium hover:text-text-white transition-colors px-4 py-2 text-sm">
             {NAV.login}
-          </button>
-          <button className="cta-yellow font-bold px-6 py-2.5 rounded-lg text-sm shadow-xl shadow-yellow/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+          </a>
+          <a href="#precos" className="cta-yellow font-bold px-6 py-2.5 rounded-lg text-sm shadow-xl shadow-yellow/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
             {NAV.cta}
-          </button>
+          </a>
         </div>
       </div>
     </nav>

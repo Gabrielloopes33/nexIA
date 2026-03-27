@@ -35,15 +35,9 @@ export default function LandingLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${jakarta.variable} ${inter.variable}`}>
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="landing-page">{children}</body>
+    <div className={`${jakarta.variable} ${inter.variable} landing-page`}>
+      {children}
       <Analytics />
-    </html>
+    </div>
   );
 }
