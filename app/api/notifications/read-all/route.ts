@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// Marcar como dinâmico para evitar pré-renderização estática
+export const dynamic = 'force-dynamic';
+
 /**
  * PATCH /api/notifications/read-all
  * Marca todas as notificações como lidas

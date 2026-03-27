@@ -1,0 +1,78 @@
+/* ============================================
+   LANDING PAGE - Tema Escuro Isolado
+   ============================================ */
+
+@import "tailwindcss";
+
+@theme inline {
+  /* Cores primárias */
+  --color-primary: #46347F;
+  --color-primary-dark: #3a2d6e;
+  --color-primary-glow: rgba(70,52,127,0.25);
+  --color-yellow: #f3c845;
+  
+  /* Cores de fundo */
+  --color-page-bg: #0a0a0f;
+  --color-section-bg: #0f0e17;
+  --color-card-bg: #14131e;
+  
+  /* Cores de texto */
+  --color-text-white: #f0eef8;
+  --color-text-body: #c4c4d4;
+  --color-text-muted: #8585a0;
+  
+  /* Cores de superfície */
+  --color-surface-high: #1f1f26;
+  --color-surface-bright: #2c2b33;
+  --color-surface-low: #131319;
+  --color-surface-variant: #25252d;
+  
+  /* Cores primárias variantes */
+  --color-primary-light: #a88cfb;
+  --color-primary-muted: #4f319c;
+  
+  /* Fontes */
+  --font-headline: var(--font-jakarta), 'Plus Jakarta Sans', sans-serif;
+  --font-body: var(--font-inter), 'Inter', sans-serif;
+}
+
+.landing-page {
+  background-color: var(--color-page-bg);
+  color: var(--color-text-white);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+.landing-page h1,
+.landing-page h2,
+.landing-page h3,
+.landing-page h4,
+.landing-page h5,
+.landing-page h6 {
+  font-family: var(--font-headline);
+}
+
+.landing-page .headline-tight {
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.landing-page .glass-card {
+  background: #14131e;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+}
+
+.landing-page .hero-glow {
+  background: radial-gradient(
+    circle at center,
+    rgba(70, 52, 127, 0.15) 0%,
+    transparent 70%
+  );
+}
+
+.landing-page .cta-yellow {
+  background-color: #f3c845;
+  color: #0a0a0f;
+}

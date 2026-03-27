@@ -15,7 +15,7 @@ interface SidebarDropdownGroupProps {
 // Section separator with horizontal connector (only for section titles)
 function SectionSeparator({ label }: { label: string }) {
   return (
-    <div className="relative flex items-center gap-2 px-0 py-2 mt-2">
+    <div className="relative flex items-center gap-2 px-3 py-2 mt-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50">
         {label}
       </span>
@@ -23,7 +23,7 @@ function SectionSeparator({ label }: { label: string }) {
   )
 }
 
-// Sub-nav item without horizontal connector, just indented
+// Sub-nav item without horizontal connector, alinhado à esquerda
 function SubNavItem({
   child,
   isActive,
@@ -34,7 +34,7 @@ function SubNavItem({
   const content = (
     <span
       className={cn(
-        "flex items-center justify-between py-1.5 pr-2 text-[13px] rounded-md transition-colors relative",
+        "flex items-center justify-between py-1.5 pr-3 text-[13px] rounded-md transition-colors relative pl-3",
         isActive
           ? "bg-white/20 text-white font-medium"
           : "text-white/80 hover:bg-white/10 hover:text-white",
@@ -56,14 +56,14 @@ function SubNavItem({
 
   if (child.disabled) {
     return (
-      <div className="cursor-not-allowed pl-4">
+      <div className="cursor-not-allowed">
         {content}
       </div>
     )
   }
 
   return (
-    <Link href={child.href} className={cn("block", isActive ? "pl-5" : "pl-4")}>
+    <Link href={child.href} className="block">
       {content}
     </Link>
   )
@@ -119,7 +119,7 @@ export function SidebarDropdownGroup({
       <button
         onClick={handleToggle}
         className={cn(
-          "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200",
+          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200",
           "text-white/95 hover:text-white hover:bg-white/10",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
           isOpen && "bg-white/10",
@@ -145,8 +145,8 @@ export function SidebarDropdownGroup({
           isOpen ? "block" : "hidden"
         )}
       >
-        {/* Tree container */}
-        <div className="relative ml-[22px] pl-0">
+        {/* Tree container - alinhado à esquerda sem indentação */}
+        <div className="relative pl-0">
           
           {groupedChildren.map(({ section, items }, sectionIndex) => (
             <div key={section || `section-${sectionIndex}`} className="relative">
