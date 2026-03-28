@@ -89,6 +89,11 @@ export function ManualConnectionForm({ organizationId, onSuccess }: ManualConnec
     e.preventDefault()
     setResult(null)
 
+    if (!organizationId) {
+      setResult({ type: "error", message: "Organização não identificada. Recarregue a página e tente novamente." })
+      return
+    }
+
     if (!validateForm()) {
       return
     }

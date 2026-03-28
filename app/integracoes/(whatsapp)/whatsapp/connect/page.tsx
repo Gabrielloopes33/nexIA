@@ -10,12 +10,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { WhatsAppIcon } from "@/components/whatsapp/shared/whatsapp-icon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useWhatsApp } from "@/hooks/use-whatsapp"
+import { useOrganization } from "@/lib/contexts/organization-context"
 import { GENERAL_COMPLIANCE_MESSAGES } from "@/lib/whatsapp/compliance-messages"
 import { CheckCircle2, Shield, ExternalLink, Facebook, KeyRound } from "lucide-react"
 import Link from "next/link"
 
 export default function WhatsAppConnectPage() {
   const { status } = useWhatsApp()
+  const { organization } = useOrganization()
   const isConnected = status === 'connected'
 
   // Get all compliance messages for the connect page
@@ -156,8 +158,8 @@ export default function WhatsAppConnectPage() {
 
               {/* Manual Connection Tab */}
               <TabsContent value="manual">
-                <ManualConnectionForm 
-                  organizationId="temp-org-id" // TODO: Replace with actual organization ID from context
+                <ManualConnectionForm
+                  organizationId={organization?.id ?? ""}
                   onSuccess={() => {
                     // Refresh the page or update status
                     window.location.reload()
