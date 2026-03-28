@@ -11,6 +11,7 @@ import {
   Headphones,
   ListTodo,
   Phone,
+  Megaphone,
 } from "lucide-react"
 
 export interface SidebarNavChild {
@@ -97,6 +98,12 @@ export const topNavItems: SidebarNavItem[] = [
     label: "Pipeline",
     href: "/pipeline",
     icon: BarChart3,
+  },
+  {
+    key: "campanhas",
+    label: "Campanhas",
+    href: "/campanhas",
+    icon: Megaphone,
   },
   {
     key: "agendamentos",

@@ -588,6 +588,54 @@ model pipeline_stage_histories {
   @@index([deal_id])
 }
 
+/// Campaign - Disparo em massa de mensagens WhatsApp
+model Campaign {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId   String           @map("organization_id") @db.Uuid
+  name             String           @db.VarChar(255)
+  status           CampaignStatus   @default(DRAFT)
+  instanceId       String           @map("instance_id") @db.Uuid
+  templateName     String           @map("template_name") @db.VarChar(255)
+  templateLanguage String           @map("template_language") @db.VarChar(20)
+  templateComponents Json?          @map("template_components")
+  audienceType     AudienceType     @default(MANUAL) @map("audience_type")
+  audienceTags     String[]         @default([]) @map("audience_tags")
+  totalContacts    Int              @default(0) @map("total_contacts")
+  sentCount        Int              @default(0) @map("sent_count")
+  failedCount      Int              @default(0) @map("failed_count")
+  pendingCount     Int              @default(0) @map("pending_count")
+  startedAt        DateTime?        @map("started_at")
+  completedAt      DateTime?        @map("completed_at")
+  createdBy        String           @map("created_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
+  contacts         CampaignContact[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("campaigns")
+}
+
+/// CampaignContact - Contato individual de uma campanha
+model CampaignContact {
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaignId        String                @map("campaign_id") @db.Uuid
+  contactId         String                @map("contact_id") @db.Uuid
+  phone             String                @db.VarChar(50)
+  name              String?               @db.VarChar(255)
+  status            CampaignContactStatus @default(PENDING)
+  externalMessageId String?               @map("external_message_id") @db.VarChar(255)
+  errorMessage      String?               @map("error_message") @db.Text
+  sentAt            DateTime?             @map("sent_at")
+  failedAt          DateTime?             @map("failed_at")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  campaign          Campaign              @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([status])
+  @@map("campaign_contacts")
+}
+
 enum ScheduleType {
   meeting
   task
@@ -896,4 +944,24 @@ enum NotificationType {
   SYSTEM
   WARNING
   SUCCESS
+}
+
+enum CampaignStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum CampaignContactStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum AudienceType {
+  ALL
+  BY_TAG
+  MANUAL
 }
