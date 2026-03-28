@@ -77,13 +77,22 @@ model UserCredential {
 /// WhatsAppInstance - Instância WhatsApp Business
 /// Modelo adaptado para tabela whatsapp_cloud_instances do Aurea
 model WhatsAppInstance {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
-  name           String   @db.VarChar(255)
-  phoneNumber    String   @map("phone_number") @db.VarChar(50)
-  status         String   @default("DISCONNECTED") @map("status") @db.VarChar(50)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId      String    @map("organization_id") @db.Uuid
+  name                String    @db.VarChar(255)
+  phoneNumber         String    @map("phone_number") @db.VarChar(50)
+  phoneNumberId       String?   @map("phone_number_id") @db.VarChar(100)
+  wabaId              String?   @map("waba_id") @db.VarChar(100)
+  accessToken         String?   @map("access_token")
+  displayPhoneNumber  String?   @map("display_phone_number") @db.VarChar(50)
+  verifiedName        String?   @map("verified_name") @db.VarChar(255)
+  status              String    @default("DISCONNECTED") @map("status") @db.VarChar(50)
+  qualityRating       String    @default("UNKNOWN") @map("quality_rating") @db.VarChar(20)
+  messagingLimit      Int?      @map("messaging_limit")
+  messagingTier       Int?      @map("messaging_tier")
+  connectedAt         DateTime? @map("connected_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@map("whatsapp_cloud_instances")
 }
