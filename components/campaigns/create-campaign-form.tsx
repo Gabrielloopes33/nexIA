@@ -67,7 +67,7 @@ export function CreateCampaignForm() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
-          setTemplates((data.data || []).filter((t: Template) => t.status === 'APPROVED'))
+          setTemplates((data.data?.templates || []).filter((t: Template) => t.status === 'APPROVED'))
         }
       })
       .catch(() => toast.error('Erro ao carregar templates'))

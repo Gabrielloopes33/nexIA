@@ -54,14 +54,12 @@ export async function POST(request: NextRequest, { params }: Params) {
     let sentCount = 0
     let failedCount = 0
     const batchSize = 100
-    let skip = 0
 
     while (true) {
       const batch = await withRLS(prisma, organizationId, async (tx) => {
         return tx.campaignContact.findMany({
           where: { campaignId: id, status: 'PENDING' },
           take: batchSize,
-          skip,
         })
       })
 
@@ -111,8 +109,6 @@ export async function POST(request: NextRequest, { params }: Params) {
 
         await sleep(250) // Respeita rate limit da Meta
       }
-
-      skip += batchSize
     }
 
     const finalStatus = sentCount === 0 ? 'FAILED' : 'COMPLETED'
