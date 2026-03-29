@@ -147,20 +147,13 @@ async function findOrCreateContact(organizationId: string, phone: string) {
  */
 async function findOrCreateConversation(
   organizationId: string,
-  instanceId: string,
   contactId: string,
-  type: 'USER_INITIATED' | 'BUSINESS_INITIATED' | 'REFERRAL_INITIATED'
 ) {
-  const now = new Date();
-  const windowEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-  // Try to find active conversation
   let conversation = await prisma.conversation.findFirst({
     where: {
       organizationId,
       contactId,
-      status: 'ACTIVE',
-      windowEnd: { gt: now },
+      status: 'active',
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -169,12 +162,8 @@ async function findOrCreateConversation(
     conversation = await prisma.conversation.create({
       data: {
         organizationId,
-        instanceId,
         contactId,
-        type,
-        status: 'ACTIVE',
-        windowStart: now,
-        windowEnd,
+        status: 'active',
       },
     });
   }
@@ -259,15 +248,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Find or create conversation
     const conversation = await findOrCreateConversation(
       instance.organizationId,
-      instance.id,
       contact.id,
-      'BUSINESS_INITIATED'
     );
 
     let result;
     let messageContent = '';
-    let mediaUrl: string | undefined;
-    let templateId: string | undefined;
 
     // Send message based on type
     switch (type) {
@@ -286,23 +271,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       case 'template': {
         const templateBody = body as TemplateMessageRequest;
-        
-        // Find template in database
-        const template = await prisma.whatsAppTemplate.findFirst({
-          where: {
-            instanceId,
-            name: templateBody.templateName,
-            status: 'APPROVED',
-          },
-        });
-
-        if (!template) {
-          return NextResponse.json(
-            { success: false, error: 'Template not found or not approved' },
-            { status: 404 }
-          );
-        }
-
         result = await sendTemplateMessage(
           phoneNumberId,
           formattedPhone,
@@ -311,9 +279,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           accessToken,
           templateBody.components
         );
-        
         messageContent = `[Template: ${templateBody.templateName}]`;
-        templateId = template.id;
         break;
       }
 
@@ -332,7 +298,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           mediaBody.filename
         );
         messageContent = mediaBody.caption || `[${type.toUpperCase()}]`;
-        mediaUrl = mediaBody.mediaUrl;
         break;
       }
 
@@ -374,30 +339,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Get message ID from Meta response
     const messageId = result.messages?.[0]?.id;
 
-    // Create message in database
+    // Create message in database (only fields that exist in the schema)
     const message = await prisma.message.create({
       data: {
         conversationId: conversation.id,
         contactId: contact.id,
         messageId: messageId || null,
         direction: 'OUTBOUND',
-        type: type === 'template' ? 'TEMPLATE' : type.toUpperCase() as 'TEXT' | 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'LOCATION' | 'CONTACT' | 'TEMPLATE' | 'INTERACTIVE',
         content: messageContent,
-        mediaUrl,
-        templateId,
-        status: 'SENT',
-        sentAt: new Date(),
-        metadata: { metaResponse: result },
+        status: 'sent',
       },
     });
 
-    // Update conversation
+    // Bump conversation updatedAt
     await prisma.conversation.update({
       where: { id: conversation.id },
-      data: {
-        lastMessageAt: new Date(),
-        messageCount: { increment: 1 },
-      },
+      data: { updatedAt: new Date() },
     });
 
     // Update contact last interaction
@@ -408,22 +365,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
 
-    // Save log
-    await prisma.whatsAppLog.create({
-      data: {
-        instanceId: instance.id,
-        type: 'message_sent',
-        eventType: 'messages',
-        payload: { 
-          to: formattedPhone, 
-          type, 
-          messageId,
-          metaResponse: result 
-        },
-        processed: true,
-        processedAt: new Date(),
-      },
-    });
+    console.log('[Send] Message sent and saved:', { messageId, to: formattedPhone, type });
 
     return NextResponse.json({
       success: true,
