@@ -8,16 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { WhatsAppIcon } from "@/components/whatsapp/shared/whatsapp-icon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useWhatsApp } from "@/hooks/use-whatsapp"
-import { useOrganization } from "@/lib/contexts/organization-context"
+import { useWhatsAppInstances } from "@/hooks/use-whatsapp-instances"
+import { useOrganization, useOrganizationId } from "@/lib/contexts/organization-context"
 
 import { CheckCircle2, Shield, ExternalLink, Facebook, KeyRound } from "lucide-react"
 import Link from "next/link"
 
 export default function WhatsAppConnectPage() {
-  const { status } = useWhatsApp()
+  const orgId = useOrganizationId()
+  const { connectedInstances } = useWhatsAppInstances(orgId)
   const { organization } = useOrganization()
-  const isConnected = status === 'connected'
+  const isConnected = connectedInstances.length > 0
 
   return (<>
         {/* Header */}
