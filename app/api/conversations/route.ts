@@ -254,18 +254,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Cria nova conversa
-    const conversation = await prisma.conversation.create({
-      data: {
-        organizationId,
-        contactId,
-        status: 'active',
-      },
-    });
-
+    // Resolve a instância a usar: prioridade para instanceId do body, depois oficial conectada, depois Evolution
     const [waInst, evoInst] = await Promise.all([
       prisma.whatsAppInstance.findFirst({
-        where: { organizationId },
+        where: { organizationId, status: 'CONNECTED' },
         select: { id: true, name: true, phoneNumber: true },
       }),
       prisma.evolutionInstance.findFirst({
@@ -274,7 +266,18 @@ export async function POST(request: NextRequest) {
       }),
     ]);
     const instSrc = waInst || evoInst;
+    const resolvedInstanceId = instanceId || instSrc?.id || null;
     const instance = instSrc ? { id: instSrc.id, name: instSrc.name, displayPhoneNumber: instSrc.phoneNumber } : null;
+
+    // Cria nova conversa com instanceId resolvido
+    const conversation = await prisma.conversation.create({
+      data: {
+        organizationId,
+        contactId,
+        instanceId: resolvedInstanceId,
+        status: 'active',
+      },
+    });
 
     const now = new Date();
     const windowEnd = new Date(conversation.createdAt.getTime() + 24 * 60 * 60 * 1000);
