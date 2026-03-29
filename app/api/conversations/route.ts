@@ -269,12 +269,11 @@ export async function POST(request: NextRequest) {
     const resolvedInstanceId = instanceId || instSrc?.id || null;
     const instance = instSrc ? { id: instSrc.id, name: instSrc.name, displayPhoneNumber: instSrc.phoneNumber } : null;
 
-    // Cria nova conversa com instanceId resolvido
+    // Cria nova conversa (instanceId não existe no schema — instância é resolvida na hora de enviar)
     const conversation = await prisma.conversation.create({
       data: {
         organizationId,
         contactId,
-        instanceId: resolvedInstanceId,
         status: 'active',
       },
     });

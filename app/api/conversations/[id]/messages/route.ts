@@ -152,50 +152,35 @@ export async function POST(request: NextRequest, { params }: Params) {
       },
     });
 
-    // Tenta enviar pela instância associada à conversa (oficial ou Evolution)
-    if (contact?.phone && conversation.instanceId) {
-      // Verifica se é instância oficial (WhatsApp Cloud API)
-      const officialInstance = await prisma.whatsAppInstance.findUnique({
-        where: { id: conversation.instanceId },
-        select: { phoneNumberId: true, accessToken: true, status: true },
-      });
+    // Tenta enviar via instância conectada da organização (oficial tem prioridade)
+    if (contact?.phone) {
+      const [officialInstance, evolutionInstance] = await Promise.all([
+        prisma.whatsAppInstance.findFirst({
+          where: { organizationId, status: 'CONNECTED' },
+          select: { phoneNumberId: true, accessToken: true },
+        }),
+        prisma.evolutionInstance.findFirst({
+          where: { organizationId, status: 'CONNECTED' },
+          select: { instanceName: true },
+        }),
+      ]);
 
-      if (officialInstance && officialInstance.status === 'CONNECTED' && officialInstance.phoneNumberId && officialInstance.accessToken) {
+      if (officialInstance?.phoneNumberId && officialInstance?.accessToken) {
         try {
           await sendTextMessage(officialInstance.phoneNumberId, contact.phone, content, officialInstance.accessToken);
+          console.log('Messages POST: Sent via WhatsApp Cloud API');
         } catch (sendError) {
           console.error('Messages POST: WhatsApp Cloud API send failed:', sendError);
         }
-      } else {
-        // Tenta Evolution como fallback
-        const evolutionInstance = await prisma.evolutionInstance.findUnique({
-          where: { id: conversation.instanceId },
-          select: { instanceName: true, status: true },
-        });
-
-        if (evolutionInstance && evolutionInstance.status === 'CONNECTED') {
-          try {
-            await evolutionService.sendText(evolutionInstance.instanceName, contact.phone, content);
-          } catch (sendError) {
-            console.error('Messages POST: Evolution API send failed:', sendError);
-          }
-        } else {
-          // Fallback: busca qualquer instância Evolution conectada da org
-          const anyEvolutionInstance = await prisma.evolutionInstance.findFirst({
-            where: { organizationId, status: 'CONNECTED' },
-            select: { instanceName: true },
-          });
-
-          if (anyEvolutionInstance) {
-            try {
-              await evolutionService.sendText(anyEvolutionInstance.instanceName, contact.phone, content);
-            } catch (sendError) {
-              console.error('Messages POST: Evolution API send failed:', sendError);
-            }
-          } else {
-            console.warn('Messages POST: No connected instance found for org', organizationId);
-          }
+      } else if (evolutionInstance) {
+        try {
+          await evolutionService.sendText(evolutionInstance.instanceName, contact.phone, content);
+          console.log('Messages POST: Sent via Evolution API');
+        } catch (sendError) {
+          console.error('Messages POST: Evolution API send failed:', sendError);
         }
+      } else {
+        console.warn('Messages POST: No connected instance found for org', organizationId);
       }
     }
 
