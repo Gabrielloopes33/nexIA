@@ -254,10 +254,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             contact?.profile?.name
           );
 
+          const ts = parseInt(String(timestamp));
           await prisma.contact.update({
             where: { id: contactRecord.id },
             data: {
-              lastInteractionAt: new Date(parseInt(String(timestamp)) * 1000),
+              lastInteractionAt: !isNaN(ts) ? new Date(ts * 1000) : new Date(),
               ...(contact?.profile?.name ? { name: contact.profile.name } : {}),
             },
           });
