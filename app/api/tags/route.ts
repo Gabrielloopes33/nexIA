@@ -1,7 +1,108 @@
 /**
- * Tags API Route (Refatorado - Fase 3: RBAC)
- * GET: List all tags for the authenticated user's organization
- * POST: Create a new tag (MANAGER+)
+ * @swagger
+ * tags:
+ *   - name: Tags
+ *     description: Gerenciamento de tags de contatos
+ * 
+ * /api/tags:
+ *   get:
+ *     summary: Lista todas as tags da organização
+ *     description: Retorna todas as tags com paginação, suporte a busca por nome e contagem de contatos
+ *     tags: [Tags]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar tags por nome (case insensitive)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Limite de registros por página
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Offset para paginação
+ *     responses:
+ *       200:
+ *         description: Lista de tags retornada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Tag'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/PaginationResponse'
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Usuário sem organização
+ *       500:
+ *         description: Erro interno do servidor
+ *   
+ *   post:
+ *     summary: Cria uma nova tag
+ *     description: Cria uma nova tag para a organização (requer permissão MANAGER+)
+ *     tags: [Tags]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Nome da tag
+ *               color:
+ *                 type: string
+ *                 description: Cor da tag em hex (ex: #6366f1)
+ *                 default: '#6366f1'
+ *               description:
+ *                 type: string
+ *                 description: Descrição da tag
+ *               source:
+ *                 type: string
+ *                 enum: [manual, automation, utm]
+ *                 default: manual
+ *     responses:
+ *       201:
+ *         description: Tag criada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Tag'
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Sem permissão (tags:manage)
+ *       409:
+ *         description: Tag com este nome já existe
+ *       500:
+ *         description: Erro interno do servidor
  */
 
 import { NextRequest, NextResponse } from 'next/server';

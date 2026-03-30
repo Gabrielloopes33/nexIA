@@ -1,6 +1,47 @@
 /**
- * Contact Tag API Route
- * DELETE: Remove a tag from a contact
+ * @swagger
+ * tags:
+ *   - name: Contacts
+ *     description: Gerenciamento de contatos
+ * 
+ * /api/contacts/{id}/tags/{tagId}:
+ *   delete:
+ *     summary: Remove uma tag de um contato
+ *     description: Desassocia uma tag específica de um contato
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do contato
+ *       - in: path
+ *         name: tagId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID da tag a ser removida
+ *     responses:
+ *       200:
+ *         description: Tag removida do contato com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Contato, tag ou associação não encontrada
+ *       500:
+ *         description: Erro interno do servidor
  */
 
 import { NextRequest, NextResponse } from 'next/server';

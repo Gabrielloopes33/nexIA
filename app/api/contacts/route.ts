@@ -1,7 +1,139 @@
 /**
- * Contacts API Route (Refatorado - Fase 1.B)
- * GET: List all contacts for the authenticated user's organization
- * POST: Create a new contact in the authenticated user's organization
+ * @swagger
+ * tags:
+ *   - name: Contacts
+ *     description: Gerenciamento de contatos
+ * 
+ * /api/contacts:
+ *   get:
+ *     summary: Lista todos os contatos
+ *     description: Retorna todos os contatos da organização com filtros, busca e paginação
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ACTIVE, INACTIVE, BLOCKED]
+ *         description: Filtrar por status do contato
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar por nome ou telefone (case insensitive)
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: Filtrar por tags (separadas por vírgula, ex: tag1,tag2)
+ *       - in: query
+ *         name: includeDeleted
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Incluir contatos deletados (soft delete)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Limite de registros por página
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Offset para paginação
+ *     responses:
+ *       200:
+ *         description: Lista de contatos retornada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Contact'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/PaginationResponse'
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ *   
+ *   post:
+ *     summary: Cria um novo contato
+ *     description: Cria um novo contato na organização do usuário autenticado
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Nome do contato
+ *               email:
+ *                 type: string
+ *                 description: Email do contato
+ *               phone:
+ *                 type: string
+ *                 description: Telefone do contato (obrigatório)
+ *               avatarUrl:
+ *                 type: string
+ *                 description: URL da foto do contato
+ *               notes:
+ *                 type: string
+ *                 description: Notas sobre o contato
+ *               metadata:
+ *                 type: object
+ *                 description: Metadados adicionais do contato
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Tags do contato (array de strings)
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, INACTIVE, BLOCKED]
+ *                 default: ACTIVE
+ *               source:
+ *                 type: string
+ *                 description: Origem do contato
+ *     responses:
+ *       201:
+ *         description: Contato criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Contact'
+ *       400:
+ *         description: Dados inválidos (telefone obrigatório)
+ *       401:
+ *         description: Não autorizado
+ *       403:
+ *         description: Usuário sem organização
+ *       409:
+ *         description: Contato com este telefone já existe
+ *       500:
+ *         description: Erro interno do servidor
  */
 
 import { NextRequest, NextResponse } from 'next/server';

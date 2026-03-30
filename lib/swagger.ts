@@ -40,6 +40,12 @@ export const getApiDocs = () => {
               source: { type: 'string', enum: ['manual', 'automation', 'utm'] },
               createdAt: { type: 'string', format: 'date-time' },
               updatedAt: { type: 'string', format: 'date-time' },
+              _count: {
+                type: 'object',
+                properties: {
+                  contactTags: { type: 'integer', description: 'Número de contatos com esta tag' }
+                }
+              },
             },
           },
           List: {

@@ -1,8 +1,119 @@
 /**
- * Contact API Route (Refatorado - Fase 3: RBAC)
- * GET: Get a specific contact
- * PATCH: Update a contact
- * DELETE: Soft delete a contact (ADMIN+)
+ * @swagger
+ * tags:
+ *   - name: Contacts
+ *     description: Gerenciamento de contatos
+ * 
+ * /api/contacts/{id}:
+ *   get:
+ *     summary: Obtém um contato específico
+ *     description: Retorna os detalhes de um contato, incluindo últimas conversas e deals
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do contato
+ *     responses:
+ *       200:
+ *         description: Contato encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/Contact'
+ *                     - type: object
+ *                       properties:
+ *                         conversations:
+ *                           type: array
+ *                         deals:
+ *                           type: array
+ *                         _count:
+ *                           type: object
+ *       403:
+ *         description: Acesso negado
+ *       404:
+ *         description: Contato não encontrado
+ *   
+ *   patch:
+ *     summary: Atualiza um contato
+ *     description: Atualiza os dados de um contato existente
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do contato
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               avatarUrl:
+ *                 type: string
+ *               metadata:
+ *                 type: object
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, INACTIVE, BLOCKED]
+ *               leadScore:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Contato atualizado com sucesso
+ *       403:
+ *         description: Acesso negado
+ *       404:
+ *         description: Contato não encontrado
+ *       409:
+ *         description: Telefone já existe em outro contato
+ *   
+ *   delete:
+ *     summary: Remove um contato (soft delete)
+ *     description: Move o contato para a lixeira (requer permissão ADMIN+)
+ *     tags: [Contacts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do contato
+ *     responses:
+ *       200:
+ *         description: Contato movido para lixeira com sucesso
+ *       403:
+ *         description: Sem permissão
+ *       404:
+ *         description: Contato não encontrado
  */
 
 import { NextRequest, NextResponse } from 'next/server';
