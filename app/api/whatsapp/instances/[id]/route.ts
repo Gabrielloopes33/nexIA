@@ -1,17 +1,16 @@
 /**
- * WhatsApp Instance API Route
+ * WhatsApp Instance Individual API Route
  * GET: Get a specific instance
- * DELETE: Delete an instance
  * PATCH: Update an instance
+ * DELETE: Delete an instance
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSession } from '@/lib/auth/session';
 
 interface RouteParams {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -24,38 +23,50 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
+    const session = await getSession();
+    
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Não autenticado' },
+        { status: 401 }
+      );
+    }
 
-    const instance = await prisma.whatsAppInstance.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            conversations: true,
-            templates: true,
-          },
-        },
+    if (!session.organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'Organização não encontrada' },
+        { status: 400 }
+      );
+    }
+
+    const instance = await prisma.whatsAppInstance.findFirst({
+      where: {
+        id,
+        organizationId: session.organizationId,
       },
     });
 
     if (!instance) {
       return NextResponse.json(
-        { success: false, error: 'Instance not found' },
+        { success: false, error: 'Instância não encontrada' },
         { status: 404 }
       );
     }
 
-    // Remove sensitive data
+    // Return sanitized instance
     const sanitizedInstance = {
       id: instance.id,
       name: instance.name,
       phoneNumber: instance.phoneNumber,
+      displayPhoneNumber: instance.displayPhoneNumber,
+      verifiedName: instance.verifiedName,
       status: instance.status,
       qualityRating: instance.qualityRating,
       messagingLimit: instance.messagingLimit,
       messagingTier: instance.messagingTier,
       connectedAt: instance.connectedAt,
       createdAt: instance.createdAt,
-      _count: instance._count,
+      updatedAt: instance.updatedAt,
     };
 
     return NextResponse.json({
@@ -65,7 +76,97 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching WhatsApp instance:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch instance' },
+      { success: false, error: 'Falha ao carregar instância' },
+      { status: 500 }
+    );
+  }
+}
+
+interface UpdateInstanceRequest {
+  name?: string;
+  status?: string;
+  qualityRating?: string;
+  verifiedName?: string;
+}
+
+/**
+ * PATCH /api/whatsapp/instances/[id]
+ * Update a WhatsApp instance
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
+  try {
+    const { id } = await params;
+    const session = await getSession();
+    
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Não autenticado' },
+        { status: 401 }
+      );
+    }
+
+    if (!session.organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'Organização não encontrada' },
+        { status: 400 }
+      );
+    }
+
+    // Check if instance exists and belongs to organization
+    const existingInstance = await prisma.whatsAppInstance.findFirst({
+      where: {
+        id,
+        organizationId: session.organizationId,
+      },
+    });
+
+    if (!existingInstance) {
+      return NextResponse.json(
+        { success: false, error: 'Instância não encontrada' },
+        { status: 404 }
+      );
+    }
+
+    const body: UpdateInstanceRequest = await request.json();
+    const updateData: Record<string, unknown> = {};
+
+    if (body.name !== undefined) updateData.name = body.name.trim();
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.qualityRating !== undefined) updateData.qualityRating = body.qualityRating;
+    if (body.verifiedName !== undefined) updateData.verifiedName = body.verifiedName.trim();
+
+    const instance = await prisma.whatsAppInstance.update({
+      where: { id },
+      data: updateData,
+    });
+
+    // Return sanitized instance
+    const sanitizedInstance = {
+      id: instance.id,
+      name: instance.name,
+      phoneNumber: instance.phoneNumber,
+      displayPhoneNumber: instance.displayPhoneNumber,
+      verifiedName: instance.verifiedName,
+      status: instance.status,
+      qualityRating: instance.qualityRating,
+      messagingLimit: instance.messagingLimit,
+      messagingTier: instance.messagingTier,
+      connectedAt: instance.connectedAt,
+      createdAt: instance.createdAt,
+      updatedAt: instance.updatedAt,
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: sanitizedInstance,
+    });
+  } catch (error) {
+    console.error('Error updating WhatsApp instance:', error);
+    return NextResponse.json(
+      { success: false, error: 'Falha ao atualizar instância' },
       { status: 500 }
     );
   }
@@ -81,14 +182,33 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
+    const session = await getSession();
+    
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Não autenticado' },
+        { status: 401 }
+      );
+    }
 
-    const instance = await prisma.whatsAppInstance.findUnique({
-      where: { id },
+    if (!session.organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'Organização não encontrada' },
+        { status: 400 }
+      );
+    }
+
+    // Check if instance exists and belongs to organization
+    const existingInstance = await prisma.whatsAppInstance.findFirst({
+      where: {
+        id,
+        organizationId: session.organizationId,
+      },
     });
 
-    if (!instance) {
+    if (!existingInstance) {
       return NextResponse.json(
-        { success: false, error: 'Instance not found' },
+        { success: false, error: 'Instância não encontrada' },
         { status: 404 }
       );
     }
@@ -99,68 +219,12 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Instance deleted successfully',
+      message: 'Instância removida com sucesso',
     });
   } catch (error) {
     console.error('Error deleting WhatsApp instance:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to delete instance' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * PATCH /api/whatsapp/instances/[id]
- * Update a WhatsApp instance
- */
-export async function PATCH(
-  request: NextRequest,
-  { params }: RouteParams
-): Promise<NextResponse> {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { name, status, qualityRating } = body;
-
-    const instance = await prisma.whatsAppInstance.findUnique({
-      where: { id },
-    });
-
-    if (!instance) {
-      return NextResponse.json(
-        { success: false, error: 'Instance not found' },
-        { status: 404 }
-      );
-    }
-
-    const updated = await prisma.whatsAppInstance.update({
-      where: { id },
-      data: {
-        ...(name && { name }),
-        ...(status && { status }),
-        ...(qualityRating && { qualityRating }),
-      },
-    });
-
-    // Return sanitized instance
-    const sanitizedInstance = {
-      id: updated.id,
-      name: updated.name,
-      phoneNumber: updated.phoneNumber,
-      status: updated.status,
-      qualityRating: updated.qualityRating,
-      updatedAt: updated.updatedAt,
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: sanitizedInstance,
-    });
-  } catch (error) {
-    console.error('Error updating WhatsApp instance:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to update instance' },
+      { success: false, error: 'Falha ao remover instância' },
       { status: 500 }
     );
   }

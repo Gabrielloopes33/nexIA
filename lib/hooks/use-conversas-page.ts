@@ -84,7 +84,7 @@ function mapConversation(apiConv: ApiConversation): Conversation {
       email: '',
       avatar: 'AG',
     } : null,
-    tags: [], // TODO: Adicionar tags na API
+    tags: apiConv.contact?.tags || [],
     lastMessage,
     unreadCount: 0, // TODO: Calcular não lidas
     messageCount: apiConv.messageCount,

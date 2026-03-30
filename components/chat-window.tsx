@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Send, Bot, User, Phone, MoreHorizontal, Clock, Tag, AlertCircle, Star, Loader2 } from "lucide-react"
+import { Send, Bot, User, Phone, MoreHorizontal, Clock, Tag, AlertCircle, Star, Loader2, X, Plus } from "lucide-react"
 import { cn, formatRelativeDate } from "@/lib/utils"
 import type { Conversation } from "@/lib/types/conversation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AssignConversationDialog } from "@/components/conversations/assign-conversation-dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useConversation } from "@/hooks/use-conversations"
 import { useConversationStream } from "@/hooks/use-conversation-stream"
 import { toast } from "sonner"
@@ -32,6 +33,10 @@ interface Props {
 export function ChatWindow({ conversation }: Props) {
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [tagPopoverOpen, setTagPopoverOpen] = useState(false)
+  const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([])
+  const [contactTags, setContactTags] = useState<{ id: string; name: string; color: string }[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
   
   // Busca mensagens reais da API
   const {
@@ -74,6 +79,57 @@ export function ChatWindow({ conversation }: Props) {
     
     if (!success) {
       toast.error("Erro ao enviar mensagem")
+    }
+  }
+
+  // Handlers de tags
+  const handleTagPopoverOpen = async (open: boolean) => {
+    setTagPopoverOpen(open)
+    if (open && conversation?.contactId) {
+      setTagsLoading(true)
+      try {
+        const [allTagsRes, contactTagsRes] = await Promise.all([
+          fetch('/api/tags?limit=100'),
+          fetch(`/api/contacts/${conversation.contactId}/tags`),
+        ])
+        const allTagsData = await allTagsRes.json()
+        const contactTagsData = await contactTagsRes.json()
+        if (allTagsData.success) setAvailableTags(allTagsData.data)
+        if (contactTagsData.success) setContactTags(contactTagsData.data)
+      } catch {
+        toast.error('Erro ao carregar tags')
+      } finally {
+        setTagsLoading(false)
+      }
+    }
+  }
+
+  const handleAddTag = async (tagId: string) => {
+    if (!conversation?.contactId) return
+    const res = await fetch(`/api/contacts/${conversation.contactId}/tags`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tagId }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      const tag = availableTags.find((t) => t.id === tagId)
+      if (tag) setContactTags((prev) => [...prev, tag])
+    } else {
+      toast.error(data.error || 'Erro ao adicionar tag')
+    }
+  }
+
+  const handleRemoveTag = async (tagId: string) => {
+    if (!conversation?.contactId) return
+    const res = await fetch(`/api/contacts/${conversation.contactId}/tags/${tagId}`, {
+      method: 'DELETE',
+    })
+    const data = await res.json()
+    if (data.success) {
+      setContactTags((prev) => prev.filter((t) => t.id !== tagId))
+    } else {
+      toast.error(data.error || 'Erro ao remover tag')
     }
   }
 
@@ -178,9 +234,65 @@ export function ChatWindow({ conversation }: Props) {
             conversationId={conversation.id}
             currentAssignee={conversation.assignedTo}
           />
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Tag className="h-4 w-4" />
-          </Button>
+          <Popover open={tagPopoverOpen} onOpenChange={handleTagPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Tag className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 p-3">
+              <p className="text-xs font-semibold text-foreground mb-2">Tags do contato</p>
+              {tagsLoading ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  {contactTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {contactTags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="flex items-center gap-1 bg-[#46347F]/10 text-[#46347F] rounded px-2 py-0.5 text-xs font-medium"
+                        >
+                          {tag.name}
+                          <button
+                            onClick={() => handleRemoveTag(tag.id)}
+                            className="hover:text-red-500 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className={contactTags.length > 0 ? "border-t pt-2" : ""}>
+                    <p className="text-[11px] text-muted-foreground mb-1.5">Adicionar tag</p>
+                    <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto">
+                      {availableTags.filter((t) => !contactTags.some((ct) => ct.id === t.id)).length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          Todas as tags já foram adicionadas
+                        </p>
+                      ) : (
+                        availableTags
+                          .filter((t) => !contactTags.some((ct) => ct.id === t.id))
+                          .map((tag) => (
+                            <button
+                              key={tag.id}
+                              onClick={() => handleAddTag(tag.id)}
+                              className="flex items-center gap-2 text-xs text-left px-2 py-1 rounded hover:bg-muted text-foreground transition-colors"
+                            >
+                              <Plus className="h-3 w-3 text-muted-foreground" />
+                              {tag.name}
+                            </button>
+                          ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </PopoverContent>
+          </Popover>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <Phone className="h-4 w-4" />
           </Button>

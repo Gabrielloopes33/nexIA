@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
               phone: true,
               avatarUrl: true,
               status: true,
+              tags: true,
             },
           }),
           prisma.message.findMany({

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { withRLS } from '@/lib/db/rls'
 import { getOrganizationId } from '@/lib/auth/helpers'
 import { sendTemplateMessage } from '@/lib/whatsapp/cloud-api'
+import { ensureLeadCapturado } from '@/lib/pipeline/lead-automation'
 
 export const maxDuration = 300
 
@@ -96,6 +97,38 @@ export async function POST(request: NextRequest, { params }: Params) {
               data: { sentCount: { increment: 1 }, pendingCount: { decrement: 1 } },
             })
           })
+
+          // Criar ou encontrar conversa + mensagem para o contato
+          try {
+            let existingConversation = await prisma.conversation.findFirst({
+              where: { contactId: contact.contactId, organizationId, status: 'active' },
+            })
+            if (!existingConversation) {
+              existingConversation = await prisma.conversation.create({
+                data: { organizationId, contactId: contact.contactId, status: 'active' },
+              })
+            }
+            await prisma.message.create({
+              data: {
+                conversationId: existingConversation.id,
+                contactId: contact.contactId,
+                content: campaign.templateName,
+                direction: 'OUTBOUND',
+                status: 'sent',
+                messageId: messageId || undefined,
+              },
+            })
+          } catch (convErr) {
+            console.error('Error creating conversation for campaign contact:', convErr)
+          }
+
+          // Criar deal em Lead Capturado (se o contato ainda não tiver deal aberto)
+          await ensureLeadCapturado(
+            organizationId,
+            contact.contactId,
+            contact.name || contact.phone,
+            campaign.createdBy
+          )
 
           sentCount++
         } catch (err: any) {
