@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
           audienceTags: audienceTags || [],
           totalContacts: contacts.length,
           pendingCount: contacts.length,
-          createdBy: user.id,
+          createdBy: user.userId,
           contacts: {
             create: contacts.map((c) => ({
               contactId: c.id,
