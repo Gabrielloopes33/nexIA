@@ -73,106 +73,106 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       duplicates: [],
     };
 
-    const importedContactIds: string[] = [];
+    const now = new Date();
 
-    const now = new Date().toISOString();
+    // Validar todos os contatos e coletar telefones com número de linha
+    interface ValidContact {
+      rowNumber: number;
+      contact: ContactImportData;
+      normalizedPhone: string;
+      fullName: string;
+      contactStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+      metadata: Record<string, string>;
+    }
+    const validContacts: ValidContact[] = [];
 
-    // Processar cada contato
     for (let i = 0; i < contacts.length; i++) {
       const contact = contacts[i] as ContactImportData;
       const rowNumber = i + 1;
 
-      try {
-        // Validação: nome é obrigatório
-        if (!contact.nome || contact.nome.trim() === '') {
-          result.errors.push({
-            row: rowNumber,
-            contact,
-            error: 'Nome é obrigatório',
-          });
-          continue;
-        }
-
-        // Validação: email deve ser válido (se fornecido)
-        if (contact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) {
-          result.errors.push({
-            row: rowNumber,
-            contact,
-            error: 'Email inválido',
-          });
-          continue;
-        }
-
-        // Normalizar telefone
-        const normalizedPhone = contact.telefone 
-          ? contact.telefone.replace(/\D/g, '')
-          : '';
-
-        // Verificar se contato já existe (por telefone)
-        if (normalizedPhone) {
-          const existingContact = await prisma.contact.findFirst({
-            where: { organizationId: orgId, phone: normalizedPhone },
-            select: { id: true },
-          });
-
-          if (existingContact) {
-            result.duplicates.push({
-              row: rowNumber,
-              contact,
-            });
-            continue;
-          }
-        }
-
-        // Combinar nome e sobrenome
-        const fullName = contact.sobrenome 
-          ? `${contact.nome.trim()} ${contact.sobrenome.trim()}`
-          : contact.nome.trim();
-
-        // Mapear status
-        let contactStatus: string = 'ACTIVE';
-        if (contact.status) {
-          const statusLower = contact.status.toLowerCase();
-          if (statusLower === 'ativo' || statusLower === 'active') {
-            contactStatus = 'ACTIVE';
-          } else if (statusLower === 'inativo' || statusLower === 'inactive') {
-            contactStatus = 'INACTIVE';
-          } else if (statusLower === 'bloqueado' || statusLower === 'blocked') {
-            contactStatus = 'BLOCKED';
-          }
-        }
-
-        // Montar metadata com campos extras
-        const metadata: Record<string, string> = {};
-        if (contact.cidade) metadata.cidade = contact.cidade;
-        if (contact.estado) metadata.estado = contact.estado;
-        if (contact.empresa) metadata.empresa = contact.empresa;
-        if (contact.cargo) metadata.cargo = contact.cargo;
-
-        // Inserir contato
-        const createdContact = await prisma.contact.create({
-          data: {
-            organizationId: orgId,
-            phone: normalizedPhone || `sem-telefone-${Date.now()}-${i}`,
-            name: fullName,
-            metadata: Object.keys(metadata).length > 0 ? metadata : {},
-            tags: [],
-            status: contactStatus as 'ACTIVE' | 'INACTIVE' | 'BLOCKED',
-            leadScore: 0,
-            lastInteractionAt: new Date(now),
-          },
-        });
-
-        importedContactIds.push(createdContact.id);
-        result.imported++;
-      } catch (error: any) {
-        console.error('[Import Contacts] Erro ao processar contato:', error);
-        result.errors.push({
-          row: rowNumber,
-          contact,
-          error: error.message || 'Erro desconhecido',
-        });
+      if (!contact.nome || contact.nome.trim() === '') {
+        result.errors.push({ row: rowNumber, contact, error: 'Nome é obrigatório' });
+        continue;
       }
+
+      if (contact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)) {
+        result.errors.push({ row: rowNumber, contact, error: 'Email inválido' });
+        continue;
+      }
+
+      const normalizedPhone = contact.telefone ? contact.telefone.replace(/\D/g, '') : '';
+
+      const fullName = contact.sobrenome
+        ? `${contact.nome.trim()} ${contact.sobrenome.trim()}`
+        : contact.nome.trim();
+
+      let contactStatus: 'ACTIVE' | 'INACTIVE' | 'BLOCKED' = 'ACTIVE';
+      if (contact.status) {
+        const s = contact.status.toLowerCase();
+        if (s === 'inativo' || s === 'inactive') contactStatus = 'INACTIVE';
+        else if (s === 'bloqueado' || s === 'blocked') contactStatus = 'BLOCKED';
+      }
+
+      const metadata: Record<string, string> = {};
+      if (contact.cidade) metadata.cidade = contact.cidade;
+      if (contact.estado) metadata.estado = contact.estado;
+      if (contact.empresa) metadata.empresa = contact.empresa;
+      if (contact.cargo) metadata.cargo = contact.cargo;
+
+      validContacts.push({ rowNumber, contact, normalizedPhone, fullName, contactStatus, metadata });
+    }
+
+    // Buscar todos os telefones existentes em uma única query
+    const phonesToCheck = validContacts
+      .map(v => v.normalizedPhone)
+      .filter(p => p.length > 0);
+
+    const existingPhones = new Set<string>();
+    if (phonesToCheck.length > 0) {
+      const existing = await prisma.contact.findMany({
+        where: { organizationId: orgId, phone: { in: phonesToCheck } },
+        select: { phone: true },
+      });
+      existing.forEach(c => existingPhones.add(c.phone));
+    }
+
+    // Separar duplicatas dos novos contatos
+    const toCreate: typeof validContacts = [];
+    for (const v of validContacts) {
+      if (v.normalizedPhone && existingPhones.has(v.normalizedPhone)) {
+        result.duplicates.push({ row: v.rowNumber, contact: v.contact });
+      } else {
+        toCreate.push(v);
+      }
+    }
+
+    // Inserir todos de uma vez com createMany
+    if (toCreate.length > 0) {
+      await prisma.contact.createMany({
+        data: toCreate.map((v, i) => ({
+          organizationId: orgId,
+          phone: v.normalizedPhone || `sem-telefone-${now.getTime()}-${i}`,
+          name: v.fullName,
+          metadata: Object.keys(v.metadata).length > 0 ? v.metadata : {},
+          tags: [],
+          status: v.contactStatus,
+          leadScore: 0,
+          lastInteractionAt: now,
+        })),
+        skipDuplicates: true,
+      });
+      result.imported = toCreate.length;
+    }
+
+    // Buscar IDs dos contatos criados para tags/listas
+    const createdPhones = toCreate.map(v => v.normalizedPhone).filter(p => p.length > 0);
+    const importedContactIds: string[] = [];
+    if (createdPhones.length > 0) {
+      const created = await prisma.contact.findMany({
+        where: { organizationId: orgId, phone: { in: createdPhones } },
+        select: { id: true },
+      });
+      importedContactIds.push(...created.map(c => c.id));
     }
 
     // Criar tag e/ou lista se solicitado e houver contatos importados
