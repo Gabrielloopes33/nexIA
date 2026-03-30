@@ -29,8 +29,6 @@ export function useWhatsAppPhoneNumbers(wabaId?: string): UseWhatsAppPhoneNumber
   const [error, setError] = useState<string | null>(null)
 
   const fetchPhoneNumbers = useCallback(async () => {
-    if (!wabaId) return
-    
     setIsLoading(true)
     setError(null)
     try {
@@ -48,14 +46,9 @@ export function useWhatsAppPhoneNumbers(wabaId?: string): UseWhatsAppPhoneNumber
   }, [fetchPhoneNumbers])
 
   const addNumber = useCallback(async (request: AddPhoneNumberRequest) => {
-    if (!wabaId) {
-      setError('WABA ID não disponível')
-      return
-    }
-    
     setIsLoading(true)
     try {
-      const newNumber = await addPhoneNumber(wabaId, request)
+      const newNumber = await addPhoneNumber(wabaId || 'default', request)
       setPhoneNumbers((prev) => [...prev, newNumber])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao adicionar número')
@@ -105,14 +98,9 @@ export function useWhatsAppPhoneNumbers(wabaId?: string): UseWhatsAppPhoneNumber
   }, [fetchPhoneNumbers])
 
   const setAsDefault = useCallback(async (phoneNumberId: string) => {
-    if (!wabaId) {
-      setError('WABA ID não disponível')
-      return
-    }
-    
     setIsLoading(true)
     try {
-      await setDefaultPhoneNumber(wabaId, phoneNumberId)
+      await setDefaultPhoneNumber(wabaId || 'default', phoneNumberId)
       // Update local state
       setPhoneNumbers((prev) =>
         prev.map((p) => ({

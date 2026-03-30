@@ -5,7 +5,6 @@ import { PhoneNumberCard } from "@/components/whatsapp/numeros/phone-number-card
 import { AddNumberDialog } from "@/components/whatsapp/numeros/add-number-dialog"
 import { QualityBadge } from "@/components/whatsapp/numeros/quality-badge"
 import { useWhatsAppPhoneNumbers } from "@/hooks/use-whatsapp-phone-numbers"
-import { useWhatsApp } from "@/hooks/use-whatsapp"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -17,14 +16,12 @@ import {
   CheckCircle2, 
   RefreshCw,
   Shield,
-  ArrowRight
 } from "lucide-react"
 import { QUALITY_COMPLIANCE_MESSAGES } from "@/lib/whatsapp/compliance-messages"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 export default function WhatsAppNumerosPage() {
-  const { account, status } = useWhatsApp()
   const { 
     phoneNumbers, 
     isLoading, 
@@ -34,30 +31,12 @@ export default function WhatsAppNumerosPage() {
     requestCode,
     setAsDefault,
     refreshNumbers,
-  } = useWhatsAppPhoneNumbers(account?.wabaId)
-
-  const isConnected = status === 'connected'
+  } = useWhatsAppPhoneNumbers()
 
   // Calculate stats
   const verifiedCount = phoneNumbers.filter(p => p.status === 'VERIFIED').length
   const defaultNumber = phoneNumbers.find(p => p.isDefault)
   const lowQualityNumbers = phoneNumbers.filter(p => p.qualityRating === 'RED' || p.qualityRating === 'YELLOW')
-
-  if (!isConnected) {
-    return (<>
-          <Alert className="border-amber-200 bg-amber-50">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-700">
-              Conecte sua conta WhatsApp Business para gerenciar números.{' '}
-              <Link href="/meta-api/whatsapp/connect" className="font-medium underline">
-                Conectar agora
-                <ArrowRight className="ml-1 inline-block h-3 w-3" />
-              </Link>
-            </AlertDescription>
-          </Alert>
-      </>
-    )
-  }
 
   return (<>
         {/* Header */}
@@ -156,7 +135,9 @@ export default function WhatsAppNumerosPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   Adicione seu primeiro número de telefone para começar
                 </p>
-                <AddNumberDialog onAdd={addNumber} disabled={isLoading} />
+                <div className="mt-4">
+                  <AddNumberDialog onAdd={addNumber} disabled={isLoading} />
+                </div>
               </CardContent>
             </Card>
           ) : (

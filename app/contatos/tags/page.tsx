@@ -28,37 +28,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Tag as TagIcon, Target, Bot, Filter, Loader2 } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Tag as TagIcon, Loader2 } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useTags, type Tag } from "@/hooks/use-tags"
 import { useOrganizationId } from "@/lib/contexts/organization-context"
-
-const UTM_SOURCES = [
-  { value: "google", label: "Google" },
-  { value: "facebook", label: "Facebook" },
-  { value: "instagram", label: "Instagram" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "email", label: "Email" },
-  { value: "direct", label: "Direto" },
-  { value: "referral", label: "Referência" },
-]
-
-const UTM_MEDIUMS = [
-  { value: "organic", label: "Orgânico" },
-  { value: "paid", label: "Pago" },
-  { value: "social", label: "Social" },
-  { value: "email", label: "Email" },
-  { value: "cpc", label: "CPC" },
-  { value: "display", label: "Display" },
-]
 
 export default function TagsPage() {
   const organizationId = useOrganizationId()
@@ -73,14 +46,10 @@ export default function TagsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
 
-  // Form state - adapted to use new Tag type
-  const [formData, setFormData] = useState<Partial<Tag> & { automatizacao?: boolean; utmSource?: string; utmMedium?: string; utmCampaign?: string }>({
+  // Form state - simplified: only name and color
+  const [formData, setFormData] = useState<Partial<Tag>>({
     name: "",
     color: "#46347F",
-    automatizacao: false,
-    utmSource: "",
-    utmMedium: "",
-    utmCampaign: "",
   })
 
   const filteredTags = tags.filter((tag) =>
@@ -92,17 +61,16 @@ export default function TagsPage() {
     setFormData({
       name: "",
       color: "#46347F",
-      automatizacao: false,
-      utmSource: "",
-      utmMedium: "",
-      utmCampaign: "",
     })
     setIsDialogOpen(true)
   }
 
   const handleEditTag = (tag: Tag) => {
     setEditingTag(tag)
-    setFormData({ ...tag })
+    setFormData({ 
+      name: tag.name,
+      color: tag.color,
+    })
     setIsDialogOpen(true)
   }
 
@@ -156,9 +124,6 @@ export default function TagsPage() {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Main Sidebar */}
       <Sidebar />
-
-      {/* Contacts Sub-Sidebar */}
-
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 min-w-0">
@@ -215,18 +180,14 @@ export default function TagsPage() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[250px]">Nome</TableHead>
-
                   <TableHead>Contatos</TableHead>
-                  <TableHead>Automação</TableHead>
-                  <TableHead>UTM Source</TableHead>
-                  <TableHead>UTM Medium</TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTags.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
                       Nenhuma tag encontrada
                     </TableCell>
                   </TableRow>
@@ -251,29 +212,8 @@ export default function TagsPage() {
                           </Badge>
                         </div>
                       </TableCell>
-
                       <TableCell>
                         <span className="text-sm">{tag._count?.contactTags || 0}</span>
-                      </TableCell>
-                      <TableCell>
-                        {tag.automatizacao ? (
-                          <div className="flex items-center gap-1.5 text-emerald-600">
-                            <Bot className="h-4 w-4" />
-                            <span className="text-xs font-medium">Sim</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Não</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {tag.utmSource || "-"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {tag.utmMedium || "-"}
-                        </span>
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -348,87 +288,6 @@ export default function TagsPage() {
                       style={{ backgroundColor: color }}
                     />
                   ))}
-                </div>
-              </div>
-
-              {/* Automation */}
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="flex items-center gap-2">
-                  <Bot className="h-4 w-4 text-[#46347F]" />
-                  <div>
-                    <p className="text-sm font-medium">Automação</p>
-                    <p className="text-xs text-muted-foreground">
-                      Ativar automações para esta tag
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={formData.automatizacao}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, automatizacao: checked })
-                  }
-                />
-              </div>
-
-              {/* UTM Section */}
-              <div className="space-y-3 rounded-lg border p-3">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-[#46347F]" />
-                  <p className="text-sm font-medium">Configuração UTM</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="utmSource">UTM Source</Label>
-                  <Select
-                    value={formData.utmSource}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, utmSource: value })
-                    }
-                  >
-                    <SelectTrigger id="utmSource">
-                      <SelectValue placeholder="Selecione a origem" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {UTM_SOURCES.map((source) => (
-                        <SelectItem key={source.value} value={source.value}>
-                          {source.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="utmMedium">UTM Medium</Label>
-                  <Select
-                    value={formData.utmMedium}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, utmMedium: value })
-                    }
-                  >
-                    <SelectTrigger id="utmMedium">
-                      <SelectValue placeholder="Selecione o meio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {UTM_MEDIUMS.map((medium) => (
-                        <SelectItem key={medium.value} value={medium.value}>
-                          {medium.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="utmCampaign">UTM Campaign</Label>
-                  <Input
-                    id="utmCampaign"
-                    value={formData.utmCampaign}
-                    onChange={(e) =>
-                      setFormData({ ...formData, utmCampaign: e.target.value })
-                    }
-                    placeholder="Ex: blackfriday2024"
-                  />
                 </div>
               </div>
             </div>
