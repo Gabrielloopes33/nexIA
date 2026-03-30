@@ -37,23 +37,7 @@ import {
 } from "lucide-react"
 import { TEMPLATE_COMPLIANCE_MESSAGES } from "@/lib/whatsapp/compliance-messages"
 import { cn } from "@/lib/utils"
-
-// Hook para pegar organizationId - simplificado para este exemplo
-function useOrganizationId(): string | undefined {
-  // Em produção, isso viria de um contexto de organização
-  // Por agora, vamos usar localStorage ou um valor padrão
-  const [orgId, setOrgId] = useState<string | undefined>(undefined)
-  
-  useEffect(() => {
-    // Tentar pegar do localStorage ou usar um mock
-    const saved = localStorage.getItem('current_organization_id')
-    if (saved) {
-      setOrgId(saved)
-    }
-  }, [])
-  
-  return orgId
-}
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 
 export default function WhatsAppTemplatesPage() {
   const organizationId = useOrganizationId()
