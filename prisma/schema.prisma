@@ -94,6 +94,8 @@ model WhatsAppInstance {
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 
+  webhookLogs         MetaWebhookLog[]
+
   @@map("whatsapp_cloud_instances")
 }
 
@@ -964,4 +966,25 @@ enum AudienceType {
   ALL
   BY_TAG
   MANUAL
+}
+
+/// MetaWebhookLog - Logs de eventos recebidos via webhook da Meta (WhatsApp/Instagram)
+model MetaWebhookLog {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId      String    @map("organization_id") @db.Uuid
+  whatsappInstanceId  String?   @map("whatsapp_instance_id") @db.Uuid
+  eventType           String?   @map("event_type") @db.VarChar(100)
+  payload             Json?
+  forwardedToN8n      Boolean   @default(false) @map("forwarded_to_n8n")
+  processed           Boolean   @default(false)
+  processedAt         DateTime? @map("processed_at")
+  errorMessage        String?   @map("error_message")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  whatsappInstance    WhatsAppInstance? @relation(fields: [whatsappInstanceId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("meta_webhook_logs")
 }

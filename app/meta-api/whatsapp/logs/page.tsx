@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,7 +19,7 @@ import {
   EVENT_TYPE_LABELS,
 } from '@/hooks/use-whatsapp-logs'
 import { useWhatsAppInstances } from '@/hooks/use-whatsapp-instances'
-import { useWhatsApp } from '@/hooks/use-whatsapp'
+import { useOrganizationId } from '@/lib/contexts/organization-context'
 import { 
   ScrollText, 
   AlertCircle, 
@@ -34,20 +34,6 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-// Hook para pegar organizationId
-function useOrganizationId(): string | undefined {
-  const [orgId, setOrgId] = useState<string | undefined>(undefined)
-  
-  useEffect(() => {
-    const saved = localStorage.getItem('current_organization_id')
-    if (saved) {
-      setOrgId(saved)
-    }
-  }, [])
-  
-  return orgId
-}
 
 // Stats Card Component
 interface StatCardProps {
@@ -217,8 +203,6 @@ function Pagination({ currentPage, totalPages, onPageChange, totalItems }: Pagin
 
 export default function WhatsAppLogsPage() {
   const organizationId = useOrganizationId()
-  const { status } = useWhatsApp()
-  const isConnected = status === 'connected'
 
   // Filtros
   const [selectedInstanceId, setSelectedInstanceId] = useState<string>('all')
@@ -227,11 +211,13 @@ export default function WhatsAppLogsPage() {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null)
 
   // Buscar instâncias
-  const { 
-    instances, 
+  const {
+    instances,
     isLoading: isLoadingInstances,
-    error: instancesError 
+    error: instancesError
   } = useWhatsAppInstances(organizationId)
+
+  const isConnected = instances.some(i => i.status === 'CONNECTED')
 
   // Converter status selecionado para boolean
   const processedFilter = selectedStatus === 'all' 

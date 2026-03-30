@@ -224,15 +224,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const handlers: WebhookEventHandlers = {
       onMessage: async ({ message, contact, phoneNumberId, timestamp }) => {
-        console.log('[Webhook] onMessage:', {
-          type: message.type,
-          from: message.from,
-          phoneNumberId,
-          messageId: message.id,
-        });
+        console.log('[Webhook] onMessage:', { type: message.type, from: message.from, phoneNumberId });
 
         try {
-          // Find the WhatsApp instance by phoneNumberId
           const instance = await prisma.whatsAppInstance.findFirst({
             where: { phoneNumberId },
           });
@@ -242,14 +236,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return;
           }
 
-          // Find or create contact
+          // Save log
+          await prisma.metaWebhookLog.create({
+            data: {
+              organizationId: instance.organizationId,
+              whatsappInstanceId: instance.id,
+              eventType: 'messages',
+              payload: { message, contact, phoneNumberId, timestamp } as Record<string, unknown>,
+              processed: true,
+              processedAt: new Date(),
+            },
+          });
+
           const contactRecord = await findOrCreateContact(
             instance.organizationId,
             message.from,
             contact?.profile?.name
           );
 
-          // Update contact last interaction
           await prisma.contact.update({
             where: { id: contactRecord.id },
             data: {
@@ -258,13 +262,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             },
           });
 
-          // Find or create conversation
           const conversation = await findOrCreateConversation(
             instance.organizationId,
             contactRecord.id
           );
 
-          // Create inbound message
           await prisma.message.create({
             data: {
               conversationId: conversation.id,
@@ -276,14 +278,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             },
           });
 
-          // Bump conversation updatedAt so it appears first in the list
           await prisma.conversation.update({
             where: { id: conversation.id },
             data: { unread_count: { increment: 1 } },
           });
 
           processedEvents.push(`message:${message.id}`);
-          console.log('[Webhook] Message saved successfully:', message.id);
+          console.log('[Webhook] Message saved:', message.id);
         } catch (error) {
           console.error('[Webhook] Error processing message:', error);
           throw error;
@@ -291,13 +292,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
 
       onStatus: async ({ status, phoneNumberId }) => {
-        console.log('[Webhook] onStatus:', {
-          messageId: status.id,
-          status: status.status,
-        });
+        console.log('[Webhook] onStatus:', { messageId: status.id, status: status.status });
 
         try {
-          // Find the WhatsApp instance
           const instance = await prisma.whatsAppInstance.findFirst({
             where: { phoneNumberId },
           });
@@ -307,21 +304,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return;
           }
 
-          // Map status to our values
+          // Save log
+          await prisma.metaWebhookLog.create({
+            data: {
+              organizationId: instance.organizationId,
+              whatsappInstanceId: instance.id,
+              eventType: 'statuses',
+              payload: { status, phoneNumberId } as Record<string, unknown>,
+              processed: true,
+              processedAt: new Date(),
+            },
+          });
+
           const statusMap: Record<string, string> = {
-            sent: 'sent',
-            delivered: 'delivered',
-            read: 'read',
-            failed: 'failed',
+            sent: 'sent', delivered: 'delivered', read: 'read', failed: 'failed',
           };
 
           const mappedStatus = statusMap[status.status];
-          if (!mappedStatus) {
-            console.log('[Webhook] Unknown status:', status.status);
-            return;
-          }
+          if (!mappedStatus) return;
 
-          // Update message status (only the status field exists in our schema)
           const existing = await prisma.message.findFirst({
             where: { messageId: status.id },
           });
@@ -332,9 +333,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
               data: { status: mappedStatus },
             });
             processedEvents.push(`status:${status.id}`);
-            console.log('[Webhook] Status updated:', status.id, mappedStatus);
-          } else {
-            console.log('[Webhook] Message not found for status update:', status.id);
           }
         } catch (error) {
           console.error('[Webhook] Error processing status:', error);
@@ -342,21 +340,44 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
       },
 
-      onTemplateUpdate: async ({ template }) => {
-        // Template status updates are logged only — no WhatsAppTemplate table exists yet
-        console.log('[Webhook] Template update received:', {
-          templateId: template.id,
-          newStatus: template.status_update?.new_status,
-        });
+      onTemplateUpdate: async ({ template, phoneNumberId }) => {
+        console.log('[Webhook] Template update:', { templateId: template.id, newStatus: template.status_update?.new_status });
+
+        const instance = await prisma.whatsAppInstance.findFirst({ where: { phoneNumberId } });
+        if (instance) {
+          await prisma.metaWebhookLog.create({
+            data: {
+              organizationId: instance.organizationId,
+              whatsappInstanceId: instance.id,
+              eventType: 'message_template_status_update',
+              payload: { template } as Record<string, unknown>,
+              processed: true,
+              processedAt: new Date(),
+            },
+          });
+        }
         processedEvents.push(`template:${template.id}`);
       },
 
-      onError: async ({ error }) => {
-        console.error('[Webhook] Error event received:', {
-          code: error.code,
-          title: error.title,
-          message: error.message,
-        });
+      onError: async ({ error, phoneNumberId }) => {
+        console.error('[Webhook] Error event:', { code: error.code, title: error.title });
+
+        const instance = phoneNumberId
+          ? await prisma.whatsAppInstance.findFirst({ where: { phoneNumberId } })
+          : null;
+
+        if (instance) {
+          await prisma.metaWebhookLog.create({
+            data: {
+              organizationId: instance.organizationId,
+              whatsappInstanceId: instance.id,
+              eventType: 'error',
+              payload: { error } as Record<string, unknown>,
+              processed: false,
+              errorMessage: error.message || String(error.code),
+            },
+          });
+        }
         processedEvents.push(`error:${error.code}`);
       },
     };
