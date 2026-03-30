@@ -56,9 +56,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Limitar número de contatos por requisição
-    if (contacts.length > 1000) {
+    if (contacts.length > 5000) {
       return NextResponse.json(
-        { success: false, error: 'Limite máximo de 1000 contatos por importação' },
+        { success: false, error: 'Limite máximo de 5000 contatos por importação' },
         { status: 400 }
       );
     }
