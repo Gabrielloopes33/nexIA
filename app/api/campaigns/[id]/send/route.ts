@@ -67,12 +67,17 @@ export async function POST(request: NextRequest, { params }: Params) {
 
       for (const contact of batch) {
         try {
+          // Only pass components that have actual parameter substitutions (not template structure)
+          const rawComponents = campaign.templateComponents as any[] | null | undefined
+          const sendComponents = Array.isArray(rawComponents)
+            ? rawComponents.filter((c: any) => Array.isArray(c?.parameters) && c.parameters.length > 0)
+            : undefined
           const result = await sendTemplateMessage({
             instance: { phoneNumberId: instance.phoneNumberId, accessToken: instance.accessToken } as any,
             to: contact.phone,
             templateName: campaign.templateName,
             language: campaign.templateLanguage,
-            components: campaign.templateComponents as any,
+            components: sendComponents?.length ? sendComponents : undefined,
           })
 
           if (!result.success) {
