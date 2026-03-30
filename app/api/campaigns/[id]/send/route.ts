@@ -67,16 +67,19 @@ export async function POST(request: NextRequest, { params }: Params) {
 
       for (const contact of batch) {
         try {
-          const result = await sendTemplateMessage(
-            instance.phoneNumberId!,
-            contact.phone,
-            campaign.templateName,
-            campaign.templateLanguage,
-            instance.accessToken!,
-            campaign.templateComponents as Record<string, unknown>[] | undefined
-          )
+          const result = await sendTemplateMessage({
+            instance: { phoneNumberId: instance.phoneNumberId, accessToken: instance.accessToken } as any,
+            to: contact.phone,
+            templateName: campaign.templateName,
+            language: campaign.templateLanguage,
+            components: campaign.templateComponents as any,
+          })
 
-          const messageId = result?.messages?.[0]?.id || null
+          if (!result.success) {
+            throw new Error(result.error || 'Send failed')
+          }
+
+          const messageId = result.messageId || null
 
           await withRLS(prisma, organizationId, async (tx) => {
             await tx.campaignContact.update({
