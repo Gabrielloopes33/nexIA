@@ -77,20 +77,8 @@ export const topNavItems: SidebarNavItem[] = [
   {
     key: "conversas",
     label: "Conversas",
+    href: "/conversas",
     icon: MessageSquare,
-    children: [
-      { label: "Todas", href: "/conversas", section: "Principal" },
-      { label: "Minhas", href: "/conversas/minhas", section: "Principal" },
-      { label: "Não Atribuídas", href: "/conversas/nao-atribuidas", section: "Principal" },
-      { label: "Não Atendidas", href: "/conversas/unattended", section: "Principal" },
-      { label: "Prioridade", href: "/conversas/folders/priority", section: "Pastas" },
-      { label: "Leads", href: "/conversas/folders/leads", section: "Pastas" },
-      { label: "Vendas", href: "/conversas/teams/sales", section: "Equipes" },
-      { label: "Suporte", href: "/conversas/teams/support", section: "Equipes" },
-      { label: "WhatsApp", href: "/conversas/channels/whatsapp", section: "Canais" },
-      { label: "Instagram", href: "/conversas/channels/instagram", section: "Canais" },
-      { label: "Chat Widget", href: "/conversas/channels/chat-widget", section: "Canais" },
-    ],
   },
   {
     key: "pipeline",

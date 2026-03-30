@@ -47,7 +47,7 @@ export interface Conversation {
   isWindowActive: boolean
   timeUntilWindowExpires: number
   createdAt: string
-  contact?: { id: string; name: string; phone: string; avatarUrl?: string; status: string }
+  contact?: { id: string; name: string; phone: string; avatarUrl?: string; status: string; tags?: string[] }
   instance?: { id: string; name: string; displayPhoneNumber?: string; verifiedName?: string }
   messages?: Message[]
 }

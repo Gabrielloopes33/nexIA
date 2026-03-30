@@ -40,6 +40,7 @@ async function enrichConversation(conv: any, organizationId: string) {
         phone: true,
         avatarUrl: true,
         status: true,
+        tags: true,
       },
     }),
     prisma.message.findMany({

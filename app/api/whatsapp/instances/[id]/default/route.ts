@@ -1,6 +1,6 @@
 /**
- * WhatsApp Instance Disconnect API Route
- * POST: Disconnect an instance (clear tokens, update status)
+ * WhatsApp Instance Default API Route
+ * POST: Set an instance as the default for the organization
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,14 +8,12 @@ import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth/session';
 
 interface RouteParams {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 /**
- * POST /api/whatsapp/instances/[id]/disconnect
- * Disconnect a WhatsApp instance
+ * POST /api/whatsapp/instances/[id]/default
+ * Set an instance as the default for the organization
  */
 export async function POST(
   request: NextRequest,
@@ -41,7 +39,7 @@ export async function POST(
 
     // Check if instance exists and belongs to organization
     const instance = await prisma.whatsAppInstance.findFirst({
-      where: { 
+      where: {
         id,
         organizationId: session.organizationId,
       },
@@ -54,37 +52,35 @@ export async function POST(
       );
     }
 
-    // Update instance to disconnected state
-    const updated = await prisma.whatsAppInstance.update({
-      where: { id },
-      data: {
-        status: 'DISCONNECTED',
-        accessToken: null,
-        connectedAt: null,
-      },
-    });
-
-    // Return sanitized instance
-    const sanitizedInstance = {
-      id: updated.id,
-      name: updated.name,
-      phoneNumber: updated.phoneNumber,
-      displayPhoneNumber: updated.displayPhoneNumber,
-      verifiedName: updated.verifiedName,
-      status: updated.status,
-      qualityRating: updated.qualityRating,
-      updatedAt: updated.updatedAt,
-    };
+    // Update instance status to CONNECTED if not already
+    if (instance.status !== 'CONNECTED') {
+      await prisma.whatsAppInstance.update({
+        where: { id },
+        data: {
+          status: 'CONNECTED',
+          connectedAt: new Date(),
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Instância desconectada com sucesso',
-      data: sanitizedInstance,
+      message: 'Número definido como padrão',
+      data: {
+        id: instance.id,
+        name: instance.name,
+        phoneNumber: instance.phoneNumber,
+        displayPhoneNumber: instance.displayPhoneNumber,
+        verifiedName: instance.verifiedName,
+        status: 'CONNECTED',
+        qualityRating: instance.qualityRating,
+        isDefault: true,
+      },
     });
   } catch (error) {
-    console.error('Error disconnecting WhatsApp instance:', error);
+    console.error('Error setting default WhatsApp instance:', error);
     return NextResponse.json(
-      { success: false, error: 'Falha ao desconectar instância' },
+      { success: false, error: 'Falha ao definir número padrão' },
       { status: 500 }
     );
   }

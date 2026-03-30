@@ -97,6 +97,30 @@ export async function POST(request: NextRequest, { params }: Params) {
             })
           })
 
+          // Criar ou encontrar conversa para o contato e registrar a mensagem enviada
+          try {
+            let existingConversation = await prisma.conversation.findFirst({
+              where: { contactId: contact.contactId, organizationId, status: 'active' },
+            })
+            if (!existingConversation) {
+              existingConversation = await prisma.conversation.create({
+                data: { organizationId, contactId: contact.contactId, status: 'active' },
+              })
+            }
+            await prisma.message.create({
+              data: {
+                conversationId: existingConversation.id,
+                contactId: contact.contactId,
+                content: campaign.templateName,
+                direction: 'OUTBOUND',
+                status: 'sent',
+                messageId: messageId || undefined,
+              },
+            })
+          } catch (convErr) {
+            console.error('Error creating conversation for campaign contact:', convErr)
+          }
+
           sentCount++
         } catch (err: any) {
           const errorMessage = err?.message || 'Send failed'
