@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma, upsertWhatsAppInstance, CreateInstanceInput } from '@/lib/db/whatsapp';
+import { prisma } from '@/lib/prisma';
+import { upsertWhatsAppInstance, CreateInstanceInput } from '@/lib/db/whatsapp';
 import {
   exchangeCodeForTokenEmbedded,
   exchangeCodeForToken,
