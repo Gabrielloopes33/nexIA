@@ -535,26 +535,31 @@ async function sendTemplateMessageInternal(
     }>;
   }>
 ): Promise<MessageResponse> {
-  return makeRequest(
-    `/${phoneNumberId}/messages`,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to,
-        type: 'template',
-        template: {
-          name: templateName,
-          language: {
-            code: languageCode,
-          },
-          components,
-        },
-      }),
+  const url = `${BASE_URL}/${phoneNumberId}/messages`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
     },
-    accessToken
-  );
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: languageCode },
+        ...(components && components.length > 0 ? { components } : {}),
+      },
+    }),
+  });
+  const json = await response.json() as MessageResponse & { error?: WhatsAppError };
+  if (!response.ok || json.error) {
+    if (json.error) handleApiError(json.error);
+    throw new WhatsAppApiError(response.status, 'Unknown error occurred', 'UnknownError');
+  }
+  return json;
 }
 
 /**
