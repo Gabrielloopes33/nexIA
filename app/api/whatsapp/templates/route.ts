@@ -48,7 +48,7 @@ function validateCreateBody(body: unknown): body is CreateTemplateRequest {
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const requestId = Math.random().toString(36).substring(7);
-  console.log(`[${requestId}] WhatsApp Templates API - GET request started`);
+  console.log(`[${requestId}] === WhatsApp Templates API - GET request started ===`);
   
   try {
     const { searchParams } = request.nextUrl;
@@ -79,7 +79,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       console.log(`[${requestId}] DB query where clause:`, where);
 
       try {
+        // Test database connection first
+        console.log(`[${requestId}] Testing DB connection...`);
+        await prisma.$connect();
+        console.log(`[${requestId}] DB connected successfully`);
+        
         const instance = await prisma.whatsAppInstance.findFirst({ where });
+        console.log(`[${requestId}] DB query completed`);
+        
         console.log(`[${requestId}] DB query result:`, instance ? { 
           id: instance.id, 
           hasAccessToken: !!instance.accessToken, 
@@ -110,6 +117,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         resolvedWabaId = instance.wabaId;
       } catch (dbError) {
         console.error(`[${requestId}] Database error:`, dbError);
+        console.error(`[${requestId}] Database error stack:`, dbError instanceof Error ? dbError.stack : 'No stack');
         return NextResponse.json(
           { success: false, error: 'Database error', details: dbError instanceof Error ? dbError.message : 'Unknown DB error' },
           { status: 500 }
@@ -168,6 +176,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const { code, message, type } = extractErrorDetails(error);
 
     console.error(`[${requestId}] WhatsApp List Templates Error:`, { code, message, type, error });
+    console.error(`[${requestId}] Error stack:`, error instanceof Error ? error.stack : 'No stack');
 
     if (error instanceof WhatsAppApiError) {
       return NextResponse.json(
@@ -180,6 +189,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { success: false, error: 'Failed to list templates', details: message },
       { status: 500 }
     );
+  } finally {
+    console.log(`[${requestId}] === Request completed ===`);
   }
 }
 
