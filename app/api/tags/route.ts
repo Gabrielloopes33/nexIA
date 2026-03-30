@@ -72,7 +72,7 @@
  *                 description: Nome da tag
  *               color:
  *                 type: string
- *                 description: Cor da tag em hex (ex: #6366f1)
+ *                 description: "Cor da tag em hex (ex: #6366f1)"
  *                 default: '#6366f1'
  *               description:
  *                 type: string
@@ -107,12 +107,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { 
-  getAuthenticatedUser, 
-  AuthError, 
-  createAuthErrorResponse 
+import {
+  getAuthenticatedUser,
+  AuthError,
+  createAuthErrorResponse
 } from '@/lib/auth/helpers';
-import { 
+import {
   withPermission
 } from '@/lib/auth/permissions';
 import { handleCorsPreflight, addCorsHeaders } from '@/lib/cors';
@@ -132,14 +132,14 @@ export async function OPTIONS(): Promise<NextResponse> {
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     console.log('[Tags API] GET request received');
-    
+
     // Busca usuário autenticado e depois a organização do banco
     // (pois o cookie pode estar desatualizado)
     const user = await getAuthenticatedUser();
     console.log('[Tags API] User authenticated:', user.userId, 'org:', user.organizationId);
-    
+
     let organizationId = user.organizationId;
-    
+
     // Se não tem organizationId no cookie, busca do banco
     if (!organizationId) {
       console.log('[Tags API] No org in cookie, fetching from DB...');
@@ -147,12 +147,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         where: { userId: user.userId, status: 'ACTIVE' },
         select: { organizationId: true },
       });
-      
+
       if (!membership) {
         console.log('[Tags API] No membership found');
         throw new AuthError('Usuário não possui organização', 403);
       }
-      
+
       organizationId = membership.organizationId;
       console.log('[Tags API] Found org in DB:', organizationId);
     }
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const where: Record<string, unknown> = { 
+    const where: Record<string, unknown> = {
       organizationId,
     };
 
@@ -197,11 +197,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         hasMore: offset + tags.length < total,
       },
     });
-    
+
     return addCorsHeaders(response);
   } catch (error) {
     console.error('[Tags GET] Error:', error);
-    
+
     if (error instanceof AuthError) {
       return addCorsHeaders(createAuthErrorResponse(error));
     }
@@ -210,7 +210,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { success: false, error: 'Failed to fetch tags' },
       { status: 500 }
     );
-    
+
     return addCorsHeaders(response);
   }
 }
@@ -226,8 +226,8 @@ export const POST = withPermission(
       console.log('[Tags API] POST - Member:', member.userId, 'Role:', member.role, 'Org:', member.organizationId);
       const body = await request.json();
       console.log('[Tags API] POST - Body:', body);
-      const { 
-        name, 
+      const {
+        name,
         color,
         description,
         source,
