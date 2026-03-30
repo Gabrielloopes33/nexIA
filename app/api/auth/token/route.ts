@@ -73,6 +73,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword } from '@/lib/auth/password';
 import { signToken } from '@/lib/auth/server';
+import { handleCorsPreflight, addCorsHeaders } from '@/lib/cors';
+
+/**
+ * OPTIONS /api/auth/token
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS(): Promise<NextResponse> {
+  return handleCorsPreflight();
+}
 
 /**
  * POST /api/auth/token
@@ -141,7 +150,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       expiresAt,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         token,
@@ -155,11 +164,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         expiresAt: new Date(expiresAt).toISOString(),
       },
     });
+    
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('[Auth Token] Error:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, error: 'Failed to generate token' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

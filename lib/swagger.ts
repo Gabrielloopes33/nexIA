@@ -1,6 +1,9 @@
 import { createSwaggerSpec } from 'next-swagger-doc';
 
-export const getApiDocs = () => {
+export const getApiDocs = (baseUrl?: string) => {
+  // Detecta o servidor base - usa o fornecido, ou env, ou localhost
+  const serverUrl = baseUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  
   const spec = createSwaggerSpec({
     apiFolder: 'app/api',
     definition: {
@@ -16,7 +19,11 @@ export const getApiDocs = () => {
       },
       servers: [
         {
-          url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
+          url: serverUrl,
+          description: 'Servidor atual',
+        },
+        {
+          url: 'http://localhost:3000/api',
           description: 'Servidor local',
         },
       ],

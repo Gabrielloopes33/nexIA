@@ -115,6 +115,15 @@ import {
 import { 
   withPermission
 } from '@/lib/auth/permissions';
+import { handleCorsPreflight, addCorsHeaders } from '@/lib/cors';
+
+/**
+ * OPTIONS /api/tags
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS(): Promise<NextResponse> {
+  return handleCorsPreflight();
+}
 
 /**
  * GET /api/tags
@@ -178,7 +187,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       prisma.tag.count({ where }),
     ]);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: tags,
       pagination: {
@@ -188,17 +197,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         hasMore: offset + tags.length < total,
       },
     });
+    
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('[Tags GET] Error:', error);
     
     if (error instanceof AuthError) {
-      return createAuthErrorResponse(error);
+      return addCorsHeaders(createAuthErrorResponse(error));
     }
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, error: 'Failed to fetch tags' },
       { status: 500 }
     );
+    
+    return addCorsHeaders(response);
   }
 }
 

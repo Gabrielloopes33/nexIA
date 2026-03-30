@@ -87,6 +87,15 @@ import {
   AuthError,
   createAuthErrorResponse,
 } from '@/lib/auth/helpers';
+import { handleCorsPreflight, addCorsHeaders } from '@/lib/cors';
+
+/**
+ * OPTIONS /api/contacts/by-phone/tags
+ * Handle CORS preflight requests
+ */
+export async function OPTIONS(): Promise<NextResponse> {
+  return handleCorsPreflight();
+}
 
 /**
  * POST /api/contacts/by-phone/tags
@@ -197,7 +206,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: true,
         data: {
@@ -211,11 +220,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
       { status: 201 }
     );
+    
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('Error adding tag to contact by phone:', error);
 
     if (error instanceof AuthError) {
-      return createAuthErrorResponse(error);
+      return addCorsHeaders(createAuthErrorResponse(error));
     }
 
     // Check for unique constraint violation
@@ -225,15 +236,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       'code' in error &&
       error.code === 'P2002'
     ) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, error: 'Tag already assigned to this contact' },
         { status: 409 }
       );
+      return addCorsHeaders(response);
     }
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, error: 'Failed to add tag to contact' },
       { status: 500 }
     );
+    
+    return addCorsHeaders(response);
   }
 }

@@ -430,14 +430,21 @@ export async function createTemplate(
   },
   accessToken: string
 ): Promise<{ id: string; status: string }> {
-  return makeRequest(
-    `/${wabaId}/message_templates`,
-    {
-      method: 'POST',
-      body: JSON.stringify(template),
+  const url = `${BASE_URL}/${wabaId}/message_templates`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
     },
-    accessToken
-  );
+    body: JSON.stringify(template),
+  });
+  const json = await response.json() as { id: string; status: string; error?: WhatsAppError };
+  if (!response.ok || json.error) {
+    if (json.error) handleApiError(json.error);
+    throw new WhatsAppApiError(response.status, 'Unknown error occurred', 'UnknownError');
+  }
+  return json;
 }
 
 /**

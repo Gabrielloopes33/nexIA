@@ -8,8 +8,12 @@ const SwaggerUI = dynamic(() => import('swagger-ui-react'), { ssr: false });
 
 export default function ApiDocsPage() {
   const [spec, setSpec] = useState(null);
+  const [url, setUrl] = useState('');
 
   useEffect(() => {
+    // Detecta a URL atual para exibir ao usuário
+    setUrl(window.location.origin);
+    
     fetch('/api/swagger')
       .then((res) => res.json())
       .then((data) => setSpec(data));
@@ -25,6 +29,9 @@ export default function ApiDocsPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <div className="bg-slate-900 text-white px-4 py-2 text-sm">
+        <span className="font-semibold">Servidor atual:</span> {url}/api
+      </div>
       <SwaggerUI spec={spec} docExpansion="list" />
     </div>
   );
