@@ -18,6 +18,12 @@ interface ContactImportData {
   cargo?: string;
   origem?: string;
   status?: string;
+  utmsource?: string;
+  utmmedium?: string;
+  utmcampaign?: string;
+  utmcontent?: string;
+  utmterm?: string;
+  facebook?: string;
 }
 
 interface ImportResult {
@@ -118,6 +124,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (contact.estado) metadata.estado = contact.estado;
       if (contact.empresa) metadata.empresa = contact.empresa;
       if (contact.cargo) metadata.cargo = contact.cargo;
+      if (contact.utmsource) metadata.utmsource = contact.utmsource;
+      if (contact.utmmedium) metadata.utmmedium = contact.utmmedium;
+      if (contact.utmcampaign) metadata.utmcampaign = contact.utmcampaign;
+      if (contact.utmcontent) metadata.utmcontent = contact.utmcontent;
+      if (contact.utmterm) metadata.utmterm = contact.utmterm;
+      if (contact.facebook) metadata.facebook = contact.facebook;
 
       validContacts.push({ rowNumber, contact, normalizedPhone, fullName, contactStatus, metadata });
     }

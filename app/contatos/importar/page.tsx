@@ -62,6 +62,12 @@ const SYSTEM_FIELDS = [
   { value: "cargo", label: "Cargo", required: false },
   { value: "origem", label: "Origem", required: false },
   { value: "status", label: "Status", required: false },
+  { value: "utmsource", label: "UTM Source", required: false },
+  { value: "utmmedium", label: "UTM Medium", required: false },
+  { value: "utmcampaign", label: "UTM Campaign", required: false },
+  { value: "utmcontent", label: "UTM Content", required: false },
+  { value: "utmterm", label: "UTM Term", required: false },
+  { value: "facebook", label: "Facebook ID", required: false },
   { value: "ignore", label: "Ignorar coluna", required: false },
 ]
 
