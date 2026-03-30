@@ -11,7 +11,6 @@ import {
   Headphones,
   ListTodo,
   Phone,
-  Megaphone,
 } from "lucide-react"
 
 export interface SidebarNavChild {
@@ -100,12 +99,6 @@ export const topNavItems: SidebarNavItem[] = [
     icon: BarChart3,
   },
   {
-    key: "campanhas",
-    label: "Campanhas",
-    href: "/campanhas",
-    icon: Megaphone,
-  },
-  {
     key: "agendamentos",
     label: "Agendamentos",
     icon: Calendar,
@@ -126,6 +119,7 @@ export const topNavItems: SidebarNavItem[] = [
       { label: "Instagram", href: "/meta-api/instagram", section: "APIs" },
       { label: "Conectar", href: "/meta-api/whatsapp/connect", section: "WhatsApp" },
       { label: "Templates", href: "/meta-api/whatsapp/templates", section: "WhatsApp" },
+      { label: "Campanhas", href: "/campanhas", section: "WhatsApp" },
       { label: "Números", href: "/meta-api/whatsapp/numeros", section: "WhatsApp" },
       { label: "Analytics", href: "/meta-api/whatsapp/analytics", section: "WhatsApp" },
       { label: "Enviar Mensagens", href: "/meta-api/whatsapp/send", section: "WhatsApp" },
