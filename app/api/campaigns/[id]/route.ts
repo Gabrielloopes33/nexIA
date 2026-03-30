@@ -38,6 +38,50 @@ export async function GET(request: NextRequest, { params }: Params) {
   }
 }
 
+export async function PATCH(request: NextRequest, { params }: Params) {
+  try {
+    const organizationId = await getOrganizationId()
+    const { id } = await params
+    const body = await request.json()
+
+    if (body.status !== 'DRAFT') {
+      return NextResponse.json({ success: false, error: 'Only reset to DRAFT is supported' }, { status: 400 })
+    }
+
+    const campaign = await withRLS(prisma, organizationId, async (tx) => {
+      return tx.campaign.findFirst({ where: { id, organizationId } })
+    })
+
+    if (!campaign) {
+      return NextResponse.json({ success: false, error: 'Campaign not found' }, { status: 404 })
+    }
+
+    // Reseta campanha e todos os contatos de volta para PENDING
+    await withRLS(prisma, organizationId, async (tx) => {
+      await tx.campaignContact.updateMany({
+        where: { campaignId: id },
+        data: { status: 'PENDING', externalMessageId: null, sentAt: null, failedAt: null, errorMessage: null },
+      })
+      return tx.campaign.update({
+        where: { id },
+        data: {
+          status: 'DRAFT',
+          startedAt: null,
+          completedAt: null,
+          sentCount: 0,
+          failedCount: 0,
+          pendingCount: campaign.totalContacts,
+        },
+      })
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('PATCH /api/campaigns/[id] error:', error)
+    return NextResponse.json({ success: false, error: 'Failed to reset campaign' }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     const organizationId = await getOrganizationId()
