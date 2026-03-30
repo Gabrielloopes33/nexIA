@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { withRLS } from '@/lib/db/rls'
 import { getOrganizationId } from '@/lib/auth/helpers'
 import { sendTemplateMessage } from '@/lib/whatsapp/cloud-api'
-import { ensureLeadCapturado } from '@/lib/pipeline/lead-automation'
+import { ensureLeadCapturado, ensureCampaignTag } from '@/lib/pipeline/lead-automation'
 
 export const maxDuration = 300
 
@@ -129,6 +129,9 @@ export async function POST(request: NextRequest, { params }: Params) {
             contact.name || contact.phone,
             campaign.createdBy
           )
+
+          // Adicionar tag de campanha ao contato
+          await ensureCampaignTag(organizationId, contact.contactId, 'NR1_Disparo Feito', campaign.createdBy)
 
           sentCount++
         } catch (err: any) {

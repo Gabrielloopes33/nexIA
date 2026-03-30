@@ -87,6 +87,55 @@ export async function ensureLeadCapturado(
 }
 
 /**
+ * Garante que a tag de campanha existe para a organização e está atribuída ao contato.
+ * Cria a tag se não existir. Silenciosamente ignora se o contato já tem a tag.
+ */
+export async function ensureCampaignTag(
+  organizationId: string,
+  contactId: string,
+  tagName: string = 'NR1_Disparo Feito',
+  assignedBy?: string
+): Promise<void> {
+  try {
+    // Find or create the tag
+    const tag = await prisma.tag.upsert({
+      where: { organizationId_name: { organizationId, name: tagName } },
+      update: {},
+      create: {
+        organizationId,
+        name: tagName,
+        color: '#f59e0b',
+        source: 'campanha',
+      },
+    })
+
+    // Assign tag to contact (ignore if already assigned)
+    const existing = await prisma.contactTag.findUnique({
+      where: { contactId_tagId: { contactId, tagId: tag.id } },
+    })
+
+    if (!existing) {
+      await prisma.contactTag.create({
+        data: { contactId, tagId: tag.id, assignedBy: assignedBy ?? null },
+      })
+
+      // Also keep the legacy String[] array in sync
+      const contact = await prisma.contact.findUnique({ where: { id: contactId }, select: { tags: true } })
+      if (contact && !contact.tags.includes(tagName)) {
+        await prisma.contact.update({
+          where: { id: contactId },
+          data: { tags: [...contact.tags, tagName] },
+        })
+      }
+    }
+
+    console.log('[LeadAutomation] Tag atribuída ao contato:', { contactId, tagName })
+  } catch (err) {
+    console.error('[LeadAutomation] Erro ao atribuir tag de campanha:', err)
+  }
+}
+
+/**
  * Promove o deal aberto do contato de "Lead Capturado" (1ª etapa) para "Lead Engajado" (2ª etapa).
  * Só move se o deal estiver exatamente na 1ª etapa — não faz downgrade.
  */
