@@ -1,16 +1,28 @@
 "use client"
 
-import { CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw } from "lucide-react"
+import { CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw, PowerOff } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useWhatsAppInstances } from "@/hooks/use-whatsapp-instances"
 import { useOrganizationId } from "@/lib/contexts/organization-context"
 import { cn } from "@/lib/utils"
+import { useState } from "react"
 
 export function ConnectionStatusCard() {
   const orgId = useOrganizationId()
   const { connectedInstances, instances, isLoading, refresh } = useWhatsAppInstances(orgId)
+  const [disconnecting, setDisconnecting] = useState<string | null>(null)
+
+  async function handleDisconnect(instanceId: string) {
+    setDisconnecting(instanceId)
+    try {
+      await fetch(`/api/whatsapp/instances/${instanceId}/disconnect`, { method: 'POST' })
+      await refresh()
+    } finally {
+      setDisconnecting(null)
+    }
+  }
 
   const hasConnected = connectedInstances.length > 0
   const officialConnected = connectedInstances.filter(i => i.type === 'OFFICIAL')
@@ -59,11 +71,26 @@ export function ConnectionStatusCard() {
             <p className="text-sm text-muted-foreground">{config.description}</p>
 
             {officialConnected.length > 0 && (
-              <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
+              <div className="rounded-md bg-muted/50 p-3 text-sm space-y-2">
                 {officialConnected.map((inst) => (
-                  <div key={inst.id}>
-                    <p><span className="font-medium">Número:</span> {inst.displayPhoneNumber || inst.phoneNumber}</p>
-                    {inst.verifiedName && <p><span className="font-medium">Nome:</span> {inst.verifiedName}</p>}
+                  <div key={inst.id} className="flex items-center justify-between gap-2">
+                    <div>
+                      <p><span className="font-medium">Número:</span> {inst.displayPhoneNumber || inst.phoneNumber}</p>
+                      {inst.verifiedName && <p><span className="font-medium">Nome:</span> {inst.verifiedName}</p>}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDisconnect(inst.id)}
+                      disabled={disconnecting === inst.id}
+                      className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                    >
+                      {disconnecting === inst.id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <PowerOff className="h-3.5 w-3.5" />
+                      }
+                      Desconectar
+                    </Button>
                   </div>
                 ))}
               </div>
