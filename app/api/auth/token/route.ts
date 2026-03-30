@@ -121,8 +121,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Fetch user credentials
+    const credential = await prisma.userCredential.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (!credential) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
+
     // Verify password
-    const isValidPassword = await verifyPassword(password, user.passwordHash);
+    const isValidPassword = await verifyPassword(password, credential.passwordHash);
 
     if (!isValidPassword) {
       return NextResponse.json(
@@ -164,7 +176,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         expiresAt: new Date(expiresAt).toISOString(),
       },
     });
-    
+
     return addCorsHeaders(response);
   } catch (error) {
     console.error('[Auth Token] Error:', error);
