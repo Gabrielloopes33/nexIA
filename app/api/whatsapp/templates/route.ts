@@ -146,8 +146,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     try {
       const result = await listTemplates(resolvedWabaId, resolvedAccessToken, limit, after);
+      console.log(`[${requestId}] Meta API raw response:`, JSON.stringify(result, null, 2));
+      
+      // Verificar se result.data existe e é um array
+      if (!result || !result.data || !Array.isArray(result.data)) {
+        console.log(`[${requestId}] No templates found or invalid response structure. Returning empty array.`);
+        return NextResponse.json({
+          success: true,
+          data: {
+            templates: [],
+            pagination: null,
+            source: 'meta_api',
+          },
+        });
+      }
+      
       console.log(`[${requestId}] Meta API response:`, { 
-        templateCount: result.data?.length || 0,
+        templateCount: result.data.length,
         hasPaging: !!result.paging 
       });
 
@@ -190,6 +205,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { status: 500 }
     );
   } finally {
+    // Desconectar do banco para liberar conexões no ambiente serverless
+    try {
+      await prisma.$disconnect();
+      console.log(`[${requestId}] DB disconnected`);
+    } catch (e) {
+      console.error(`[${requestId}] Error disconnecting from DB:`, e);
+    }
     console.log(`[${requestId}] === Request completed ===`);
   }
 }
