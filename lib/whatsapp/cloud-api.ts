@@ -376,8 +376,31 @@ export async function listTemplates(
   if (after) {
     endpoint += `&after=${after}`;
   }
-  
-  return makeRequest(endpoint, { method: 'GET' }, accessToken);
+
+  const url = `${BASE_URL}${endpoint}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  const json = await response.json() as {
+    data?: Template[];
+    paging?: { cursors: { before: string; after: string } };
+    error?: WhatsAppError;
+  };
+
+  if (!response.ok || json.error) {
+    if (json.error) handleApiError(json.error);
+    throw new WhatsAppApiError(response.status, 'Unknown error occurred', 'UnknownError');
+  }
+
+  return {
+    data: json.data || [],
+    paging: json.paging,
+  };
 }
 
 /**
