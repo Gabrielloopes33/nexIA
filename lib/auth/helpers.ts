@@ -70,9 +70,20 @@ async function getTokenFromCookie(): Promise<string | null> {
 
 /**
  * Extrai o token do request (para uso em middleware ou API routes com request)
+ * Suporta cookie 'nexia_session' ou header Authorization (Bearer token)
  */
 function getTokenFromRequest(req: NextRequest): string | null {
-  return req.cookies.get('nexia_session')?.value ?? null
+  // Primeiro tenta pegar do cookie
+  const cookieToken = req.cookies.get('nexia_session')?.value
+  if (cookieToken) return cookieToken
+
+  // Se não achou no cookie, tenta pegar do header Authorization
+  const authHeader = req.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.slice(7) // Remove 'Bearer ' do início
+  }
+
+  return null
 }
 
 /**
