@@ -47,6 +47,9 @@ function validateCreateBody(body: unknown): body is CreateTemplateRequest {
  * List templates from Meta API using instance credentials
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[${requestId}] WhatsApp Templates API - GET request started`);
+  
   try {
     const { searchParams } = request.nextUrl;
 
@@ -55,36 +58,70 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const accessToken = searchParams.get('accessToken');
     const wabaId = searchParams.get('wabaId');
 
+    console.log(`[${requestId}] Query params:`, { 
+      instanceId, 
+      organizationId, 
+      hasAccessToken: !!accessToken, 
+      hasWabaId: !!wabaId 
+    });
+
     let resolvedAccessToken = accessToken;
     let resolvedWabaId = wabaId;
 
     // If instanceId or organizationId provided, look up credentials from DB
     if (instanceId || organizationId) {
+      console.log(`[${requestId}] Looking up instance in DB...`);
+      
       const where = instanceId
         ? { id: instanceId }
         : { organizationId: organizationId! };
 
-      const instance = await prisma.whatsAppInstance.findFirst({ where });
+      console.log(`[${requestId}] DB query where clause:`, where);
 
-      if (!instance) {
+      try {
+        const instance = await prisma.whatsAppInstance.findFirst({ where });
+        console.log(`[${requestId}] DB query result:`, instance ? { 
+          id: instance.id, 
+          hasAccessToken: !!instance.accessToken, 
+          hasWabaId: !!instance.wabaId,
+          wabaId: instance.wabaId
+        } : 'Instance not found');
+
+        if (!instance) {
+          console.error(`[${requestId}] Instance not found`);
+          return NextResponse.json(
+            { success: false, error: 'Instance not found' },
+            { status: 404 }
+          );
+        }
+
+        if (!instance.accessToken || !instance.wabaId) {
+          console.error(`[${requestId}] Instance missing credentials`, { 
+            hasAccessToken: !!instance.accessToken, 
+            hasWabaId: !!instance.wabaId 
+          });
+          return NextResponse.json(
+            { success: false, error: 'Instance is missing credentials' },
+            { status: 400 }
+          );
+        }
+
+        resolvedAccessToken = instance.accessToken;
+        resolvedWabaId = instance.wabaId;
+      } catch (dbError) {
+        console.error(`[${requestId}] Database error:`, dbError);
         return NextResponse.json(
-          { success: false, error: 'Instance not found' },
-          { status: 404 }
+          { success: false, error: 'Database error', details: dbError instanceof Error ? dbError.message : 'Unknown DB error' },
+          { status: 500 }
         );
       }
-
-      if (!instance.accessToken || !instance.wabaId) {
-        return NextResponse.json(
-          { success: false, error: 'Instance is missing credentials' },
-          { status: 400 }
-        );
-      }
-
-      resolvedAccessToken = instance.accessToken;
-      resolvedWabaId = instance.wabaId;
     }
 
     if (!resolvedAccessToken || !resolvedWabaId) {
+      console.error(`[${requestId}] Missing credentials`, { 
+        hasAccessToken: !!resolvedAccessToken, 
+        hasWabaId: !!resolvedWabaId 
+      });
       return NextResponse.json(
         {
           success: false,
@@ -97,29 +134,40 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const limit = parseInt(searchParams.get('limit') || '100', 10);
     const after = searchParams.get('after') || undefined;
 
-    const result = await listTemplates(resolvedWabaId, resolvedAccessToken, limit, after);
+    console.log(`[${requestId}] Calling Meta API listTemplates with wabaId: ${resolvedWabaId}, limit: ${limit}`);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        templates: result.data.map((template) => ({
-          id: template.id,
-          name: template.name,
-          language: template.language,
-          status: template.status,
-          category: template.category,
-          components: template.components,
-        })),
-        pagination: result.paging
-          ? { cursors: result.paging.cursors }
-          : null,
-        source: 'meta_api',
-      },
-    });
+    try {
+      const result = await listTemplates(resolvedWabaId, resolvedAccessToken, limit, after);
+      console.log(`[${requestId}] Meta API response:`, { 
+        templateCount: result.data?.length || 0,
+        hasPaging: !!result.paging 
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          templates: result.data.map((template) => ({
+            id: template.id,
+            name: template.name,
+            language: template.language,
+            status: template.status,
+            category: template.category,
+            components: template.components,
+          })),
+          pagination: result.paging
+            ? { cursors: result.paging.cursors }
+            : null,
+          source: 'meta_api',
+        },
+      });
+    } catch (apiError) {
+      console.error(`[${requestId}] Meta API error:`, apiError);
+      throw apiError;
+    }
   } catch (error) {
     const { code, message, type } = extractErrorDetails(error);
 
-    console.error('WhatsApp List Templates Error:', { code, message, type });
+    console.error(`[${requestId}] WhatsApp List Templates Error:`, { code, message, type, error });
 
     if (error instanceof WhatsAppApiError) {
       return NextResponse.json(
@@ -129,7 +177,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json(
-      { success: false, error: 'Failed to list templates' },
+      { success: false, error: 'Failed to list templates', details: message },
       { status: 500 }
     );
   }
