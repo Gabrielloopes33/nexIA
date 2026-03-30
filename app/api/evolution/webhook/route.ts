@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
+import { promoteToLeadEngajado } from '@/lib/pipeline/lead-automation';
 
 interface WebhookEvent {
   event: string;
@@ -312,6 +313,9 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
     });
 
     console.log('[Evolution Webhook] Saved inbound message:', savedMessage.id);
+
+    // Automação CRM: lead respondeu → promove para Lead Engajado
+    await promoteToLeadEngajado(organizationId, contact.id);
   } catch (error) {
     console.error('[Evolution Webhook] Error saving inbound message:', error);
     throw error;

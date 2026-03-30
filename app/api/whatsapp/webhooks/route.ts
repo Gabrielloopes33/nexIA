@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { promoteToLeadEngajado } from '@/lib/pipeline/lead-automation';
 import {
   validateWebhookSignature,
   verifyWebhookChallenge,
@@ -283,6 +284,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             where: { id: conversation.id },
             data: { unread_count: { increment: 1 } },
           });
+
+          // Automação CRM: lead respondeu → promove para Lead Engajado
+          await promoteToLeadEngajado(instance.organizationId, contactRecord.id);
 
           processedEvents.push(`message:${message.id}`);
           console.log('[Webhook] Message saved:', message.id);
