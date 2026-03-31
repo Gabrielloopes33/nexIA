@@ -133,8 +133,16 @@ export function ChatWindow({ conversation }: Props) {
     }
   }
 
-  // Handler para tecla Enter
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+    e.target.style.height = 'auto'
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`
+  }
+
+  // Enter envia, Shift+Enter cria nova linha
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -396,14 +404,17 @@ export function ChatWindow({ conversation }: Props) {
 
       {/* Input area */}
       <div className="border-t border-border px-4 py-3">
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-2.5 focus-within:ring-2 focus-within:ring-[#7C3AED]/30">
-          <input
+        <div className="flex items-end gap-3 rounded-xl border border-border bg-background px-4 py-2.5 focus-within:ring-2 focus-within:ring-[#7C3AED]/30">
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
-            placeholder="Digite sua mensagem..."
+            placeholder="Digite sua mensagem... (Shift+Enter para nova linha)"
             disabled={isSending}
-            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
+            className="flex-1 min-w-0 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 leading-5 overflow-y-auto overflow-x-hidden"
+            style={{ maxHeight: '160px' }}
           />
           <button
             onClick={handleSend}

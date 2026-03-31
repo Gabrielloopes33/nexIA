@@ -146,8 +146,7 @@ function readCsvRows(filePath: string): Record<string, string>[] {
   }
 
   const buffer = fs.readFileSync(absolutePath);
-  const csvString = buffer.toString('latin1');
-  const workbook = XLSX.read(csvString, { type: 'string', raw: true });
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) {
     throw new Error('CSV vazio ou sem abas');
