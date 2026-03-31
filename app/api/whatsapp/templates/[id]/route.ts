@@ -4,36 +4,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import {
   deleteTemplate,
   WhatsAppApiError,
   extractErrorDetails,
 } from '@/lib/whatsapp/cloud-api';
 
-interface DeleteTemplateRequest {
-  accessToken: string;
-  wabaId: string;
-  confirm?: boolean;
-}
-
-function validateDeleteBody(body: unknown): body is DeleteTemplateRequest {
-  if (typeof body !== 'object' || body === null) {
-    return false;
-  }
-
-  const { accessToken, wabaId } = body as Record<string, unknown>;
-
-  return (
-    typeof accessToken === 'string' &&
-    accessToken.length > 0 &&
-    typeof wabaId === 'string' &&
-    wabaId.length > 0
-  );
-}
-
 /**
  * DELETE /api/whatsapp/templates/[id]
- * Delete a message template
+ * Delete a message template by name.
+ * Body: { instanceId: string }
  */
 export async function DELETE(
   request: NextRequest,
@@ -44,48 +25,45 @@ export async function DELETE(
 
     if (!templateName) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Template name is required',
-        },
+        { success: false, error: 'Template name is required' },
         { status: 400 }
       );
     }
 
     const body = await request.json();
+    const { instanceId } = body as Record<string, unknown>;
 
-    if (!validateDeleteBody(body)) {
+    if (typeof instanceId !== 'string' || !instanceId) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid request body. Required: accessToken (string), wabaId (string). Optional: confirm (boolean)',
-        },
+        { success: false, error: 'Invalid request body. Required: instanceId (string)' },
         { status: 400 }
       );
     }
 
-    const { accessToken, wabaId, confirm } = body;
+    const instance = await prisma.whatsAppInstance.findUnique({
+      where: { id: instanceId },
+      select: { accessToken: true, wabaId: true },
+    });
 
-    // Require explicit confirmation
-    if (confirm !== true) {
+    if (!instance) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Confirmation required. Set confirm: true to delete this template',
-        },
+        { success: false, error: 'Instance not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!instance.accessToken || !instance.wabaId) {
+      return NextResponse.json(
+        { success: false, error: 'Instance is missing credentials' },
         { status: 400 }
       );
     }
 
-    await deleteTemplate(wabaId, templateName, accessToken);
+    await deleteTemplate(instance.wabaId, templateName, instance.accessToken);
 
     return NextResponse.json({
       success: true,
-      data: {
-        deleted: true,
-        templateName,
-        message: 'Template deleted successfully',
-      },
+      data: { deleted: true, templateName, message: 'Template deleted successfully' },
     });
   } catch (error) {
     const { code, message, type } = extractErrorDetails(error);
@@ -94,21 +72,13 @@ export async function DELETE(
 
     if (error instanceof WhatsAppApiError) {
       return NextResponse.json(
-        {
-          success: false,
-          error: message,
-          errorCode: code,
-          errorType: type,
-        },
+        { success: false, error: message, errorCode: code, errorType: type },
         { status: code >= 400 && code < 500 ? code : 500 }
       );
     }
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to delete template',
-      },
+      { success: false, error: 'Failed to delete template' },
       { status: 500 }
     );
   }

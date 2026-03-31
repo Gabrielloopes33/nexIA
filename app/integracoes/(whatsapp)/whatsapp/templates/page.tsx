@@ -13,13 +13,14 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { 
   FileText, 
@@ -89,6 +90,21 @@ export default function WhatsAppTemplatesPage() {
   const handleSync = async () => {
     if (!selectedInstanceId) return
     await syncTemplates(selectedInstanceId)
+  }
+
+  const handleDelete = async (templateName: string) => {
+    const res = await fetch(`/api/whatsapp/templates/${encodeURIComponent(templateName)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instanceId: selectedInstanceId }),
+    })
+    const data = await res.json()
+    if (!data.success) {
+      toast.error(data.error || 'Erro ao excluir template')
+      throw new Error(data.error)
+    }
+    toast.success(`Template "${templateName}" excluído com sucesso`)
+    if (selectedInstanceId) await loadTemplates(selectedInstanceId)
   }
 
   const selectedInstance = instances.find(i => i.id === selectedInstanceId)
@@ -398,12 +414,7 @@ export default function WhatsAppTemplatesPage() {
                       <TemplateCard
                         key={template.id}
                         template={template}
-                        onDelete={async () => {
-                          // Recarregar templates após deletar
-                          if (selectedInstanceId) {
-                            await loadTemplates(selectedInstanceId)
-                          }
-                        }}
+                        onDelete={handleDelete}
                       />
                     ))}
                   </div>

@@ -1,9 +1,21 @@
 "use client"
 
-import { FileText, Globe, ChevronRight, Trash2, RefreshCw } from "lucide-react"
+import { useState } from "react"
+import { FileText, Globe, ChevronRight, Trash2, RefreshCw, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   Collapsible,
   CollapsibleContent,
@@ -16,12 +28,24 @@ import { cn } from "@/lib/utils"
 
 interface TemplateCardProps {
   template: WhatsAppTemplate
-  onDelete?: (id: string) => void
+  onDelete?: (name: string) => Promise<void>
   onSync?: (id: string) => void
   isSyncing?: boolean
 }
 
 export function TemplateCard({ template, onDelete, onSync, isSyncing }: TemplateCardProps) {
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!onDelete) return
+    setIsDeleting(true)
+    try {
+      await onDelete(template.name)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const bodyComponent = template.components.find(c => c.type === 'BODY')
   const headerComponent = template.components.find(c => c.type === 'HEADER')
   const footerComponent = template.components.find(c => c.type === 'FOOTER')
@@ -183,16 +207,41 @@ export function TemplateCard({ template, onDelete, onSync, isSyncing }: Template
             )}
           </div>
           
-          {template.status !== 'PENDING' && onDelete && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 gap-1.5"
-              onClick={() => onDelete(template.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Excluir
-            </Button>
+          {onDelete && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 gap-1.5"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                  Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir template?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O template <strong>{template.name}</strong> será excluído permanentemente da sua conta WhatsApp Business. Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={handleDelete}
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
 
