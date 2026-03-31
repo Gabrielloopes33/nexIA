@@ -24,6 +24,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { useConversationSelection } from "@/lib/contexts/conversation-selection-context"
+import { getUserIdFromSession } from "@/lib/auth/client"
+
+type AssignmentFilter = 'all' | 'mine' | 'unassigned'
 
 const avatarColors = [
   "bg-violet-100 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400",
@@ -87,9 +90,11 @@ export function ConversationsPanel({
   enableSelection = true,
 }: Props) {
   const [search, setSearch] = useState("")
+  const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const currentUserId = getUserIdFromSession()
   
   // Contexto de seleção em massa
   const {
@@ -111,7 +116,15 @@ export function ConversationsPanel({
       c.contactName.toLowerCase().includes(search.toLowerCase()) ||
       c.lastMessage.toLowerCase().includes(search.toLowerCase()) ||
       (c.contactCompany?.toLowerCase().includes(search.toLowerCase()) ?? false)
-    return searchMatch
+
+    const assignmentMatch =
+      assignmentFilter === 'mine'
+        ? c.assignedTo?.id === currentUserId
+        : assignmentFilter === 'unassigned'
+        ? c.assignedTo === null
+        : true
+
+    return searchMatch && assignmentMatch
   })
 
   const allSelected = filtered.length > 0 && filtered.every((c) => isSelected(c.id))
@@ -209,6 +222,30 @@ export function ConversationsPanel({
             />
           </div>
 
+          {/* Assignment Filter */}
+          <div className="flex mt-2 rounded-lg border border-border overflow-hidden">
+            {(
+              [
+                { value: 'all' as const, label: 'Todas' },
+                { value: 'mine' as const, label: 'Minhas' },
+                { value: 'unassigned' as const, label: 'Não atribuídas' },
+              ]
+            ).map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setAssignmentFilter(value)}
+                className={cn(
+                  "flex-1 py-1.5 text-[11px] font-medium transition-colors",
+                  assignmentFilter === value
+                    ? "bg-[#46347F] text-white"
+                    : "bg-background text-muted-foreground hover:bg-[#46347F]/10 hover:text-foreground"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           {/* Selection Controls */}
           {enableSelection && filtered.length > 0 && (
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
@@ -246,7 +283,11 @@ export function ConversationsPanel({
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <p className="text-sm text-muted-foreground">
-                Nenhuma conversa encontrada.
+                {assignmentFilter === 'mine'
+                  ? 'Nenhuma conversa atribuída a você.'
+                  : assignmentFilter === 'unassigned'
+                  ? 'Nenhuma conversa sem atribuição.'
+                  : 'Nenhuma conversa encontrada.'}
               </p>
             </div>
           ) : (

@@ -151,11 +151,11 @@ function mapConversation(apiConv: ApiConversation): Conversation {
     channel,
     status: mapStatus(apiConv.status),
     priority,
-    assignedTo: apiConv.instance ? {
-      id: apiConv.instance.id,
-      name: apiConv.instance.name || 'Agente',
-      email: '',
-      avatar: 'AG',
+    assignedTo: apiConv.assignedTo ? {
+      id: apiConv.assignedTo.id,
+      name: apiConv.assignedTo.name || 'Agente',
+      email: apiConv.assignedTo.email || '',
+      avatarUrl: apiConv.assignedTo.avatarUrl ?? null,
     } : null,
     tags: apiConv.contact?.tags || [],
     lastMessage,
