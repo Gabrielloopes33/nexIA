@@ -91,11 +91,25 @@ export function ConversationsPanel({
 }: Props) {
   const [search, setSearch] = useState("")
   const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all')
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const currentUserId = getUserIdFromSession()
-  
+
+  // Tags únicas de todas as conversas (para exibir os chips de filtro)
+  const availableTags = Array.from(
+    new Set(conversations.flatMap((c) => c.tags ?? []))
+  ).sort()
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) => {
+      const next = new Set(prev)
+      next.has(tag) ? next.delete(tag) : next.add(tag)
+      return next
+    })
+  }
+
   // Contexto de seleção em massa
   const {
     selectedIds,
@@ -124,7 +138,12 @@ export function ConversationsPanel({
         ? c.assignedTo === null
         : true
 
-    return searchMatch && assignmentMatch
+    const tagMatch =
+      selectedTags.size === 0
+        ? true
+        : (c.tags ?? []).some((t) => selectedTags.has(t))
+
+    return searchMatch && assignmentMatch && tagMatch
   })
 
   const allSelected = filtered.length > 0 && filtered.every((c) => isSelected(c.id))
@@ -245,6 +264,34 @@ export function ConversationsPanel({
               </button>
             ))}
           </div>
+
+          {/* Tag Filter */}
+          {availableTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {availableTags.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors border",
+                    selectedTags.has(tag)
+                      ? "bg-[#46347F] text-white border-[#46347F]"
+                      : "bg-background text-muted-foreground border-border hover:border-[#46347F]/50 hover:text-foreground"
+                  )}
+                >
+                  {tag}
+                </button>
+              ))}
+              {selectedTags.size > 0 && (
+                <button
+                  onClick={() => setSelectedTags(new Set())}
+                  className="rounded-full px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Selection Controls */}
           {enableSelection && filtered.length > 0 && (
