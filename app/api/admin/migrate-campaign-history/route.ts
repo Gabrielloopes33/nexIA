@@ -59,9 +59,10 @@ export async function POST(request: NextRequest) {
       try {
         const { organizationId: orgId, templateName, createdBy } = cc.campaign
 
-        // 1. Find or create active conversation
+        // 1. Find or create active conversation (mais recente primeiro para consistência com webhook)
         let conversation = await prisma.conversation.findFirst({
           where: { contactId: cc.contactId, organizationId: orgId, status: 'active' },
+          orderBy: { createdAt: 'desc' },
         })
         if (!conversation) {
           conversation = await prisma.conversation.create({
@@ -69,6 +70,8 @@ export async function POST(request: NextRequest) {
           })
           conversations++
         }
+
+        const formattedContent = `[Template: ${templateName}]`
 
         // 2. Find or create OUTBOUND message (check by externalMessageId to avoid duplicates)
         const existingMsg = cc.externalMessageId
@@ -78,7 +81,7 @@ export async function POST(request: NextRequest) {
                 conversationId: conversation.id,
                 contactId: cc.contactId,
                 direction: 'OUTBOUND',
-                content: templateName,
+                content: { in: [templateName, formattedContent] },
               },
             })
 
@@ -87,7 +90,7 @@ export async function POST(request: NextRequest) {
             data: {
               conversationId: conversation.id,
               contactId: cc.contactId,
-              content: templateName,
+              content: formattedContent,
               direction: 'OUTBOUND',
               status: 'sent',
               messageId: cc.externalMessageId ?? undefined,

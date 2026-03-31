@@ -22,7 +22,8 @@ import {
   AlertCircle,
   Plus,
   Trash2,
-  Edit3
+  Edit3,
+  Bot
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,7 +32,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { formatDate, formatCurrency } from "@/lib/utils"
 import type { Conversation } from "@/lib/types/conversation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useContactDeals, ContactDeal } from "@/hooks/use-contact-deals"
 import { useContactTimeline, TimelineEvent } from "@/hooks/use-contact-timeline"
 import { useOrganizationId } from "@/lib/contexts/organization-context"
@@ -68,6 +69,8 @@ export function CustomerContextPanel({ conversation }: Props) {
   const [activitiesExpanded, setActivitiesExpanded] = useState(true)
   const [isCreateDealOpen, setIsCreateDealOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [contactData, setContactData] = useState<any>(null)
+  const [isLoadingContact, setIsLoadingContact] = useState(false)
   
   // Form state for new deal
   const [dealForm, setDealForm] = useState({
@@ -77,6 +80,19 @@ export function CustomerContextPanel({ conversation }: Props) {
   })
 
   const organizationId = useOrganizationId()
+
+  // Buscar dados do contato (incluindo metadata do Typebot)
+  useEffect(() => {
+    if (!conversation?.contactId) return
+    setIsLoadingContact(true)
+    fetch(`/api/contacts/${conversation.contactId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setContactData(data.data)
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingContact(false))
+  }, [conversation?.contactId])
 
   // Buscar dados reais do backend
   const { 
@@ -285,6 +301,78 @@ export function CustomerContextPanel({ conversation }: Props) {
             </div>
           )}
         </div>
+
+        {/* Typebot Data */}
+        {contactData?.metadata?.typebot && (
+          <div className="border-b border-border px-5 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Bot className="h-4 w-4 text-[#46347F]" />
+              <span className="text-xs font-semibold text-foreground">Dados do Typebot (NR-01)</span>
+            </div>
+            <div className="space-y-2">
+              {contactData.metadata.typebot.cargo && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Cargo:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.cargo}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.colaboradores && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Colaboradores:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.colaboradores}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.responsavel && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Responsável:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.responsavel}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.estagio && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Estágio:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.estagio}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.preocupacao && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Preocupação:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.preocupacao}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.afastamento && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Afastamento:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.afastamento}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.levantamento && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Levantamento:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.levantamento}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.decisao && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Decisão:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.decisao}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.problema && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Problema:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.problema}</span>
+                </div>
+              )}
+              {contactData.metadata.typebot.duvida && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Dúvida:</span>{' '}
+                  <span className="text-foreground font-medium">{contactData.metadata.typebot.duvida}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-3 border-b border-border px-5 py-4">

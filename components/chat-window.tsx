@@ -342,7 +342,7 @@ export function ChatWindow({ conversation }: Props) {
                   )}
                   <div
                     className={cn(
-                      "max-w-[72%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                      "max-w-[72%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap",
                       isUser
                         ? "rounded-br-sm bg-[#46347F] text-white"
                         : "rounded-bl-sm bg-[#F3F2F2] text-foreground"
