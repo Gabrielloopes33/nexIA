@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { requireAuth } from '@/lib/auth/server';
 
 // GET /api/conversations?contactId=&status=&assignedTo=&limit=20
@@ -69,95 +70,122 @@ export async function GET(request: NextRequest) {
       prisma.conversation.count({ where }),
     ]);
 
-    // Buscar contatos, instâncias, mensagens e assigned users para enriquecer as conversas
-    const enrichedConversations = await Promise.all(
-      conversations.map(async (conv) => {
-        const [contact, messages, messageCount, assignedUser] = await Promise.all([
-          prisma.contact.findUnique({
-            where: { id: conv.contactId },
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              avatarUrl: true,
-              status: true,
-              tags: true,
-            },
-          }),
-          prisma.message.findMany({
-            where: { conversationId: conv.id },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          }),
-          prisma.message.count({
-            where: { conversationId: conv.id },
-          }),
-          // Busca dados do usuário atribuído se existir
-          conv.assignedTo ? prisma.user.findUnique({
-            where: { id: conv.assignedTo },
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              avatarUrl: true,
-            },
-          }) : null,
-        ]);
-        
-        // Buscar instância do WhatsApp (se existir)
-        let instance = null;
-        // Tenta buscar em ambas as tabelas
-        const waInstance = await prisma.whatsAppInstance.findFirst({
-          where: { organizationId },
-          select: { id: true, name: true, phoneNumber: true },
-        });
-        const evoInstance = await prisma.evolutionInstance.findFirst({
-          where: { organizationId, status: 'CONNECTED' },
-          select: { id: true, name: true, phoneNumber: true, profileName: true },
-        });
-        instance = waInstance ? {
-          id: waInstance.id,
-          name: waInstance.name,
-          displayPhoneNumber: waInstance.phoneNumber,
-        } : (evoInstance ? {
-          id: evoInstance.id,
-          name: evoInstance.name,
-          displayPhoneNumber: evoInstance.phoneNumber,
-        } : null);
+    // Enriquecer conversas usando batch queries (evita N+1 no connection pool)
+    const conversationIds = conversations.map(c => c.id);
+    const contactIds = [...new Set(conversations.map(c => c.contactId))];
+    const assignedUserIds = [...new Set(
+      conversations.map(c => (c as any).assignedTo).filter((id: any): id is string => !!id)
+    )];
 
-        const now = new Date();
-        // Janela de 24h para WhatsApp
-        const windowEnd = new Date(conv.createdAt.getTime() + 24 * 60 * 60 * 1000);
-        const isWindowActive = windowEnd > now;
+    // 6 queries totais independente do número de conversas
+    const [
+      contacts,
+      lastMessages,
+      messageCounts,
+      assignedUsers,
+      waInstance,
+      evoInstance,
+    ] = await Promise.all([
+      // Todos os contatos em uma query
+      prisma.contact.findMany({
+        where: { id: { in: contactIds } },
+        select: { id: true, name: true, phone: true, avatarUrl: true, status: true, tags: true },
+      }),
 
-        return {
-          ...conv,
-          contact: contact || {
-            id: conv.contactId,
-            name: 'Desconhecido',
-            phone: '',
-            status: 'active',
-          },
-          assignedTo: assignedUser ? {
-            id: assignedUser.id,
-            name: assignedUser.name,
-            email: assignedUser.email,
-            avatarUrl: assignedUser.avatarUrl,
-          } : null,
-          instance,
-          messages: messages.map(m => ({
-            ...m,
-            direction: m.direction || 'OUTBOUND',
-          })),
-          messageCount,
-          lastMessageAt: messages[0]?.createdAt || conv.createdAt,
-          windowStart: conv.createdAt,
-          windowEnd,
-          isWindowActive,
-          timeUntilWindowExpires: Math.max(0, windowEnd.getTime() - now.getTime()),
-        };
-      })
-    );
+      // Última mensagem por conversa usando DISTINCT ON do PostgreSQL
+      conversationIds.length > 0
+        ? prisma.$queryRaw<Array<{
+            id: string;
+            conversation_id: string;
+            content: string | null;
+            direction: string | null;
+            type: string | null;
+            created_at: Date;
+            status: string;
+          }>>(Prisma.sql`
+            SELECT DISTINCT ON (conversation_id)
+              id, conversation_id, content, direction, type, created_at, status
+            FROM "Message"
+            WHERE conversation_id = ANY(${conversationIds}::uuid[])
+            ORDER BY conversation_id, created_at DESC
+          `)
+        : Promise.resolve([]),
+
+      // Contagem de mensagens por conversa em uma query
+      conversationIds.length > 0
+        ? prisma.message.groupBy({
+            by: ['conversationId'],
+            where: { conversationId: { in: conversationIds } },
+            _count: { id: true },
+          })
+        : Promise.resolve([]),
+
+      // Todos os usuários atribuídos em uma query
+      assignedUserIds.length > 0
+        ? prisma.user.findMany({
+            where: { id: { in: assignedUserIds } },
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          })
+        : Promise.resolve([]),
+
+      // Instância WhatsApp — uma query para toda a org
+      prisma.whatsAppInstance.findFirst({
+        where: { organizationId },
+        select: { id: true, name: true, phoneNumber: true },
+      }),
+
+      // Instância Evolution — uma query para toda a org
+      prisma.evolutionInstance.findFirst({
+        where: { organizationId, status: 'CONNECTED' },
+        select: { id: true, name: true, phoneNumber: true },
+      }),
+    ]);
+
+    // Mapear resultados para lookup rápido por id
+    const contactMap = new Map(contacts.map(c => [c.id, c]));
+    const lastMessageMap = new Map(lastMessages.map(m => [m.conversation_id, m]));
+    const messageCountMap = new Map(messageCounts.map(mc => [mc.conversationId, mc._count.id]));
+    const userMap = new Map(assignedUsers.map(u => [u.id, u]));
+
+    const instance = waInstance
+      ? { id: waInstance.id, name: waInstance.name, displayPhoneNumber: waInstance.phoneNumber }
+      : evoInstance
+      ? { id: evoInstance.id, name: evoInstance.name, displayPhoneNumber: evoInstance.phoneNumber }
+      : null;
+
+    const now = new Date();
+
+    const enrichedConversations = conversations.map(conv => {
+      const contact = contactMap.get(conv.contactId) || {
+        id: conv.contactId,
+        name: 'Desconhecido',
+        phone: '',
+        status: 'active',
+      };
+      const lastMsg = lastMessageMap.get(conv.id);
+      const messageCount = messageCountMap.get(conv.id) ?? 0;
+      const assignedUser = (conv as any).assignedTo ? userMap.get((conv as any).assignedTo) ?? null : null;
+
+      const windowEnd = new Date(conv.createdAt.getTime() + 24 * 60 * 60 * 1000);
+
+      return {
+        ...conv,
+        contact,
+        assignedTo: assignedUser
+          ? { id: assignedUser.id, name: assignedUser.name, email: assignedUser.email, avatarUrl: assignedUser.avatarUrl }
+          : null,
+        instance,
+        messages: lastMsg
+          ? [{ id: lastMsg.id, conversationId: lastMsg.conversation_id, content: lastMsg.content, direction: lastMsg.direction || 'OUTBOUND', type: lastMsg.type, createdAt: lastMsg.created_at, status: lastMsg.status }]
+          : [],
+        messageCount,
+        lastMessageAt: lastMsg?.created_at || conv.createdAt,
+        windowStart: conv.createdAt,
+        windowEnd,
+        isWindowActive: windowEnd > now,
+        timeUntilWindowExpires: Math.max(0, windowEnd.getTime() - now.getTime()),
+      };
+    });
 
     return NextResponse.json({
       success: true,
