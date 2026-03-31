@@ -102,6 +102,7 @@ export async function POST(request: NextRequest, { params }: Params) {
           try {
             let existingConversation = await prisma.conversation.findFirst({
               where: { contactId: contact.contactId, organizationId, status: 'active' },
+              orderBy: { createdAt: 'desc' },
             })
             if (!existingConversation) {
               existingConversation = await prisma.conversation.create({
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest, { params }: Params) {
               data: {
                 conversationId: existingConversation.id,
                 contactId: contact.contactId,
-                content: campaign.templateName,
+                content: `[Template: ${campaign.templateName}]`,
                 direction: 'OUTBOUND',
                 status: 'sent',
                 messageId: messageId || undefined,

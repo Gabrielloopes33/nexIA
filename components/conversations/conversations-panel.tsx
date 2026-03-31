@@ -30,6 +30,16 @@ const avatarColors = [
   "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400",
 ]
 
+// Função para obter iniciais do nome
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
 const STATUS_CONFIG = {
   open: {
     label: "Aberta",
@@ -184,8 +194,9 @@ export function ConversationsPanel({
                         {conv.assignedTo && (
                           <div
                             className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#46347F] text-[8px] font-bold text-white ring-2 ring-white"
+                            title={`Atribuído a: ${conv.assignedTo.name}`}
                           >
-                            {conv.assignedTo.avatar}
+                            {getInitials(conv.assignedTo.name)}
                           </div>
                         )}
                       </div>

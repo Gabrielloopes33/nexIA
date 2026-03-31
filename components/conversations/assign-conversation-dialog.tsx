@@ -19,13 +19,8 @@ import {
 } from "@/components/ui/select"
 import { UserPlus, UserCheck, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-
-// Mock de agentes - em produção viria da API
-const MOCK_AGENTS = [
-  { id: "agent-1", name: "João Silva", email: "joao@nexia.chat", avatar: "JS" },
-  { id: "agent-2", name: "Maria Oliveira", email: "maria@nexia.chat", avatar: "MO" },
-  { id: "agent-3", name: "Pedro Costa", email: "pedro@nexia.chat", avatar: "PC" },
-]
+import { useOrganizationMembers } from "@/hooks/use-organization-members"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface AssignConversationDialogProps {
   conversationId: string
@@ -43,6 +38,9 @@ export function AssignConversationDialog({
   const [open, setOpen] = useState(false)
   const [selectedAgent, setSelectedAgent] = useState<string>(currentAssignee?.id || "")
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Busca membros reais da organização
+  const { members, isLoading: isLoadingMembers } = useOrganizationMembers()
 
   const handleAssign = async () => {
     if (!selectedAgent || selectedAgent === currentAssignee?.id) {
@@ -53,26 +51,29 @@ export function AssignConversationDialog({
     setIsLoading(true)
 
     try {
-      // TODO: Implementar chamada real à API
-      // await fetch(`/api/conversations/${conversationId}/assign`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ agentId: selectedAgent }),
-      // })
+      const response = await fetch(`/api/conversations/${conversationId}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: selectedAgent }),
+      })
 
-      const agent = MOCK_AGENTS.find((a) => a.id === selectedAgent)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erro ao atribuir conversa")
+      }
+
+      const agent = members.find((m) => m.userId === selectedAgent)
       
-      // Simula delay da API
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
       toast.success("Conversa atribuída", {
-        description: `Atribuída a ${agent?.name}`,
+        description: `Atribuída a ${agent?.name || "agente"}`,
       })
 
       onAssign?.(selectedAgent)
       setOpen(false)
-    } catch (error) {
-      toast.error("Erro ao atribuir conversa")
+    } catch (error: any) {
+      toast.error("Erro ao atribuir conversa", {
+        description: error.message,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -82,8 +83,14 @@ export function AssignConversationDialog({
     setIsLoading(true)
 
     try {
-      // TODO: Implementar chamada real à API
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const response = await fetch(`/api/conversations/${conversationId}/assign`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erro ao remover atribuição")
+      }
 
       toast.success("Atribuição removida", {
         description: "A conversa está disponível para outros agentes",
@@ -91,11 +98,26 @@ export function AssignConversationDialog({
 
       onAssign?.(null)
       setOpen(false)
-    } catch (error) {
-      toast.error("Erro ao remover atribuição")
+    } catch (error: any) {
+      toast.error("Erro ao remover atribuição", {
+        description: error.message,
+      })
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Filtra apenas membros ativos
+  const activeMembers = members.filter(m => m.status === 'ACTIVE')
+
+  // Gera as iniciais do nome para o avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase()
   }
 
   return (
@@ -124,19 +146,30 @@ export function AssignConversationDialog({
           <Select
             value={selectedAgent}
             onValueChange={setSelectedAgent}
-            disabled={isLoading}
+            disabled={isLoading || isLoadingMembers}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione um agente..." />
+              <SelectValue placeholder={isLoadingMembers ? "Carregando agentes..." : "Selecione um agente..."} />
             </SelectTrigger>
             <SelectContent>
-              {MOCK_AGENTS.map((agent) => (
-                <SelectItem key={agent.id} value={agent.id}>
+              {activeMembers.length === 0 && !isLoadingMembers && (
+                <SelectItem value="no-members" disabled>
+                  Nenhum agente disponível
+                </SelectItem>
+              )}
+              {activeMembers.map((member) => (
+                <SelectItem key={member.userId || member.id} value={member.userId || member.id}>
                   <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-full bg-[#46347F]/10 flex items-center justify-center text-xs font-medium text-[#46347F]">
-                      {agent.avatar}
-                    </div>
-                    <span>{agent.name}</span>
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={member.avatarUrl || undefined} />
+                      <AvatarFallback className="text-xs bg-[#46347F]/10 text-[#46347F]">
+                        {getInitials(member.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>{member.name}</span>
+                    {member.role === 'ADMIN' && (
+                      <span className="text-xs text-muted-foreground">(Admin)</span>
+                    )}
                   </div>
                 </SelectItem>
               ))}

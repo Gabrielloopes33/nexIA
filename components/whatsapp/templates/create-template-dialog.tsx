@@ -53,7 +53,6 @@ const formSchema = z.object({
     .min(1, "O corpo da mensagem é obrigatório")
     .max(1024, "Máximo de 1024 caracteres"),
   footer: z.string().max(60).optional(),
-  allowCategoryChange: z.boolean(),
 })
 
 const languages = [
@@ -85,7 +84,6 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
       },
       body: "",
       footer: "",
-      allowCategoryChange: true,
     },
   })
 
@@ -102,12 +100,14 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
           type: 'HEADER',
           format: values.header.type,
           text: values.header.text,
+          example: values.header.type === 'TEXT' ? { header_text: [values.header.text] } : undefined,
         })
       }
 
       components.push({
         type: 'BODY',
         text: values.body,
+        example: { body_text: [[values.body]] },
       })
 
       if (values.footer) {
@@ -122,7 +122,6 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
         category: values.category,
         language: values.language,
         components,
-        allowCategoryChange: values.allowCategoryChange,
       })
       
       setIsOpen(false)
@@ -342,27 +341,13 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
                   )}
                 />
 
-                {/* Allow Category Change */}
-                <FormField
-                  control={form.control}
-                  name="allowCategoryChange"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Permitir alteração de categoria</FormLabel>
-                        <FormDescription>
-                          A Meta pode alterar a categoria se necessário
-                        </FormDescription>
-                      </div>
-                    </FormItem>
-                  )}
-                />
+                <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800">
+                  <p className="font-medium">Dica para aprovação rápida</p>
+                  <p className="mt-1 text-blue-700">
+                    Templates UTILITY precisam ter conteúdo claramente transacional 
+                    (confirmações, atualizações, alertas). Evite linguagem promocional.
+                  </p>
+                </div>
               </TabsContent>
             </Tabs>
 

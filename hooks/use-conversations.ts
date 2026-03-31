@@ -50,6 +50,7 @@ export interface Conversation {
   contact?: { id: string; name: string; phone: string; avatarUrl?: string; status: string; tags?: string[] }
   instance?: { id: string; name: string; displayPhoneNumber?: string; verifiedName?: string }
   messages?: Message[]
+  assignedTo?: { id: string; name: string; email: string; avatarUrl?: string } | null
 }
 
 export interface ConversationStats {

@@ -170,6 +170,7 @@ model Conversation {
   unread_count   Int       @default(0)
   typingUntil    DateTime? @map("typing_until")  // quando o contato para de "estar digitando"
   typingPhone    String?   @map("typing_phone") @db.VarChar(50)
+  assignedTo     String?   @map("assigned_to") @db.Uuid  // ID do usuário atribuído
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
 

@@ -182,7 +182,8 @@ export default function ImportarContatosPage() {
     errors: number
     duplicates: number
   } | null>(null)
-  const [nomeImportacao, setNomeImportacao] = useState("")
+  const [nomeTag, setNomeTag] = useState("")
+  const [nomeLista, setNomeLista] = useState("")
   const [criarTag, setCriarTag] = useState(true)
   const [criarLista, setCriarLista] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -197,9 +198,10 @@ export default function ImportarContatosPage() {
     }
 
     setArquivo(file)
-    // Auto-preenche o nome da importação com o nome do arquivo sem extensão
+    // Auto-preenche os nomes da tag e lista com o nome do arquivo sem extensão
     const nameWithoutExt = file.name.replace(/\.(csv|xlsx|xls)$/i, "")
-    setNomeImportacao(nameWithoutExt)
+    setNomeTag(nameWithoutExt)
+    setNomeLista(nameWithoutExt)
 
     const reader = new FileReader()
     
@@ -365,7 +367,8 @@ export default function ImportarContatosPage() {
         },
         body: JSON.stringify({
           contacts: validos,
-          importName: nomeImportacao.trim() || undefined,
+          tagName: criarTag ? nomeTag.trim() : undefined,
+          listName: criarLista ? nomeLista.trim() : undefined,
           createTag: criarTag,
           createList: criarLista,
         }),
@@ -419,7 +422,8 @@ export default function ImportarContatosPage() {
     setProgresso(0)
     setImportando(false)
     setImportResult(null)
-    setNomeImportacao("")
+    setNomeTag("")
+    setNomeLista("")
     setCriarTag(true)
     setCriarLista(true)
   }
@@ -738,47 +742,68 @@ export default function ImportarContatosPage() {
 
                 {/* Opções de tag e lista */}
                 <div className="rounded-lg border border-border p-4 space-y-4">
-                  <div>
-                    <Label htmlFor="nomeImportacao" className="text-sm font-medium">
-                      Nome da importação
-                    </Label>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Usado para criar a tag e a lista automaticamente
-                    </p>
-                    <Input
-                      id="nomeImportacao"
-                      value={nomeImportacao}
-                      onChange={(e) => setNomeImportacao(e.target.value)}
-                      placeholder="Ex: Leads Abril 2026"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4 text-[#46347F]" />
-                      <div>
-                        <p className="text-sm font-medium">Criar tag</p>
-                        <p className="text-xs text-muted-foreground">Vincula todos os contatos importados a esta tag</p>
+                  {/* Tag */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-[#46347F]" />
+                        <div>
+                          <p className="text-sm font-medium">Criar tag</p>
+                          <p className="text-xs text-muted-foreground">Vincula todos os contatos importados a uma tag</p>
+                        </div>
                       </div>
+                      <Switch
+                        checked={criarTag}
+                        onCheckedChange={setCriarTag}
+                      />
                     </div>
-                    <Switch
-                      checked={criarTag}
-                      onCheckedChange={setCriarTag}
-                      disabled={!nomeImportacao.trim()}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <List className="h-4 w-4 text-[#46347F]" />
-                      <div>
-                        <p className="text-sm font-medium">Criar lista</p>
-                        <p className="text-xs text-muted-foreground">Adiciona todos os contatos importados a esta lista</p>
+                    {criarTag && (
+                      <div className="pl-6">
+                        <Label htmlFor="nomeTag" className="text-xs text-muted-foreground mb-1.5 block">
+                          Nome da tag
+                        </Label>
+                        <Input
+                          id="nomeTag"
+                          value={nomeTag}
+                          onChange={(e) => setNomeTag(e.target.value)}
+                          placeholder="Ex: Leads Abril 2026"
+                          disabled={!criarTag}
+                        />
                       </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Lista */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <List className="h-4 w-4 text-[#46347F]" />
+                        <div>
+                          <p className="text-sm font-medium">Criar lista</p>
+                          <p className="text-xs text-muted-foreground">Adiciona todos os contatos importados a uma lista</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={criarLista}
+                        onCheckedChange={setCriarLista}
+                      />
                     </div>
-                    <Switch
-                      checked={criarLista}
-                      onCheckedChange={setCriarLista}
-                      disabled={!nomeImportacao.trim()}
-                    />
+                    {criarLista && (
+                      <div className="pl-6">
+                        <Label htmlFor="nomeLista" className="text-xs text-muted-foreground mb-1.5 block">
+                          Nome da lista
+                        </Label>
+                        <Input
+                          id="nomeLista"
+                          value={nomeLista}
+                          onChange={(e) => setNomeLista(e.target.value)}
+                          placeholder="Ex: Importação Abril 2026"
+                          disabled={!criarLista}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 

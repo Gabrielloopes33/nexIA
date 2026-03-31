@@ -51,7 +51,6 @@ export function useWhatsAppTemplatesSync(): UseWhatsAppTemplatesSyncReturn {
         language: t.language as string,
         components: (t.components as Record<string, unknown>[]) || [],
         rejectedReason: t.reason as string | undefined,
-        allowCategoryChange: false,
         createdAt: (t.createdAt as string) || new Date().toISOString(),
         updatedAt: (t.updatedAt as string) || new Date().toISOString(),
       }))

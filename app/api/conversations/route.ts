@@ -50,10 +50,10 @@ export async function GET(request: NextRequest) {
       prisma.conversation.count({ where }),
     ]);
 
-    // Buscar contatos, instâncias e mensagens para enriquecer as conversas
+    // Buscar contatos, instâncias, mensagens e assigned users para enriquecer as conversas
     const enrichedConversations = await Promise.all(
       conversations.map(async (conv) => {
-        const [contact, messages, messageCount] = await Promise.all([
+        const [contact, messages, messageCount, assignedUser] = await Promise.all([
           prisma.contact.findUnique({
             where: { id: conv.contactId },
             select: {
@@ -73,6 +73,16 @@ export async function GET(request: NextRequest) {
           prisma.message.count({
             where: { conversationId: conv.id },
           }),
+          // Busca dados do usuário atribuído se existir
+          conv.assignedTo ? prisma.user.findUnique({
+            where: { id: conv.assignedTo },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+            },
+          }) : null,
         ]);
         
         // Buscar instância do WhatsApp (se existir)
@@ -109,6 +119,12 @@ export async function GET(request: NextRequest) {
             phone: '',
             status: 'active',
           },
+          assignedTo: assignedUser ? {
+            id: assignedUser.id,
+            name: assignedUser.name,
+            email: assignedUser.email,
+            avatarUrl: assignedUser.avatarUrl,
+          } : null,
           instance,
           messages: messages.map(m => ({
             ...m,

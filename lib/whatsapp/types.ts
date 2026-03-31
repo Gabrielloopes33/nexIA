@@ -129,7 +129,6 @@ export interface WhatsAppTemplate {
   language: string
   components: TemplateComponent[]
   rejectedReason?: string
-  allowCategoryChange: boolean
   createdAt: string
   updatedAt: string
 }
@@ -260,7 +259,6 @@ export interface CreateTemplateRequest {
   category: TemplateCategory
   language: string
   components: TemplateComponent[]
-  allowCategoryChange?: boolean
 }
 
 export interface UpdateWebhookRequest {

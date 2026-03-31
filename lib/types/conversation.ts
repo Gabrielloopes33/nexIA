@@ -19,8 +19,8 @@ export interface Agent {
   name: string
   /** Email do agente */
   email: string
-  /** Avatar/iniciais do agente */
-  avatar: string
+  /** URL do avatar do agente */
+  avatarUrl?: string | null
 }
 
 export interface Attachment {

@@ -50,7 +50,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const organizationId = await getOrganizationId();
     
     const body = await request.json();
-    const { contacts, importName, createTag, createList } = body;
+    const { contacts, tagName, listName, createTag, createList } = body;
 
     console.log('[Import Contacts] Iniciando importação:', { organizationId, count: contacts?.length });
 
@@ -188,16 +188,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Criar tag e/ou lista se solicitado e houver contatos importados
-    if (importedContactIds.length > 0 && importName) {
-      if (createTag) {
+    if (importedContactIds.length > 0) {
+      if (createTag && tagName) {
         try {
           // Upsert: cria ou reutiliza tag com esse nome
           const tag = await prisma.tag.upsert({
-            where: { organizationId_name: { organizationId: orgId, name: importName } },
+            where: { organizationId_name: { organizationId: orgId, name: tagName } },
             update: {},
             create: {
               organizationId: orgId,
-              name: importName,
+              name: tagName,
               color: '#46347F',
               source: 'import',
             },
@@ -215,13 +215,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
       }
 
-      if (createList) {
+      if (createList && listName) {
         try {
           const list = await prisma.list.create({
             data: {
               organizationId: orgId,
-              name: importName,
-              description: `Importação: ${importName}`,
+              name: listName,
+              description: `Importação: ${listName}`,
               isDynamic: false,
               contactCount: importedContactIds.length,
             },

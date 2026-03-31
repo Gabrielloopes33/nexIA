@@ -20,6 +20,7 @@
     "validate": "tsx scripts/validate-implementation.ts",
     "typecheck": "tsc --noEmit",
     "create-admin": "tsx scripts/create-admin.ts",
+    "contacts:enrich:typebot": "tsx scripts/enrich-contacts-from-typebot.ts",
     "db:seed:templates": "tsx scripts/seed-pipeline-templates.ts",
     "db:seed:dashboard": "tsx scripts/seed-dashboard-print.ts --slug nexia-principal",
     "db:seed:reunioes": "tsx prisma/seed-reunioes.ts",

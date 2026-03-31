@@ -365,7 +365,6 @@ const MOCK_TEMPLATES: WhatsAppTemplate[] = [
         ],
       },
     ],
-    allowCategoryChange: false,
     createdAt: '2024-01-20T10:00:00Z',
     updatedAt: '2024-01-20T10:00:00Z',
   },
