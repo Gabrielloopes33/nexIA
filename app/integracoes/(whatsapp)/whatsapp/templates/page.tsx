@@ -139,14 +139,18 @@ export default function WhatsAppTemplatesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <CreateTemplateDialog 
-            onCreate={async () => {
-              // Recarregar templates após criar
-              if (selectedInstanceId) {
-                await loadTemplates(selectedInstanceId)
-              }
-            }} 
-            disabled={!selectedInstanceId || isLoadingTemplates} 
+          <CreateTemplateDialog
+            onCreate={async (request) => {
+              const res = await fetch('/api/whatsapp/templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ instanceId: selectedInstanceId, ...request }),
+              })
+              const data = await res.json()
+              if (!data.success) throw new Error(data.error || 'Erro ao criar template')
+              if (selectedInstanceId) await loadTemplates(selectedInstanceId)
+            }}
+            disabled={!selectedInstanceId || isLoadingTemplates}
           />
         </div>
       </div>
