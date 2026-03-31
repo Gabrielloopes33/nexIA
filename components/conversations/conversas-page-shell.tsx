@@ -11,7 +11,6 @@ import { Conversation } from "@/lib/types/conversation"
 import { Inbox } from "lucide-react"
 import { ConversationSelectionProvider } from "@/lib/contexts/conversation-selection-context"
 import { BulkActionsBar } from "./bulk-actions-bar"
-import { useConversations } from "@/hooks/use-conversations"
 
 export interface ConversasPageShellProps {
   /** Função de filtro para as conversas */
@@ -64,15 +63,12 @@ function ConversasPageShellContent({
     isLoading,
     error,
     deleteConversation,
+    mutate: refetchConversations,
   } = useConversasPage({ filterFn, basePath })
-  
+
   const [isNewConversationOpen, setIsNewConversationOpen] = useState(false)
-  
-  // Refetch após ações em massa
-  const { mutate: refetchConversations } = useConversations({ limit: 100 })
-  
+
   const handleActionComplete = useCallback(() => {
-    // Refetch para atualizar a lista
     refetchConversations()
   }, [refetchConversations])
 

@@ -13,8 +13,81 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Conversation as ApiConversation, useConversations } from "@/hooks/use-conversations"
+import { Conversation as ApiConversation } from "@/hooks/use-conversations"
 import { Conversation, ConversationStatus, Channel, Priority } from "@/lib/types/conversation"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
+
+const PAGE_SIZE = 500
+
+/**
+ * Busca todas as conversas paginando automaticamente até não restar mais páginas.
+ * Substitui useConversations({ limit: 100 }) que retornava apenas as primeiras 100.
+ */
+function useAllConversations() {
+  const orgId = useOrganizationId()
+  const [conversations, setConversations] = useState<ApiConversation[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    if (!orgId) return
+
+    let cancelled = false
+    setIsLoading(true)
+    setError(null)
+
+    async function fetchAll() {
+      const all: ApiConversation[] = []
+      let offset = 0
+
+      try {
+        while (true) {
+          const params = new URLSearchParams({
+            limit: PAGE_SIZE.toString(),
+            offset: offset.toString(),
+          })
+          const res = await fetch(`/api/conversations?${params}`)
+          const data = await res.json()
+
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Erro ao carregar conversas')
+          }
+
+          if (cancelled) return
+
+          all.push(...(data.data || []))
+
+          if (!data.meta?.hasMore) break
+          offset += PAGE_SIZE
+        }
+
+        if (!cancelled) {
+          setConversations(all)
+          setIsLoading(false)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err : new Error('Erro desconhecido'))
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchAll()
+    return () => { cancelled = true }
+  }, [orgId, refreshKey])
+
+  // Auto-refresh a cada 30 segundos (equivalente ao refreshInterval do SWR)
+  useEffect(() => {
+    const interval = setInterval(() => setRefreshKey(k => k + 1), 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const mutate = useCallback(() => setRefreshKey(k => k + 1), [])
+
+  return { conversations, isLoading, error, mutate }
+}
 
 // Mapeia status da API para o formato do componente
 function mapStatus(status: ApiConversation['status']): ConversationStatus {
@@ -123,6 +196,8 @@ export interface UseConversasPageReturn {
   error: Error | null
   /** Função para deletar uma conversa */
   deleteConversation: (id: string) => Promise<void>
+  /** Força recarregamento de todas as conversas */
+  mutate: () => void
 }
 
 /**
@@ -146,10 +221,8 @@ export function useConversasPage(options: UseConversasPageOptions): UseConversas
   const currentBasePath = useRef(basePath)
   const [forceUpdate, setForceUpdate] = useState(0)
   
-  // Buscar conversas da API real
-  const { conversations: allConversations, isLoading, error } = useConversations({
-    limit: 100,
-  })
+  // Buscar todas as conversas com paginação automática
+  const { conversations: allConversations, isLoading, error, mutate } = useAllConversations()
   
   // Forçar atualização quando o basePath mudar (navegação entre páginas)
   useEffect(() => {
@@ -226,5 +299,6 @@ export function useConversasPage(options: UseConversasPageOptions): UseConversas
     isLoading,
     error,
     deleteConversation,
+    mutate,
   }
 }
