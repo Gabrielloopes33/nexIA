@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useState, useCallback } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { ConversationsPanel } from "@/components/conversations/conversations-panel"
 import { ChatWindow } from "@/components/chat-window"
@@ -9,6 +9,9 @@ import { NewConversationModal } from "@/components/conversations/new-conversatio
 import { useConversasPage } from "@/lib/hooks/use-conversas-page"
 import { Conversation } from "@/lib/types/conversation"
 import { Inbox } from "lucide-react"
+import { ConversationSelectionProvider } from "@/lib/contexts/conversation-selection-context"
+import { BulkActionsBar } from "./bulk-actions-bar"
+import { useConversations } from "@/hooks/use-conversations"
 
 export interface ConversasPageShellProps {
   /** Função de filtro para as conversas */
@@ -64,6 +67,14 @@ function ConversasPageShellContent({
   } = useConversasPage({ filterFn, basePath })
   
   const [isNewConversationOpen, setIsNewConversationOpen] = useState(false)
+  
+  // Refetch após ações em massa
+  const { mutate: refetchConversations } = useConversations({ limit: 100 })
+  
+  const handleActionComplete = useCallback(() => {
+    // Refetch para atualizar a lista
+    refetchConversations()
+  }, [refetchConversations])
 
   const isEmpty = !isLoading && conversations.length === 0
 
@@ -73,7 +84,7 @@ function ConversasPageShellContent({
       <Sidebar />
 
       {/* Main Content Area */}
-      <main className="flex-1 flex overflow-hidden min-w-0">
+      <main className="flex-1 flex overflow-hidden min-w-0 relative">
         {/* Conversations List */}
         <ConversationsPanel
           conversations={conversations}
@@ -104,6 +115,12 @@ function ConversasPageShellContent({
 
         {/* Customer Context Panel */}
         <CustomerContextPanel conversation={selectedConversationData} />
+        
+        {/* Bulk Actions Bar (flutuante) */}
+        <BulkActionsBar
+          availableIds={conversations.map(c => c.id)}
+          onActionComplete={handleActionComplete}
+        />
       </main>
     </div>
   )
@@ -133,7 +150,7 @@ function EmptyState({ title, message, icon }: EmptyStateProps) {
 }
 
 /**
- * Wrapper com Suspense para carregamento
+ * Wrapper com Suspense e SelectionProvider para carregamento
  */
 export function ConversasPageShell(props: ConversasPageShellProps) {
   return (
@@ -147,7 +164,9 @@ export function ConversasPageShell(props: ConversasPageShellProps) {
         </div>
       }
     >
-      <ConversasPageShellContent {...props} />
+      <ConversationSelectionProvider>
+        <ConversasPageShellContent {...props} />
+      </ConversationSelectionProvider>
     </Suspense>
   )
 }

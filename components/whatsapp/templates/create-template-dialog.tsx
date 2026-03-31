@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, FileText, Loader2, AlertCircle } from "lucide-react"
+import { Plus, FileText, Loader2, AlertCircle, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useForm } from "react-hook-form"
+import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import type { CreateTemplateRequest } from "@/lib/whatsapp/types"
@@ -53,6 +53,14 @@ const formSchema = z.object({
     .min(1, "O corpo da mensagem é obrigatório")
     .max(1024, "Máximo de 1024 caracteres"),
   footer: z.string().max(60).optional(),
+  buttonsEnabled: z.boolean().default(false),
+  buttons: z.array(
+    z.object({
+      type: z.enum(['QUICK_REPLY', 'URL']),
+      text: z.string().min(1, "Texto obrigatório").max(25, "Máximo 25 caracteres"),
+      url: z.string().optional(),
+    })
+  ).max(3, "Máximo de 3 botões").default([]),
 })
 
 const languages = [
@@ -84,11 +92,19 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
       },
       body: "",
       footer: "",
+      buttonsEnabled: false,
+      buttons: [],
     },
   })
 
   const headerEnabled = form.watch("header.enabled")
+  const buttonsEnabled = form.watch("buttonsEnabled")
   const selectedCategory = form.watch("category")
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "buttons",
+  })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true)
@@ -114,6 +130,17 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
         components.push({
           type: 'FOOTER',
           text: values.footer,
+        })
+      }
+
+      if (values.buttonsEnabled && values.buttons.length > 0) {
+        components.push({
+          type: 'BUTTONS',
+          buttons: values.buttons.map((btn) => ({
+            type: btn.type,
+            text: btn.text,
+            ...(btn.type === 'URL' && btn.url ? { url: btn.url } : {}),
+          })),
         })
       }
 
@@ -196,6 +223,35 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
                   )}
                 />
 
+                {/* Category - movido para cá para ficar visível */}
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a categoria" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TEMPLATE_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>
+                              {cat.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        {TEMPLATE_CATEGORIES.find(c => c.value === selectedCategory)?.description}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Header */}
                 <FormField
                   control={form.control}
@@ -270,7 +326,7 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
                       <FormLabel>Rodapé</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="NexIA - Inteligência Artificial" 
+                          placeholder="Perci Consultoria" 
                           maxLength={60}
                           {...field} 
                           value={field.value || ""}
@@ -283,38 +339,122 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
                     </FormItem>
                   )}
                 />
-              </TabsContent>
 
-              <TabsContent value="settings" className="space-y-4 mt-4">
-                {/* Category */}
+                {/* Buttons */}
                 <FormField
                   control={form.control}
-                  name="category"
+                  name="buttonsEnabled"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoria</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a categoria" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {TEMPLATE_CATEGORIES.map((cat) => (
-                            <SelectItem key={cat.value} value={cat.value}>
-                              {cat.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        {TEMPLATE_CATEGORIES.find(c => c.value === selectedCategory)?.description}
-                      </FormDescription>
-                      <FormMessage />
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Adicionar Botões</FormLabel>
+                        <FormDescription>
+                          Máximo de 3 botões. Tipos: resposta rápida ou link.
+                        </FormDescription>
+                      </div>
                     </FormItem>
                   )}
                 />
 
+                {buttonsEnabled && (
+                  <div className="space-y-3 rounded-md border p-4">
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Botão {index + 1}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-red-600 hover:bg-red-50"
+                            onClick={() => remove(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name={`buttons.${index}.type`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tipo</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Tipo do botão" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="QUICK_REPLY">Resposta Rápida</SelectItem>
+                                  <SelectItem value="URL">Link (URL)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`buttons.${index}.text`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Texto do botão</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Sim" 
+                                  maxLength={25}
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        {form.watch(`buttons.${index}.type`) === 'URL' && (
+                          <FormField
+                            control={form.control}
+                            name={`buttons.${index}.url`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>URL</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="https://..." 
+                                    {...field} 
+                                    value={field.value || ""}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                        {index < fields.length - 1 && <hr className="border-border/50" />}
+                      </div>
+                    ))}
+                    {fields.length < 3 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => append({ type: 'QUICK_REPLY', text: '', url: '' })}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar botão
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="settings" className="space-y-4 mt-4">
                 {/* Language */}
                 <FormField
                   control={form.control}
@@ -346,6 +486,22 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
                   <p className="mt-1 text-blue-700">
                     Templates UTILITY precisam ter conteúdo claramente transacional 
                     (confirmações, atualizações, alertas). Evite linguagem promocional.
+                  </p>
+                </div>
+
+                <div className="rounded-md bg-slate-50 p-4 text-sm text-slate-700">
+                  <p className="font-medium">Exemplo de template com botão</p>
+                  <p className="mt-1 whitespace-pre-wrap text-slate-600">
+{`Corpo:
+Olá! Ontem aconteceu o workshop de NR1. Sabemos que imprevistos acontecem e liberamos o replay por 24 horas.
+
+Você gostaria de receber o link?`}
+                  </p>
+                  <p className="mt-2 text-slate-600">
+                    Botão: <strong>Sim</strong> (Resposta Rápida)
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Ou use um botão <strong>Link (URL)</strong> para enviar o link diretamente.
                   </p>
                 </div>
               </TabsContent>

@@ -81,9 +81,9 @@ export async function POST(
       success: true,
       conversation: updatedConversation,
       assignedTo: {
-        id: member.user.id,
-        name: member.user.name,
-        email: member.user.email,
+        id: member.user?.id || agentId,
+        name: member.user?.name || 'Agente',
+        email: member.user?.email || '',
       },
     });
 

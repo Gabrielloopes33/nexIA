@@ -94,6 +94,7 @@ interface UseConversationsOptions {
   active?: boolean
   limit?: number
   offset?: number
+  assignedTo?: 'me' | 'unassigned' | string  // 'me', 'unassigned', ou userId específico
 }
 
 interface UseConversationsReturn {
@@ -132,6 +133,7 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
     if (options.status) params.append('status', options.status)
     if (options.type) params.append('type', options.type)
     if (options.active !== undefined) params.append('active', options.active.toString())
+    if (options.assignedTo) params.append('assignedTo', options.assignedTo)
     if (options.limit) params.append('limit', options.limit.toString())
     if (options.offset) params.append('offset', options.offset.toString())
     return params.toString()

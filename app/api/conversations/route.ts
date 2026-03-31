@@ -8,7 +8,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth/server';
 
-// GET /api/conversations?contactId=&status=&limit=20
+// GET /api/conversations?contactId=&status=&assignedTo=&limit=20
+// Filtros de assignedTo:
+//   - "me": conversas atribuídas ao usuário logado
+//   - "unassigned": conversas não atribuídas (assignedTo IS NULL)
+//   - "{userId}": conversas atribuídas a um agente específico
+//   - "all" ou omitido: todas as conversas
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
@@ -21,10 +26,12 @@ export async function GET(request: NextRequest) {
 
     const contactId = searchParams.get('contactId');
     const status = searchParams.get('status') as any;
+    const assignedTo = searchParams.get('assignedTo') || 'all';
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const organizationId = user.organizationId;
+    const userId = user.userId;
     
     if (!organizationId) {
       return NextResponse.json(
@@ -39,6 +46,18 @@ export async function GET(request: NextRequest) {
 
     if (contactId) where.contactId = contactId;
     if (status) where.status = status;
+
+    // Filtro de atribuição
+    if (assignedTo === 'me') {
+      // Conversas atribuídas ao usuário logado
+      where.assignedTo = userId;
+    } else if (assignedTo === 'unassigned') {
+      // Conversas não atribuídas
+      where.assignedTo = null;
+    } else if (assignedTo !== 'all' && assignedTo) {
+      // Conversas atribuídas a um agente específico (por userId)
+      where.assignedTo = assignedTo;
+    }
 
     const [conversations, total] = await Promise.all([
       prisma.conversation.findMany({
