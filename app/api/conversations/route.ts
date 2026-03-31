@@ -99,13 +99,12 @@ export async function GET(request: NextRequest) {
             conversation_id: string;
             content: string | null;
             direction: string | null;
-            type: string | null;
             created_at: Date;
             status: string;
           }>>(Prisma.sql`
             SELECT DISTINCT ON (conversation_id)
-              id, conversation_id, content, direction, type, created_at, status
-            FROM "Message"
+              id, conversation_id, content, direction, created_at, status
+            FROM messages
             WHERE conversation_id = ANY(${conversationIds}::uuid[])
             ORDER BY conversation_id, created_at DESC
           `)
@@ -176,7 +175,7 @@ export async function GET(request: NextRequest) {
           : null,
         instance,
         messages: lastMsg
-          ? [{ id: lastMsg.id, conversationId: lastMsg.conversation_id, content: lastMsg.content, direction: lastMsg.direction || 'OUTBOUND', type: lastMsg.type, createdAt: lastMsg.created_at, status: lastMsg.status }]
+          ? [{ id: lastMsg.id, conversationId: lastMsg.conversation_id, content: lastMsg.content, direction: lastMsg.direction || 'OUTBOUND', createdAt: lastMsg.created_at, status: lastMsg.status }]
           : [],
         messageCount,
         lastMessageAt: lastMsg?.created_at || conv.createdAt,
