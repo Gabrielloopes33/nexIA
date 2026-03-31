@@ -116,14 +116,12 @@ export function CreateTemplateDialog({ onCreate, disabled }: CreateTemplateDialo
           type: 'HEADER',
           format: values.header.type,
           text: values.header.text,
-          example: values.header.type === 'TEXT' ? { header_text: [values.header.text] } : undefined,
         })
       }
 
       components.push({
         type: 'BODY',
         text: values.body,
-        example: { body_text: [[values.body]] },
       })
 
       if (values.footer) {
