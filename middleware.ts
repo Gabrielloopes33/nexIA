@@ -26,6 +26,7 @@ interface SessionPayload {
   email: string
   name: string | null
   organizationId: string | null
+  productId?: string | null
   setupComplete?: boolean
   expiresAt: number
 }

@@ -39,7 +39,7 @@ function checkRateLimit(ip: string): boolean {
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  const ip = request.ip || "unknown";
+  const ip = request.headers.get('x-forwarded-for') || "unknown";
 
   console.log(`[FormWebhook] Recebendo webhook de ${ip}`);
 
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[FormWebhook] Processado em ${duration}ms: ${result.pendingDeliveryId}`);
+    console.log(`[FormWebhook] Processado em ${duration}ms`);
 
     return NextResponse.json(
       {
@@ -122,8 +122,8 @@ export async function POST(request: NextRequest) {
         data: {
           contactId: result.contactId,
           conversationId: result.conversationId,
+          dealId: result.dealId,
           templateMessageId: result.templateMessageId,
-          pendingDeliveryId: result.pendingDeliveryId,
           status: "WAITING",
         },
       },

@@ -3,12 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { withRLS } from "@/lib/db/rls";
 import { 
   getAuthenticatedUser,
-  getOrganizationId, 
   AuthError, 
   createAuthErrorResponse 
 } from "@/lib/auth/helpers";
 
 type DealStatus = 'OPEN' | 'WON' | 'LOST' | 'CANCELLED';
+
+async function validateStagePipeline(stageId: string, pipelineId: string | null | undefined) {
+  if (!pipelineId) return true;
+  const stage = await prisma.pipelineStage.findUnique({ where: { id: stageId }, select: { pipelineId: true } });
+  return stage?.pipelineId === pipelineId;
+}
 
 /**
  * GET /api/pipeline/deals
@@ -31,13 +36,17 @@ export async function GET(request: NextRequest) {
     const stageId = searchParams.get("stageId");
     const status = searchParams.get("status") as DealStatus | null;
     const contactId = searchParams.get("contactId");
+    const productId = searchParams.get("productId");
+    const pipelineId = searchParams.get("pipelineId");
 
-    console.log('[Pipeline Deals GET] Params:', { organizationId, stageId, status, contactId });
+    console.log('[Pipeline Deals GET] Params:', { organizationId, stageId, status, contactId, productId, pipelineId });
 
     const where: any = { organizationId };
     if (stageId) where.stageId = stageId;
     if (status) where.status = status;
     if (contactId) where.contactId = contactId;
+    if (productId) where.productId = productId;
+    if (pipelineId) where.pipelineId = pipelineId;
 
     // Executa com contexto RLS para isolamento multi-tenant
     const deals = await withRLS(prisma, organizationId, async (tx) => {
@@ -47,6 +56,8 @@ export async function GET(request: NextRequest) {
         include: {
           contact: { select: { id: true, name: true, phone: true, avatarUrl: true } },
           stage: { select: { id: true, name: true, color: true, probability: true } },
+          product: { select: { id: true, name: true, color: true } },
+          pipeline: { select: { id: true, name: true } },
         },
       });
     });
@@ -119,6 +130,8 @@ export async function POST(request: NextRequest) {
       source,
       tags,
       metadata,
+      productId,
+      pipelineId,
     } = body;
     
     // Usar value ou amount (para compatibilidade)
@@ -133,6 +146,17 @@ export async function POST(request: NextRequest) {
         { success: false, error: "stageId, contactId, and title are required" },
         { status: 400 }
       );
+    }
+
+    // Valida consistência entre stage e pipeline
+    if (pipelineId) {
+      const isValid = await validateStagePipeline(stageId, pipelineId);
+      if (!isValid) {
+        return NextResponse.json(
+          { success: false, error: "stageId does not belong to the given pipelineId" },
+          { status: 400 }
+        );
+      }
     }
 
     const userId = user.userId;
@@ -155,10 +179,14 @@ export async function POST(request: NextRequest) {
           metadata: metadata ?? {},
           status: 'OPEN',
           createdBy: userId,
+          ...(productId && { productId }),
+          ...(pipelineId && { pipelineId }),
         },
         include: {
           contact: { select: { id: true, name: true, phone: true, avatarUrl: true } },
           stage: { select: { id: true, name: true, color: true, probability: true } },
+          product: { select: { id: true, name: true, color: true } },
+          pipeline: { select: { id: true, name: true } },
         },
       });
 

@@ -24,6 +24,8 @@ model Organization {
   members        OrganizationMember[]
   owner          User?                @relation("OwnedOrganizations", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   pipelineStages PipelineStage[]
+  products         Product[]
+  pipelines        Pipeline[]
 
   @@map("organizations")
 }
@@ -141,6 +143,7 @@ model Contact {
   id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId    String        @map("organization_id") @db.Uuid
   phone             String        @db.VarChar(50)
+  email             String?       @db.VarChar(255)
   name              String?       @db.VarChar(255)
   avatarUrl         String?       @map("avatar_url")
   metadata          Json?
@@ -154,9 +157,11 @@ model Contact {
   contactTags       ContactTag[]
   listContacts      ListContact[]
   deals             Deal[]
+  conversations     Conversation[]
 
   @@unique([organizationId, phone])
   @@index([organizationId])
+  @@index([organizationId, email])
   @@index([status])
   @@map("contacts")
 }
@@ -165,6 +170,7 @@ model Contact {
 model Conversation {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId String    @map("organization_id") @db.Uuid
+  productId      String?   @map("product_id") @db.Uuid
   contactId      String    @map("contact_id") @db.Uuid
   status         String    @default("active") @db.VarChar(50)
   unread_count   Int       @default(0)
@@ -173,7 +179,12 @@ model Conversation {
   assignedTo     String?   @map("assigned_to") @db.Uuid  // ID do usuário atribuído
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+  product        Product?  @relation(fields: [productId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  contact        Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId])
+  @@index([organizationId, productId])
+  @@index([contactId])
   @@map("conversations")
 }
 
@@ -193,9 +204,54 @@ model Message {
 }
 
 /// PipelineStage - Etapas do funil de vendas
+model Product {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  name           String         @db.VarChar(255)
+  description    String?        @db.Text
+  color          String         @default("#6366f1") @db.VarChar(20)
+  status         String         @default("ACTIVE") @db.VarChar(50)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pipelines      Pipeline[]
+  deals          Deal[]
+  conversations  Conversation[]
+  schedules      Schedule[]
+  campaigns      Campaign[]
+  tags           Tag[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("products")
+}
+
+model Pipeline {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId      String         @map("product_id") @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  name           String         @db.VarChar(255)
+  isDefault      Boolean        @default(false) @map("is_default")
+  status         String         @default("ACTIVE") @db.VarChar(50)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stages         PipelineStage[]
+  deals          Deal[]
+
+  @@unique([productId, name])
+  @@index([organizationId])
+  @@index([productId])
+  @@map("pipelines")
+}
+
 model PipelineStage {
   id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId String?       @map("organization_id") @db.Uuid
+  pipelineId     String?       @map("pipeline_id") @db.Uuid
   name           String
   position       Int
   color          String?
@@ -205,8 +261,10 @@ model PipelineStage {
   createdAt      DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pipeline       Pipeline?     @relation(fields: [pipelineId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   deals          Deal[]
 
+  @@index([pipelineId])
   @@map("pipeline_stages")
 }
 
@@ -214,6 +272,8 @@ model PipelineStage {
 model Deal {
   id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId    String                 @map("organization_id") @db.Uuid
+  productId         String?                @map("product_id") @db.Uuid
+  pipelineId        String?                @map("pipeline_id") @db.Uuid
   contactId         String                 @map("contact_id") @db.Uuid
   stageId           String                 @map("stage_id") @db.Uuid
   title             String                 @db.VarChar(255)
@@ -249,8 +309,14 @@ model Deal {
   stageHistory      PipelineStageHistory[]
   contact           Contact                @relation(fields: [contactId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   stage             PipelineStage          @relation(fields: [stageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product           Product?               @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  pipeline          Pipeline?              @relation(fields: [pipelineId], references: [id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([organizationId])
+  @@index([organizationId, productId])
+  @@index([organizationId, pipelineId])
+  @@index([productId])
+  @@index([pipelineId])
   @@index([status])
   @@index([leadScore])
   @@index([channel, createdAt])
@@ -331,6 +397,7 @@ model DealActivity {
 model Schedule {
   id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId String         @map("organization_id") @db.Uuid
+  productId      String?        @map("product_id") @db.Uuid
   type           ScheduleType
   title          String
   description    String?
@@ -344,8 +411,10 @@ model Schedule {
   location       String?
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
+  product        Product?       @relation(fields: [productId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([organizationId])
+  @@index([organizationId, productId])
   @@map("schedules")
 }
 
@@ -414,6 +483,7 @@ model SchedulingQueue {
 model Tag {
   id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId String       @map("organization_id") @db.Uuid
+  productId      String?      @map("product_id") @db.Uuid
   name           String       @db.VarChar(100)
   color          String       @default("#6366f1") @db.VarChar(20)
   description    String?
@@ -421,9 +491,10 @@ model Tag {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
   contactTags    ContactTag[]
+  product        Product?     @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([organizationId, name])
   @@index([organizationId])
+  @@index([productId])
   @@map("tags")
 }
 
@@ -595,6 +666,7 @@ model pipeline_stage_histories {
 model Campaign {
   id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId   String           @map("organization_id") @db.Uuid
+  productId        String?          @map("product_id") @db.Uuid
   name             String           @db.VarChar(255)
   status           CampaignStatus   @default(DRAFT)
   instanceId       String           @map("instance_id") @db.Uuid
@@ -613,8 +685,10 @@ model Campaign {
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at")
   contacts         CampaignContact[]
+  product          Product?         @relation(fields: [productId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([organizationId])
+  @@index([organizationId, productId])
   @@index([status])
   @@map("campaigns")
 }
@@ -802,6 +876,7 @@ enum ChannelType {
   EMAIL
   PHONE
   FORM
+  LINKEDIN
   OTHER
   WEBSITE
   LANDING_PAGE
@@ -849,11 +924,49 @@ enum TranscriptionSource {
 enum IntegrationType {
   WHATSAPP
   INSTAGRAM
+  LINKEDIN
   N8N
   MAKE
   ZAPIER
   WEBHOOK
   API
+}
+
+/// LinkedInIntegration - Conexão OAuth com LinkedIn Ads por organização
+model LinkedInIntegration {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId        String    @unique @map("organization_id") @db.Uuid
+
+  /// Dados da conta LinkedIn conectada
+  linkedInMemberId      String?   @map("linkedin_member_id") @db.VarChar(100)
+  linkedInMemberName    String?   @map("linkedin_member_name") @db.VarChar(255)
+  linkedInMemberEmail   String?   @map("linkedin_member_email") @db.VarChar(255)
+
+  /// Tokens OAuth (armazenados encriptados)
+  accessToken           String    @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  expiresAt             DateTime? @map("expires_at")
+
+  /// Configuração escolhida pelo admin
+  adAccountId           String?   @map("ad_account_id") @db.VarChar(100)
+  adAccountName         String?   @map("ad_account_name") @db.VarChar(255)
+  selectedFormIds       String[]  @default([]) @map("selected_form_ids")
+  pipelineId            String?   @map("pipeline_id") @db.Uuid
+  productId             String?   @map("product_id") @db.Uuid
+
+  /// Webhook
+  webhookSubscriptionId String?   @map("webhook_subscription_id") @db.VarChar(255)
+
+  /// Status: PENDING | CONFIGURED | ACTIVE | ERROR | DISCONNECTED
+  status                String    @default("PENDING") @db.VarChar(50)
+
+  lastLeadAt            DateTime? @map("last_lead_at")
+  totalLeads            Int       @default(0) @map("total_leads")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("linkedin_integrations")
 }
 
 enum IntegrationActivityType {

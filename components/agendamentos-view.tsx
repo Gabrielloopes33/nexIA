@@ -40,6 +40,7 @@ import { useAgendamentos, TipoAtividade, StatusAtividade, Atividade } from "@/li
 import { useSchedules, Schedule } from "@/hooks/use-schedules"
 import { ScheduleType } from "@prisma/client"
 import { useOrganizationId } from "@/lib/contexts/organization-context"
+import { ProductSwitcher } from "@/components/products/product-switcher"
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -927,10 +928,14 @@ export function AgendamentosView({
     <div className="flex flex-col h-full bg-background">
       {/* ── Header ── */}
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            {somenteConcluidasView ? "Atividades Concluídas" : "Agenda"}
-          </h1>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              {somenteConcluidasView ? "Atividades Concluídas" : "Agenda"}
+            </h1>
+          </div>
+          <div className="h-6 w-px bg-border" />
+          <ProductSwitcher />
           <p className="text-sm text-muted-foreground">
             {somenteConcluidasView 
               ? "Visualize o histórico de atividades realizadas com sucesso"

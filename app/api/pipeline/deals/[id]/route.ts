@@ -17,6 +17,12 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+async function validateStagePipeline(stageId: string, pipelineId: string | null | undefined) {
+  if (!pipelineId) return true;
+  const stage = await prisma.pipelineStage.findUnique({ where: { id: stageId }, select: { pipelineId: true } });
+  return stage?.pipelineId === pipelineId;
+}
+
 /**
  * GET /api/pipeline/deals/[id]
  * Retorna detalhes de um deal
@@ -43,6 +49,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             name: true,
             color: true,
             probability: true,
+          },
+        },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+        pipeline: {
+          select: {
+            id: true,
+            name: true,
           },
         },
         activities: {
@@ -97,7 +116,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const organizationId = await getOrganizationId();
     const { id } = await params;
     const body = await request.json();
-    const { stageId, contactId, status, title, description, value, priority, expectedCloseDate, metadata } = body;
+    const { stageId, contactId, status, title, description, value, priority, expectedCloseDate, metadata, productId, pipelineId } = body;
 
     // Get current deal to check stage change
     const currentDeal = await prisma.deal.findUnique({
@@ -120,6 +139,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Valida consistência entre stage e pipeline
+    const targetStageId = stageId !== undefined ? stageId : currentDeal.stageId;
+    const targetPipelineId = pipelineId !== undefined ? pipelineId : currentDeal.pipelineId;
+
+    if ((stageId !== undefined || pipelineId !== undefined) && targetPipelineId) {
+      const isValid = await validateStagePipeline(targetStageId, targetPipelineId);
+      if (!isValid) {
+        return NextResponse.json(
+          { success: false, error: "stageId does not belong to the given pipelineId" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update deal
     const deal = await prisma.deal.update({
       where: { id },
@@ -133,6 +166,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         ...(priority && { priority: priority as DealPriority }),
         ...(expectedCloseDate && { expectedCloseDate: new Date(expectedCloseDate) }),
         ...(metadata && { metadata }),
+        ...(productId !== undefined && { productId }),
+        ...(pipelineId !== undefined && { pipelineId }),
       },
       include: {
         contact: {
@@ -149,6 +184,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             name: true,
             color: true,
             probability: true,
+          },
+        },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+        pipeline: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },

@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { PipelineViewReal } from "@/components/pipeline/pipeline-view-real"
 import { PipelineTemplateModal } from "@/components/pipeline/PipelineTemplateModal"
@@ -12,12 +13,14 @@ export default function PipelinePage() {
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
       <main className="flex-1 overflow-hidden">
-        <PipelineViewReal onNewPipeline={() => setIsModalOpen(true)} />
+        <Suspense>
+          <PipelineViewReal onNewPipeline={() => setIsModalOpen(true)} />
+        </Suspense>
       </main>
-      
-      <PipelineTemplateModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+
+      <PipelineTemplateModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
     </div>
   )

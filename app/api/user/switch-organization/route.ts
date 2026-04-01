@@ -38,20 +38,22 @@ export async function POST(req: Request) {
     }
 
     // Atualiza sessão com nova organização
+    const org = membership.organization!
     await createSession({
       userId: user.userId,
       email: user.email,
       name: user.name,
-      organizationId: membership.organization.id,
-      setupComplete: membership.organization.setupComplete ?? false,
+      organizationId: org.id,
+      productId: null,
+      setupComplete: org.setupComplete ?? false,
     })
 
     return NextResponse.json({
       success: true,
       organization: {
-        id: membership.organization.id,
-        name: membership.organization.name,
-        slug: membership.organization.slug,
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
       }
     })
   } catch (error) {

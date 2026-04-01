@@ -20,6 +20,7 @@ interface StageInput {
 
 interface CreateStagesBody {
   stages: StageInput[];
+  pipelineId?: string;
 }
 
 // ============================================
@@ -41,15 +42,44 @@ export async function GET(request: NextRequest) {
 
     console.log('[Pipeline Stages GET] organizationId:', organizationId);
 
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get("productId");
+    const pipelineIdQuery = searchParams.get("pipelineId");
+
+    let pipelineId: string | null = pipelineIdQuery;
+
+    // Se productId foi informado sem pipelineId, busca o pipeline padrão do produto
+    if (!pipelineId && productId) {
+      const defaultPipeline = await prisma.pipeline.findFirst({
+        where: { productId, organizationId, isDefault: true },
+      });
+      if (defaultPipeline) {
+        pipelineId = defaultPipeline.id;
+      }
+    }
+
+    // Valida pipeline se informado
+    if (pipelineId) {
+      const pipeline = await prisma.pipeline.findFirst({
+        where: { id: pipelineId, organizationId },
+      });
+      if (!pipeline) {
+        return NextResponse.json(
+          { success: false, error: "Pipeline not found" },
+          { status: 404 }
+        );
+      }
+    }
+
     const stages = await prisma.pipelineStage.findMany({
-      where: { organizationId },
+      where: pipelineId ? { pipelineId } : { organizationId },
       orderBy: { position: 'asc' },
     });
 
-    // Conta deals por estágio
+    // Conta deals por estágio (respeitando o escopo)
     const dealsByStage = await prisma.deal.groupBy({
       by: ['stageId'],
-      where: { organizationId },
+      where: pipelineId ? { pipelineId } : { organizationId },
       _count: { stageId: true },
     });
 
@@ -99,9 +129,22 @@ export async function POST(request: NextRequest) {
     // requireRole(auth.membership, ['OWNER', 'ADMIN']);
 
     const body: CreateStagesBody = await request.json();
-    const { stages } = body;
+    const { stages, pipelineId } = body;
 
     console.log('[Pipeline Stages POST] Body:', body);
+
+    // Valida pipeline se informado
+    if (pipelineId) {
+      const pipeline = await prisma.pipeline.findFirst({
+        where: { id: pipelineId, organizationId },
+      });
+      if (!pipeline) {
+        return NextResponse.json(
+          { success: false, error: "Pipeline not found" },
+          { status: 404 }
+        );
+      }
+    }
 
     // Validação: stages deve ser um array
     if (!Array.isArray(stages)) {
@@ -154,16 +197,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verifica se já existe um pipeline para esta organização
+    // Verifica se já existe um pipeline para esta organização (ou para o pipeline específico)
+    const stageWhere = pipelineId ? { pipelineId } : { organizationId };
     const existingStagesCount = await prisma.pipelineStage.count({
-      where: { organizationId },
+      where: stageWhere,
     });
 
     const isFirstPipeline = existingStagesCount === 0;
 
     // Busca a última posição existente (se houver)
     const lastStage = await prisma.pipelineStage.findFirst({
-      where: { organizationId },
+      where: stageWhere,
       orderBy: { position: 'desc' },
     });
 
@@ -175,6 +219,7 @@ export async function POST(request: NextRequest) {
         prisma.pipelineStage.create({
           data: {
             organizationId,
+            ...(pipelineId && { pipelineId }),
             name: stage.name.trim(),
             color: stage.color || DEFAULT_STAGE_COLOR,
             position: startPosition + index,
@@ -226,9 +271,27 @@ export async function DELETE(request: NextRequest) {
     // Valida membership
     await requireOrganizationMembership(organizationId);
 
+    const { searchParams } = new URL(request.url);
+    const pipelineId = searchParams.get("pipelineId");
+
+    // Valida pipeline se informado
+    if (pipelineId) {
+      const pipeline = await prisma.pipeline.findFirst({
+        where: { id: pipelineId, organizationId },
+      });
+      if (!pipeline) {
+        return NextResponse.json(
+          { success: false, error: "Pipeline not found" },
+          { status: 404 }
+        );
+      }
+    }
+
+    const stageWhere = pipelineId ? { pipelineId, organizationId } : { organizationId };
+
     // Conta quantas etapas serão removidas
     const stagesCount = await prisma.pipelineStage.count({
-      where: { organizationId },
+      where: stageWhere,
     });
 
     if (stagesCount === 0) {
@@ -245,15 +308,15 @@ export async function DELETE(request: NextRequest) {
     // Verifica se existem deals associados às etapas
     const stagesWithDeals = await prisma.pipelineStage.findMany({
       where: { 
-        organizationId,
+        ...stageWhere,
         deals: { some: {} }
       },
       select: { id: true, name: true },
     });
 
-    // Deleta todas as etapas da organização
+    // Deleta todas as etapas da organização (ou do pipeline)
     const { count: deletedCount } = await prisma.pipelineStage.deleteMany({
-      where: { organizationId },
+      where: stageWhere,
     });
 
     return NextResponse.json({

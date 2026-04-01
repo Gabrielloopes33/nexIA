@@ -40,6 +40,10 @@ export const FormSubmissionPayloadSchema = z.object({
   pdfUrl: z.string().url("pdfUrl deve ser uma URL válida"),
   pdfFilename: z.string().min(1, "pdfFilename é obrigatório"),
 
+  // Produto e pipeline (opcional, para vinculação no CRM)
+  productId: z.string().uuid().optional(),
+  pipelineId: z.string().uuid().optional(),
+
   // Rastreamento externo
   dossieId: z.string().min(1, "dossieId é obrigatório"),
   alunoId: z.string().min(1, "alunoId é obrigatório"),

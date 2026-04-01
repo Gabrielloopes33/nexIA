@@ -1,5 +1,10 @@
+import { Suspense } from "react"
 import { AgendamentosView } from "@/components/agendamentos-view"
 
 export default function AgendamentosPage() {
-  return <AgendamentosView />
+  return (
+    <Suspense>
+      <AgendamentosView />
+    </Suspense>
+  )
 }

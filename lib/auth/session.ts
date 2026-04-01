@@ -10,6 +10,7 @@ export interface SessionPayload {
   email: string
   name: string | null
   organizationId: string | null
+  productId: string | null
   setupComplete: boolean
   expiresAt: number
 }
@@ -52,6 +53,41 @@ export async function createSession(payload: Omit<SessionPayload, 'expiresAt'>):
     path: '/',
     maxAge: SESSION_DURATION_MS / 1000,
   })
+}
+
+export async function updateSessionProduct(productId: string | null): Promise<void> {
+  const cookieStore = await cookies()
+  const token = cookieStore.get(COOKIE_NAME)?.value
+  if (!token) return
+
+  const payload = verify(token)
+  if (!payload) return
+
+  const updated: SessionPayload = { ...payload, productId }
+  const newToken = sign(updated)
+  cookieStore.set(COOKIE_NAME, newToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_DURATION_MS / 1000,
+  })
+}
+
+export async function updateSessionPipeline(pipelineId: string | null): Promise<void> {
+  // PipelineId é mantido em cookie separado para não poluir o JWT principal
+  const cookieStore = await cookies()
+  if (pipelineId) {
+    cookieStore.set('nexia_pipeline', pipelineId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SESSION_DURATION_MS / 1000,
+    })
+  } else {
+    cookieStore.delete('nexia_pipeline')
+  }
 }
 
 export async function getSession(): Promise<SessionPayload | null> {

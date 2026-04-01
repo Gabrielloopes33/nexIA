@@ -11,6 +11,7 @@ import {
   Headphones,
   ListTodo,
   Phone,
+  Package,
 } from "lucide-react"
 
 export interface SidebarNavChild {
@@ -59,6 +60,12 @@ export const topNavItems: SidebarNavItem[] = [
     label: "Início",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    key: "produtos",
+    label: "Produtos",
+    href: "/produtos",
+    icon: Package,
   },
   {
     key: "contatos",

@@ -32,6 +32,9 @@ import { Label } from "@/components/ui/label"
 import { DealCard } from "./DealCard"
 import { DealDetailModal } from "./DealDetailModal"
 import { PipelineStage, Deal, DealActivity, DealPriority, DealStatus } from "@prisma/client"
+import { useProductSelection } from "@/hooks/use-product-selection"
+import { ProductSwitcher } from "@/components/products/product-switcher"
+import { PipelineSwitcher } from "@/components/products/pipeline-switcher"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1107,15 +1110,21 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
     valorMax: null
   })
 
-  // Fetch data on mount
+  const { productId, pipelineId } = useProductSelection()
+
+  // Fetch data on mount and when product/pipeline changes
   useEffect(() => {
     fetchStages()
     fetchDeals()
-  }, [])
+  }, [productId, pipelineId])
 
   const fetchStages = async () => {
     try {
-      const response = await fetch("/api/pipeline/stages")
+      const params = new URLSearchParams()
+      if (productId) params.set("productId", productId)
+      if (pipelineId) params.set("pipelineId", pipelineId)
+      const url = `/api/pipeline/stages${params.toString() ? "?" + params.toString() : ""}`
+      const response = await fetch(url)
       const data = await response.json()
       if (data.success) {
         setStages(data.data)
@@ -1128,7 +1137,11 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
   const fetchDeals = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/pipeline/deals")
+      const params = new URLSearchParams()
+      if (productId) params.set("productId", productId)
+      if (pipelineId) params.set("pipelineId", pipelineId)
+      const url = `/api/pipeline/deals${params.toString() ? "?" + params.toString() : ""}`
+      const response = await fetch(url)
       const data = await response.json()
       if (data.success) {
         // Converter valores Decimal para number
@@ -1403,8 +1416,11 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
     <div className="flex h-full flex-col overflow-hidden bg-background">
       {/* Top Toolbar */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold text-foreground">Negócios</h1>
+          <div className="h-4 w-px bg-border" />
+          <ProductSwitcher />
+          <PipelineSwitcher />
         </div>
 
         <div className="flex items-center gap-3">

@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner"
 import { useConversationSelection } from "@/lib/contexts/conversation-selection-context"
 import { getUserIdFromSession } from "@/lib/auth/client"
+import { ProductSwitcher } from "@/components/products/product-switcher"
 
 type AssignmentFilter = 'all' | 'mine' | 'unassigned'
 
@@ -204,6 +205,7 @@ export function ConversationsPanel({
             <h2 className="text-base font-semibold text-foreground">
               {isSelectionMode ? `${selectionCount} selecionadas` : "Conversas"}
             </h2>
+            <ProductSwitcher />
             <div className="flex items-center gap-2">
               {isSelectionMode ? (
                 <Button
