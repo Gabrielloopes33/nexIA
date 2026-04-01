@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -77,7 +77,7 @@ const STATUS_LABEL: Record<string, { label: string; variant: "default" | "second
   DISCONNECTED: { label: "Desconectado",    variant: "secondary" },
 }
 
-export default function LinkedInIntegrationPage() {
+function LinkedInIntegrationContent() {
   const searchParams = useSearchParams()
   const successParam = searchParams.get("success")
 
@@ -576,5 +576,13 @@ export default function LinkedInIntegrationPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LinkedInIntegrationPage() {
+  return (
+    <Suspense fallback={null}>
+      <LinkedInIntegrationContent />
+    </Suspense>
   )
 }

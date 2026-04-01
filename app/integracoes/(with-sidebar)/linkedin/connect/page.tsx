@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -17,7 +17,7 @@ function LinkedInIcon({ className }: { className?: string }) {
   )
 }
 
-export default function LinkedInConnectPage() {
+function LinkedInConnectContent() {
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
   const errorParam = searchParams.get("error")
@@ -161,5 +161,13 @@ export default function LinkedInConnectPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LinkedInConnectPage() {
+  return (
+    <Suspense fallback={null}>
+      <LinkedInConnectContent />
+    </Suspense>
   )
 }
