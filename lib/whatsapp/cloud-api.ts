@@ -501,23 +501,30 @@ export async function sendTextMessage(
   accessToken: string,
   previewUrl: boolean = false
 ): Promise<MessageResponse> {
-  return makeRequest(
-    `/${phoneNumberId}/messages`,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to,
-        type: 'text',
-        text: {
-          preview_url: previewUrl,
-          body: text,
-        },
-      }),
+  const url = `${BASE_URL}/${phoneNumberId}/messages`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
     },
-    accessToken
-  );
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'text',
+      text: {
+        preview_url: previewUrl,
+        body: text,
+      },
+    }),
+  });
+  const json = await response.json() as MessageResponse & { error?: WhatsAppError };
+  if (!response.ok || json.error) {
+    if (json.error) handleApiError(json.error);
+    throw new WhatsAppApiError(response.status, 'Unknown error occurred', 'UnknownError');
+  }
+  return json;
 }
 
 /**
