@@ -12,10 +12,15 @@ export const linkedInConfig = {
       ? `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/linkedin/auth/callback`
       : 'http://localhost:3000/api/integrations/linkedin/auth/callback'),
 
-  // Scopes necessários para LinkedIn Ads + Lead Gen Forms
+  // Scopes básicos (Sign In with LinkedIn) — já aprovados automaticamente
   scopes: [
+    'openid',
     'profile',
     'email',
+  ],
+
+  // Scopes de Advertising + Lead Sync — ativar apenas após aprovação do LinkedIn
+  adsScopes: [
     'r_ads',
     'r_ads_leadgen_automation',
   ],
