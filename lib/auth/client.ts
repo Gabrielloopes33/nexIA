@@ -27,7 +27,7 @@ export interface SessionPayload {
  */
 export function decodeJwtUnsafe(token: string): SessionPayload | null {
   try {
-    const [encoded] = token.split('.')
+    const [, encoded] = token.split('.')
     if (!encoded) return null
 
     const payload: SessionPayload = JSON.parse(

@@ -3,6 +3,7 @@
 import { useMemo, useCallback } from "react"
 import { ConversasPageShell } from "./conversas-page-shell"
 import { Conversation } from "@/lib/types/conversation"
+import { getUserIdFromSession } from "@/lib/auth/client"
 
 export type FilterType = 
   | "mine"           // Minhas conversas (atribuídas a mim)
@@ -39,13 +40,13 @@ export function ConversasFilteredPage({
   emptyTitle,
   emptyMessage,
 }: ConversasFilteredPageProps) {
+  const currentUserId = useMemo(() => getUserIdFromSession(), [])
+
   // Memoizar a função de filtro para evitar recriação em cada render
   const filterFn = useCallback((c: Conversation): boolean => {
     switch (filter) {
       case "mine":
-        // Conversas atribuídas ao usuário logado (simulado por enquanto)
-        // TODO: Pegar ID do usuário logado do contexto de autenticação
-        return c.assignedTo !== null && c.status === "open"
+        return c.assignedTo?.id === currentUserId && c.status === "open"
       
       case "unassigned":
         // Conversas sem atribuição (disponíveis para pegar)
@@ -82,7 +83,7 @@ export function ConversasFilteredPage({
       default:
         return true
     }
-  }, [filter]) // Só recria quando filter mudar
+  }, [filter, currentUserId]) // Só recria quando filter ou usuário mudar
 
   return (
     <ConversasPageShell
