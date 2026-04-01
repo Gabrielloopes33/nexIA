@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { useConversationSelection } from "@/lib/contexts/conversation-selection-context"
-import { getUserIdFromSession } from "@/lib/auth/client"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { ProductSwitcher } from "@/components/products/product-switcher"
 
 type AssignmentFilter = 'all' | 'mine' | 'unassigned'
@@ -96,7 +96,8 @@ export function ConversationsPanel({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const currentUserId = getUserIdFromSession()
+  const { user } = useCurrentUser()
+  const currentUserId = user?.userId ?? null
 
   // Tags únicas de todas as conversas (para exibir os chips de filtro)
   const availableTags = Array.from(

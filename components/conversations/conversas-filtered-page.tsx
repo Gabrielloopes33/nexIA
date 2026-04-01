@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from "react"
 import { ConversasPageShell } from "./conversas-page-shell"
 import { Conversation } from "@/lib/types/conversation"
-import { getUserIdFromSession } from "@/lib/auth/client"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
 export type FilterType = 
   | "mine"           // Minhas conversas (atribuídas a mim)
@@ -40,7 +40,8 @@ export function ConversasFilteredPage({
   emptyTitle,
   emptyMessage,
 }: ConversasFilteredPageProps) {
-  const currentUserId = useMemo(() => getUserIdFromSession(), [])
+  const { user } = useCurrentUser()
+  const currentUserId = user?.userId ?? null
 
   // Memoizar a função de filtro para evitar recriação em cada render
   const filterFn = useCallback((c: Conversation): boolean => {

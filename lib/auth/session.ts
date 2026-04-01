@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
 
 const COOKIE_NAME = 'nexia_session'
+const USER_COOKIE_NAME = 'nexia_user'
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 dias
 
 export interface SessionPayload {
@@ -43,11 +44,27 @@ function verify(token: string): SessionPayload | null {
 }
 
 export async function createSession(payload: Omit<SessionPayload, 'expiresAt'>): Promise<void> {
-  const full: SessionPayload = { ...payload, expiresAt: Date.now() + SESSION_DURATION_MS }
+  const expiresAt = Date.now() + SESSION_DURATION_MS
+  const full: SessionPayload = { ...payload, expiresAt }
   const token = sign(full)
   const cookieStore = await cookies()
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_DURATION_MS / 1000,
+  })
+  // Cookie legível no cliente para dados básicos de UI (filtros, contexto)
+  cookieStore.set(USER_COOKIE_NAME, JSON.stringify({
+    userId: payload.userId,
+    email: payload.email,
+    name: payload.name,
+    organizationId: payload.organizationId,
+    setupComplete: payload.setupComplete,
+    expiresAt,
+  }), {
+    httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
@@ -100,6 +117,7 @@ export async function getSession(): Promise<SessionPayload | null> {
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete(COOKIE_NAME)
+  cookieStore.delete(USER_COOKIE_NAME)
 }
 
 export function getSessionFromRequest(req: NextRequest): SessionPayload | null {
