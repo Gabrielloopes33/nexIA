@@ -131,6 +131,7 @@ export const topNavItems: SidebarNavItem[] = [
     icon: Puzzle,
     children: [
       { label: "WhatsApp Não Oficial", href: "/integracoes/whatsapp-nao-oficial", section: "Canais" },
+      { label: "LinkedIn Ads", href: "/integracoes/linkedin", section: "Canais" },
       { label: "Webhooks", href: "/integracoes/webhooks", section: "Ações" },
       { label: "Logs", href: "/integracoes/logs", section: "Ações" },
       { label: "Sync", href: "/integracoes/sync", section: "Ações" },

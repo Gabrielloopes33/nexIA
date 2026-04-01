@@ -482,17 +482,36 @@ export function useConversation(
         throw new Error(result.error || 'Erro ao enviar mensagem')
       }
 
-      // Revalidate to get real data
-      await swrMutate()
-      
+      // Substitui a mensagem temporária pela real no cache
+      await swrMutate(
+        (currentData: any) => {
+          if (!currentData?.data?.messages) return currentData
+          const existing: any[] = currentData.data.messages
+          const filtered = existing.filter((m) => m.id !== optimisticMessage.id)
+          return {
+            ...currentData,
+            data: {
+              ...currentData.data,
+              messages: [...filtered, result.data],
+              lastMessageAt: result.data.createdAt,
+              messageCount: (currentData.data.messageCount || 0) + (filtered.length === existing.length ? 1 : 0),
+            },
+          }
+        },
+        { revalidate: false }
+      )
+
+      // Revalida em background sem bloquear a UI
+      swrMutate(undefined, { revalidate: true })
+
       return result.data
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao enviar mensagem'
       toast.error(`Erro: ${message}`)
-      
+
       // Rollback
       await swrMutate()
-      
+
       return null
     } finally {
       setIsMutating(false)

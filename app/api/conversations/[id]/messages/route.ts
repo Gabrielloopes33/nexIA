@@ -142,15 +142,17 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
 
     // Cria a mensagem no banco
-    const message = await prisma.message.create({
+    let message = await prisma.message.create({
       data: {
         conversationId: id,
         contactId: conversation.contactId,
         content,
         direction: 'OUTBOUND',
-        status: 'SENT',
+        status: 'sent',
       },
     });
+
+    let sentMessageId: string | undefined;
 
     // Tenta enviar via instância conectada da organização (oficial tem prioridade)
     if (contact?.phone) {
@@ -167,21 +169,34 @@ export async function POST(request: NextRequest, { params }: Params) {
 
       if (officialInstance?.phoneNumberId && officialInstance?.accessToken) {
         try {
-          await sendTextMessage(officialInstance.phoneNumberId, contact.phone, content, officialInstance.accessToken);
-          console.log('Messages POST: Sent via WhatsApp Cloud API');
+          const result = await sendTextMessage(officialInstance.phoneNumberId, contact.phone, content, officialInstance.accessToken);
+          sentMessageId = (result as any).messages?.[0]?.id;
+          console.log('Messages POST: Sent via WhatsApp Cloud API. messageId:', sentMessageId);
         } catch (sendError) {
           console.error('Messages POST: WhatsApp Cloud API send failed:', sendError);
         }
       } else if (evolutionInstance) {
         try {
-          await evolutionService.sendText(evolutionInstance.instanceName, contact.phone, content);
-          console.log('Messages POST: Sent via Evolution API');
+          const result = await evolutionService.sendText(evolutionInstance.instanceName, contact.phone, content);
+          sentMessageId = (result as any).key?.id;
+          console.log('Messages POST: Sent via Evolution API. messageId:', sentMessageId);
         } catch (sendError) {
           console.error('Messages POST: Evolution API send failed:', sendError);
         }
       } else {
         console.warn('Messages POST: No connected instance found for org', organizationId);
       }
+    }
+
+    // Atualiza a mensagem com o messageId retornado (crítico para webhooks de status)
+    if (sentMessageId) {
+      message = await prisma.message.update({
+        where: { id: message.id },
+        data: {
+          messageId: sentMessageId,
+          status: 'sent',
+        },
+      });
     }
 
     // Atualiza a conversa

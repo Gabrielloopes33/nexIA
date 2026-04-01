@@ -130,7 +130,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-type IntegrationType = 'whatsapp' | 'instagram' | 'n8n' | 'webhook' | 'api';
+type IntegrationType = 'whatsapp' | 'instagram' | 'linkedin' | 'n8n' | 'webhook' | 'api';
 
 interface IntegrationItem {
   id: string;
@@ -184,8 +184,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       instagramWhere.status = status;
     }
 
+    // Buscar LinkedIn
+    const linkedInWhere: Record<string, unknown> = { organizationId };
+    if (status) linkedInWhere.status = status;
+
     // Buscar em paralelo
-    const [whatsappInstances, instagramInstances] = await Promise.all([
+    const [whatsappInstances, instagramInstances, linkedInIntegration] = await Promise.all([
       (!type || type === 'whatsapp')
         ? prisma.whatsappInstance.findMany({
             where: whatsappWhere,
@@ -198,10 +202,29 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             orderBy: { updatedAt: 'desc' },
           })
         : [],
+      (!type || type === 'linkedin')
+        ? prisma.linkedInIntegration.findFirst({ where: linkedInWhere })
+        : null,
     ]);
 
     // Combinar resultados
     const integrations: IntegrationItem[] = [
+      ...(linkedInIntegration ? [{
+        id: linkedInIntegration.id,
+        type: 'linkedin' as IntegrationType,
+        name: linkedInIntegration.linkedInMemberName ?? 'LinkedIn Lead Gen Forms',
+        status: linkedInIntegration.status,
+        username: linkedInIntegration.linkedInMemberEmail ?? undefined,
+        connectedAt: linkedInIntegration.createdAt,
+        lastSyncAt: linkedInIntegration.lastLeadAt ?? null,
+        organizationId: linkedInIntegration.organizationId,
+        createdAt: linkedInIntegration.createdAt,
+        updatedAt: linkedInIntegration.updatedAt,
+        settings: {
+          adAccountId: linkedInIntegration.adAccountId,
+          totalLeads: linkedInIntegration.totalLeads,
+        },
+      } satisfies IntegrationItem] : []),
       ...whatsappInstances.map((w): IntegrationItem => ({
         id: w.id,
         type: 'whatsapp',
