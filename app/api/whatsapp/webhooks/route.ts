@@ -224,16 +224,40 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const processedEvents: string[] = [];
 
     const handlers: WebhookEventHandlers = {
-      onMessage: async ({ message, contact, phoneNumberId, timestamp }) => {
-        console.log('[Webhook] onMessage:', { type: message.type, from: message.from, phoneNumberId });
+      onMessage: async ({ message, contact, phoneNumberId, displayPhoneNumber, timestamp }) => {
+        console.log('[Webhook] onMessage:', { type: message.type, from: message.from, phoneNumberId, displayPhoneNumber });
 
         try {
-          const instance = await prisma.whatsAppInstance.findFirst({
+          // Tenta encontrar a instância pelo phoneNumberId (mais preciso)
+          // Fallback: pelo displayPhoneNumber (número exibido), que pode estar armazenado como phoneNumber ou displayPhoneNumber
+          let instance = await prisma.whatsAppInstance.findFirst({
             where: { phoneNumberId },
           });
 
+          if (!instance && displayPhoneNumber) {
+            // Remove formatação para comparar (ex: "+55 11 99999-9999" → "5511999999999")
+            const rawDisplay = displayPhoneNumber.replace(/\D/g, '');
+            instance = await prisma.whatsAppInstance.findFirst({
+              where: {
+                OR: [
+                  { displayPhoneNumber },
+                  { phoneNumber: displayPhoneNumber },
+                  { phoneNumber: rawDisplay },
+                ],
+              },
+            });
+            if (instance) {
+              console.log('[Webhook] Instance found via displayPhoneNumber fallback:', instance.id);
+              // Atualiza o phoneNumberId para evitar fallback nas próximas vezes
+              await prisma.whatsAppInstance.update({
+                where: { id: instance.id },
+                data: { phoneNumberId },
+              });
+            }
+          }
+
           if (!instance) {
-            console.error('[Webhook] Instance not found for phoneNumberId:', phoneNumberId);
+            console.error('[Webhook] Instance not found for phoneNumberId:', phoneNumberId, 'displayPhoneNumber:', displayPhoneNumber);
             return;
           }
 
@@ -296,13 +320,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
       },
 
-      onStatus: async ({ status, phoneNumberId }) => {
-        console.log('[Webhook] onStatus:', { messageId: status.id, status: status.status });
+      onStatus: async ({ status, phoneNumberId, displayPhoneNumber }) => {
+        console.log('[Webhook] onStatus:', { messageId: status.id, status: status.status, phoneNumberId });
 
         try {
-          const instance = await prisma.whatsAppInstance.findFirst({
+          let instance = await prisma.whatsAppInstance.findFirst({
             where: { phoneNumberId },
           });
+
+          if (!instance && displayPhoneNumber) {
+            const rawDisplay = displayPhoneNumber.replace(/\D/g, '');
+            instance = await prisma.whatsAppInstance.findFirst({
+              where: {
+                OR: [
+                  { displayPhoneNumber },
+                  { phoneNumber: displayPhoneNumber },
+                  { phoneNumber: rawDisplay },
+                ],
+              },
+            });
+          }
 
           if (!instance) {
             console.error('[Webhook] Instance not found for phoneNumberId:', phoneNumberId);

@@ -195,6 +195,7 @@ export interface WebhookVerificationParams {
 export interface ProcessedEvent {
   type: 'message' | 'status' | 'template_update' | 'error';
   phoneNumberId: string;
+  displayPhoneNumber?: string;
   payload: unknown;
   timestamp: Date;
 }
@@ -281,6 +282,7 @@ export function processWebhookPayload(payload: WebhookPayload): ProcessedEvent[]
 
       const value = change.value;
       const phoneNumberId = value.metadata?.phone_number_id;
+      const displayPhoneNumber = value.metadata?.display_phone_number;
 
       if (!phoneNumberId) {
         continue;
@@ -292,6 +294,7 @@ export function processWebhookPayload(payload: WebhookPayload): ProcessedEvent[]
           events.push({
             type: 'message',
             phoneNumberId,
+            displayPhoneNumber,
             payload: {
               message,
               contact: value.contacts?.[0],
@@ -307,6 +310,7 @@ export function processWebhookPayload(payload: WebhookPayload): ProcessedEvent[]
           events.push({
             type: 'status',
             phoneNumberId,
+            displayPhoneNumber,
             payload: status,
             timestamp: new Date(parseInt(status.timestamp) * 1000),
           });
@@ -318,6 +322,7 @@ export function processWebhookPayload(payload: WebhookPayload): ProcessedEvent[]
         events.push({
           type: 'template_update',
           phoneNumberId,
+          displayPhoneNumber,
           payload: value.messaging_template,
           timestamp: new Date(),
         });
@@ -329,6 +334,7 @@ export function processWebhookPayload(payload: WebhookPayload): ProcessedEvent[]
           events.push({
             type: 'error',
             phoneNumberId,
+            displayPhoneNumber,
             payload: error,
             timestamp: new Date(),
           });
@@ -470,24 +476,28 @@ type MessageHandler = (event: {
   message: WebhookMessage;
   contact?: WebhookContact;
   phoneNumberId: string;
+  displayPhoneNumber?: string;
   timestamp: Date;
 }) => void | Promise<void>;
 
 type StatusHandler = (event: {
   status: WebhookStatus;
   phoneNumberId: string;
+  displayPhoneNumber?: string;
   timestamp: Date;
 }) => void | Promise<void>;
 
 type TemplateUpdateHandler = (event: {
   template: WebhookTemplateUpdate;
   phoneNumberId: string;
+  displayPhoneNumber?: string;
   timestamp: Date;
 }) => void | Promise<void>;
 
 type ErrorHandler = (event: {
   error: WebhookError;
   phoneNumberId: string;
+  displayPhoneNumber?: string;
   timestamp: Date;
 }) => void | Promise<void>;
 
@@ -521,6 +531,7 @@ export async function dispatchEvents(
                 message,
                 contact,
                 phoneNumberId: event.phoneNumberId,
+                displayPhoneNumber: event.displayPhoneNumber,
                 timestamp: event.timestamp,
               })
             ).catch(console.error)
@@ -537,6 +548,7 @@ export async function dispatchEvents(
               handlers.onStatus({
                 status,
                 phoneNumberId: event.phoneNumberId,
+                displayPhoneNumber: event.displayPhoneNumber,
                 timestamp: event.timestamp,
               })
             ).catch(console.error)
@@ -553,6 +565,7 @@ export async function dispatchEvents(
               handlers.onTemplateUpdate({
                 template,
                 phoneNumberId: event.phoneNumberId,
+                displayPhoneNumber: event.displayPhoneNumber,
                 timestamp: event.timestamp,
               })
             ).catch(console.error)
@@ -569,6 +582,7 @@ export async function dispatchEvents(
               handlers.onError({
                 error,
                 phoneNumberId: event.phoneNumberId,
+                displayPhoneNumber: event.displayPhoneNumber,
                 timestamp: event.timestamp,
               })
             ).catch(console.error)

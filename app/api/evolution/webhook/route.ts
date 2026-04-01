@@ -163,24 +163,11 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
   const messageData = data.message as Record<string, unknown> | undefined;
   const pushName = data.pushName as string | undefined;
   
-  if (key?.fromMe) {
-    // Update sent counter for outbound messages
-    await prisma.evolutionInstance.update({
-      where: { id: instanceId },
-      data: {
-        messagesSent: { increment: 1 },
-        lastActivityAt: new Date(),
-      },
-    });
-    console.log('[Evolution Webhook] Outbound message counted');
-    return;
-  }
-
   // Get instance with organization
   const instance = await prisma.evolutionInstance.findUnique({
     where: { id: instanceId },
   });
-  
+
   if (!instance) {
     console.warn('[Evolution Webhook] Instance not found:', instanceId);
     return;
@@ -192,33 +179,13 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
     console.warn('[Evolution Webhook] No remoteJid in message key');
     return;
   }
-  
+
   const phone = remoteJid.split('@')[0];
   const organizationId = instance.organizationId;
-  
+  const messageId = key?.id as string;
+
   // Verifica se é um grupo (grupos geralmente têm IDs começando com 12xxxxxx@g.us)
   const isGroup = remoteJid.endsWith('@g.us');
-  
-  // Extrai o nome do contato/grupo
-  // 1. Usa pushName se disponível (nome do perfil do WhatsApp)
-  // 2. Se for grupo, tenta pegar o subject do grupo
-  // 3. Se não tiver nome, deixa null para mostrar o telefone formatado
-  let contactName: string | null = null;
-  
-  if (pushName && pushName.trim() && pushName !== phone) {
-    contactName = pushName;
-  } else if (isGroup) {
-    // Para grupos, tenta extrair o nome do grupo dos metadados
-    const groupSubject = (messageData?.groupSubject as string) || 
-                        (data.groupMetadata as Record<string, unknown>)?.subject as string ||
-                        (data as Record<string, unknown>).subject as string;
-    if (groupSubject) {
-      contactName = groupSubject;
-    }
-  }
-  
-  // Se não conseguiu extrair nome e não é grupo, deixa null
-  // A UI vai mostrar o telefone formatado
 
   // Get message content - handle different message types
   let content = '';
@@ -238,7 +205,67 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
     content = '[Mensagem não suportada]';
   }
 
-  const messageId = key?.id as string;
+  // Mensagem enviada pelo próprio número (fromMe) — ex: ManyChat, outro sistema externo
+  if (key?.fromMe) {
+    await prisma.evolutionInstance.update({
+      where: { id: instanceId },
+      data: { messagesSent: { increment: 1 }, lastActivityAt: new Date() },
+    });
+
+    // Evita duplicata: se o CRM já salvou essa mensagem ao enviar, não salva de novo
+    if (messageId) {
+      const existing = await prisma.message.findFirst({ where: { messageId } });
+      if (existing) {
+        console.log('[Evolution Webhook] fromMe message already saved, skipping:', messageId);
+        return;
+      }
+    }
+
+    // Salva mensagem de saída enviada por ferramenta externa (ManyChat, etc.)
+    try {
+      const contact = await prisma.contact.findFirst({
+        where: { organizationId, phone },
+      });
+      if (!contact) {
+        console.log('[Evolution Webhook] fromMe: contact not found for phone', phone, '— skipping');
+        return;
+      }
+
+      const conversation = await prisma.conversation.findFirst({
+        where: { contactId: contact.id, organizationId, status: 'active' },
+      });
+      if (!conversation) {
+        console.log('[Evolution Webhook] fromMe: no active conversation for contact', contact.id, '— skipping');
+        return;
+      }
+
+      await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          contactId: contact.id,
+          content,
+          status: 'sent',
+          direction: 'OUTBOUND',
+          messageId: messageId || undefined,
+        },
+      });
+      console.log('[Evolution Webhook] Saved outbound (fromMe) message for conversation:', conversation.id);
+    } catch (error) {
+      console.error('[Evolution Webhook] Error saving fromMe message:', error);
+    }
+    return;
+  }
+
+  // Extrai o nome do contato/grupo
+  let contactName: string | null = null;
+  if (pushName && pushName.trim() && pushName !== phone) {
+    contactName = pushName;
+  } else if (isGroup) {
+    const groupSubject = (messageData?.groupSubject as string) ||
+                        (data.groupMetadata as Record<string, unknown>)?.subject as string ||
+                        (data as Record<string, unknown>).subject as string;
+    if (groupSubject) contactName = groupSubject;
+  }
 
   console.log('[Evolution Webhook] Processing inbound message:', {
     phone,
@@ -268,13 +295,12 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
       },
       update: {
         lastInteractionAt: new Date(),
-        // Atualiza o nome se anteriormente era null e agora temos um nome
         ...(contactName ? { name: contactName } : {}),
       },
       create: {
         organizationId,
         phone,
-        name: contactName, // Pode ser null - a UI vai mostrar telefone formatado
+        name: contactName,
         status: 'ACTIVE',
         lastInteractionAt: new Date(),
       },
