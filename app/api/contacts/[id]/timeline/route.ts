@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Buscar dados em paralelo
     console.log('[Timeline API] Fetching schedules, deals, conversations...');
-    const [schedules, deals, conversations] = await Promise.all([
+    const [schedules, deals, conversations, contactWithNotes] = await Promise.all([
       // Schedules (tarefas, ligações, reuniões)
       prisma.schedule.findMany({
         where: { 
@@ -70,12 +70,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       // Conversas do contato
       prisma.conversation.findMany({
-        where: { 
+        where: {
           contactId: id,
           organizationId,
         },
         orderBy: { updatedAt: "desc" },
         take: 10,
+      }),
+
+      // Contato (para ler notas do metadata)
+      prisma.contact.findUnique({
+        where: { id },
+        select: { metadata: true },
       }),
     ]);
 
@@ -240,6 +246,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         },
       });
     });
+
+    // Adicionar notas do contato (metadata.contactNotes)
+    if (contactWithNotes?.metadata && typeof contactWithNotes.metadata === 'object') {
+      const meta = contactWithNotes.metadata as Record<string, unknown>;
+      if (Array.isArray(meta.contactNotes)) {
+        (meta.contactNotes as Array<{ id: string; text: string; author: string; createdAt: string }>).forEach((note) => {
+          timeline.push({
+            id: `note-${note.id}`,
+            type: 'note',
+            title: note.text,
+            description: undefined,
+            date: note.createdAt,
+            author: note.author || 'Agente',
+            metadata: { noteId: note.id },
+          });
+        });
+      }
+    }
 
     // Criar mapa de conversas para canal
     const conversationMap = new Map(conversations.map(c => [c.id, c]));

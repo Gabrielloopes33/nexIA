@@ -180,10 +180,22 @@ export function ContactDetailPanel({ contact: propContact, isOpen: propIsOpen, o
     }
   }
 
-  const addNote = () => {
-    if (!newNote.trim()) return
-    // In real app, this would add to timeline
-    setNewNote('')
+  const addNote = async () => {
+    if (!newNote.trim() || !contact?.id) return
+    try {
+      const res = await fetch(`/api/contacts/${contact.id}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newNote }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setNewNote('')
+        refreshTimeline()
+      }
+    } catch {
+      // silently fail
+    }
   }
 
   // Tag color options

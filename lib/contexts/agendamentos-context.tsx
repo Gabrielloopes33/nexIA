@@ -9,6 +9,7 @@ export type StatusAtividade = "confirmado" | "pendente" | "cancelado"
 
 export interface Atividade {
   id: number
+  scheduleId?: string // UUID original do banco
   titulo: string
   contato: string
   empresa: string

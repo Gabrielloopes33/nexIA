@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Target,
   Loader2,
+  Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -157,6 +158,7 @@ function mapScheduleToAtividade(schedule: Schedule): Atividade {
 
   return {
     id: parseInt(schedule.id.slice(-6), 16), // Converte parte do UUID para número
+    scheduleId: schedule.id,
     titulo: schedule.title,
     contato,
     empresa,
@@ -477,10 +479,14 @@ function ModalNovaAtividade({
 
 function ModalDetalhes({
   atividade,
-  onFechar
+  onFechar,
+  onExcluir,
+  onVerContato,
 }: {
   atividade: Atividade | null
   onFechar: () => void
+  onExcluir: (atividade: Atividade) => void
+  onVerContato: (atividade: Atividade) => void
 }) {
   if (!atividade) return null
 
@@ -507,15 +513,18 @@ function ModalDetalhes({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+          <button
+            className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors text-left w-full"
+            onClick={() => onVerContato(atividade)}
+          >
             <div className={cn("flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold", avatarColor(atividade.avatar))}>
               {atividade.avatar}
             </div>
             <div>
               <p className="font-medium text-gray-900">{atividade.contato}</p>
-              <p className="text-sm text-gray-500">{atividade.empresa}</p>
+              <p className="text-sm text-gray-500">{atividade.empresa || "Ver contato →"}</p>
             </div>
-          </div>
+          </button>
 
           {atividade.local && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -545,10 +554,15 @@ function ModalDetalhes({
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onFechar}>Fechar</Button>
-          <Button className="bg-[#46347F] hover:bg-[#7b79c4] text-white">
-            Editar
+          <Button
+            variant="outline"
+            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 mr-auto"
+            onClick={() => onExcluir(atividade)}
+          >
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Excluir
           </Button>
+          <Button variant="outline" onClick={onFechar}>Fechar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -605,12 +619,13 @@ export function AgendamentosView({
   }, [inicioSemanaFiltro, fimSemanaFiltro, tipoFiltro, somenteConcluidasView])
 
   // Hook de schedules
-  const { 
-    schedules, 
-    isLoading, 
-    error, 
-    createSchedule, 
+  const {
+    schedules,
+    isLoading,
+    error,
+    createSchedule,
     updateSchedule,
+    deleteSchedule,
     refreshSchedules,
   } = useSchedules(orgId || undefined, scheduleFilters)
 
@@ -881,10 +896,24 @@ export function AgendamentosView({
   }, [draggedAtividade, diasSemana, schedules, updateSchedule, refreshSchedules])
 
   const handleCardClick = useCallback((atividade: Atividade) => {
-    const contato = createContactFromAtividade(atividade)
+    setAtividadeSelecionada(atividade)
+  }, [])
+
+  const handleExcluirAtividade = useCallback(async (atividade: Atividade) => {
+    if (!atividade.scheduleId) return
+    if (!confirm(`Excluir "${atividade.titulo}"?`)) return
+    await deleteSchedule(atividade.scheduleId)
+    setAtividadeSelecionada(null)
+    await refreshSchedules()
+  }, [deleteSchedule, refreshSchedules])
+
+  const handleVerContato = useCallback((atividade: Atividade) => {
+    const schedule = schedules.find(s => s.id === atividade.scheduleId)
+    const contato = createContactFromAtividade(atividade, schedule)
     setSelectedContact(contato)
     setIsSidebarOpen(true)
-  }, [])
+    setAtividadeSelecionada(null)
+  }, [schedules])
 
   const handleCloseSidebar = useCallback(() => {
     setIsSidebarOpen(false)
@@ -1431,6 +1460,8 @@ export function AgendamentosView({
       <ModalDetalhes
         atividade={atividadeSelecionada}
         onFechar={() => setAtividadeSelecionada(null)}
+        onExcluir={handleExcluirAtividade}
+        onVerContato={handleVerContato}
       />
     </div>
   )

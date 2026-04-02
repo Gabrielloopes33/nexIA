@@ -1,10 +1,10 @@
 "use client"
 
-import { 
-  Building2, 
-  Phone, 
-  MapPin, 
-  Globe, 
+import {
+  Building2,
+  Phone,
+  MapPin,
+  Globe,
   Calendar,
   MessageSquare,
   DollarSign,
@@ -23,18 +23,28 @@ import {
   Plus,
   Trash2,
   Edit3,
-  Bot
+  Bot,
+  CalendarPlus,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { formatDate, formatCurrency } from "@/lib/utils"
 import type { Conversation } from "@/lib/types/conversation"
 import { useState, useEffect } from "react"
 import { useContactDeals, ContactDeal } from "@/hooks/use-contact-deals"
 import { useContactTimeline, TimelineEvent } from "@/hooks/use-contact-timeline"
+import { useSchedules } from "@/hooks/use-schedules"
 import { useOrganizationId } from "@/lib/contexts/organization-context"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -67,16 +77,38 @@ export function CustomerContextPanel({ conversation }: Props) {
   const [showAllActivities, setShowAllActivities] = useState(false)
   const [dealsExpanded, setDealsExpanded] = useState(true)
   const [activitiesExpanded, setActivitiesExpanded] = useState(true)
+  const [schedulesExpanded, setSchedulesExpanded] = useState(true)
+  const [notesExpanded, setNotesExpanded] = useState(true)
   const [isCreateDealOpen, setIsCreateDealOpen] = useState(false)
+  const [isCreateScheduleOpen, setIsCreateScheduleOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false)
   const [contactData, setContactData] = useState<any>(null)
   const [isLoadingContact, setIsLoadingContact] = useState(false)
-  
+
+  // Notes state
+  interface ContactNote { id: string; text: string; author: string; createdAt: string }
+  const [notes, setNotes] = useState<ContactNote[]>([])
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false)
+  const [newNoteText, setNewNoteText] = useState('')
+  const [isSubmittingNote, setIsSubmittingNote] = useState(false)
+
   // Form state for new deal
   const [dealForm, setDealForm] = useState({
     title: '',
     value: '',
     description: '',
+  })
+
+  // Form state for new schedule
+  const [scheduleForm, setScheduleForm] = useState({
+    type: 'meeting' as 'meeting' | 'call' | 'task' | 'deadline',
+    title: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    description: '',
+    location: '',
   })
 
   const organizationId = useOrganizationId()
@@ -94,6 +126,22 @@ export function CustomerContextPanel({ conversation }: Props) {
       .finally(() => setIsLoadingContact(false))
   }, [conversation?.contactId])
 
+  // Buscar notas do contato
+  const fetchNotes = async (contactId: string) => {
+    setIsLoadingNotes(true)
+    try {
+      const res = await fetch(`/api/contacts/${contactId}/notes`)
+      const data = await res.json()
+      if (data.success) setNotes(data.data)
+    } catch {}
+    finally { setIsLoadingNotes(false) }
+  }
+
+  useEffect(() => {
+    if (!conversation?.contactId) { setNotes([]); return }
+    fetchNotes(conversation.contactId)
+  }, [conversation?.contactId])
+
   // Buscar dados reais do backend
   const { 
     deals, 
@@ -102,12 +150,21 @@ export function CustomerContextPanel({ conversation }: Props) {
     refresh: refreshDeals 
   } = useContactDeals(conversation?.contactId)
 
-  const { 
-    events: timelineEvents, 
-    isLoading: isLoadingTimeline, 
-    error: timelineError, 
-    refresh: refreshTimeline 
+  const {
+    events: timelineEvents,
+    isLoading: isLoadingTimeline,
+    error: timelineError,
+    refresh: refreshTimeline
   } = useContactTimeline(conversation?.contactId)
+
+  const {
+    schedules,
+    isLoading: isLoadingSchedules,
+    error: schedulesError,
+    refreshSchedules,
+    createSchedule,
+    deleteSchedule,
+  } = useSchedules(undefined, conversation?.contactId ? { contactId: conversation.contactId } : undefined)
 
   // Filtrar apenas deals abertos para exibição principal
   const openDeals = deals.filter(d => d.status === 'OPEN')
@@ -206,6 +263,115 @@ export function CustomerContextPanel({ conversation }: Props) {
       refreshTimeline()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao excluir negócio')
+    }
+  }
+
+  // Criar nota
+  const handleCreateNote = async () => {
+    if (!conversation?.contactId || !newNoteText.trim()) return
+    setIsSubmittingNote(true)
+    try {
+      const res = await fetch(`/api/contacts/${conversation.contactId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newNoteText }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setNotes(prev => [...prev, data.data])
+        setNewNoteText('')
+        refreshTimeline()
+      } else {
+        toast.error('Erro ao salvar nota')
+      }
+    } catch {
+      toast.error('Erro ao salvar nota')
+    } finally {
+      setIsSubmittingNote(false)
+    }
+  }
+
+  // Deletar nota
+  const handleDeleteNote = async (noteId: string) => {
+    if (!conversation?.contactId) return
+    if (!confirm('Excluir esta nota?')) return
+    try {
+      const res = await fetch(`/api/contacts/${conversation.contactId}/notes`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noteId }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setNotes(prev => prev.filter(n => n.id !== noteId))
+        refreshTimeline()
+      } else {
+        toast.error('Erro ao excluir nota')
+      }
+    } catch {
+      toast.error('Erro ao excluir nota')
+    }
+  }
+
+  // Criar novo agendamento
+  const handleCreateSchedule = async () => {
+    if (!conversation?.contactId || !organizationId) {
+      toast.error('Informações incompletas')
+      return
+    }
+    if (!scheduleForm.title.trim()) {
+      toast.error('Título é obrigatório')
+      return
+    }
+    if (!scheduleForm.date || !scheduleForm.startTime || !scheduleForm.endTime) {
+      toast.error('Data, hora de início e fim são obrigatórios')
+      return
+    }
+
+    const startTime = new Date(`${scheduleForm.date}T${scheduleForm.startTime}:00`)
+    const endTime = new Date(`${scheduleForm.date}T${scheduleForm.endTime}:00`)
+
+    if (endTime <= startTime) {
+      toast.error('Hora de fim deve ser após a hora de início')
+      return
+    }
+
+    setIsSubmittingSchedule(true)
+    try {
+      const result = await createSchedule({
+        type: scheduleForm.type as any,
+        title: scheduleForm.title,
+        description: scheduleForm.description || undefined,
+        contactId: conversation.contactId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        location: scheduleForm.location || undefined,
+      })
+
+      if (result) {
+        toast.success('Agendamento criado com sucesso!')
+        setScheduleForm({ type: 'meeting', title: '', date: '', startTime: '', endTime: '', description: '', location: '' })
+        setIsCreateScheduleOpen(false)
+        refreshTimeline()
+      } else {
+        toast.error('Erro ao criar agendamento')
+      }
+    } catch {
+      toast.error('Erro ao criar agendamento')
+    } finally {
+      setIsSubmittingSchedule(false)
+    }
+  }
+
+  // Deletar agendamento
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este agendamento?')) return
+    const success = await deleteSchedule(scheduleId)
+    if (success) {
+      toast.success('Agendamento excluído!')
+      refreshTimeline()
+    } else {
+      toast.error('Erro ao excluir agendamento')
     }
   }
 
@@ -546,6 +712,320 @@ export function CustomerContextPanel({ conversation }: Props) {
                     )}
                   </div>
                 ))
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Schedules */}
+        <div className="border-b border-border">
+          <button
+            onClick={() => setSchedulesExpanded(!schedulesExpanded)}
+            className="flex w-full items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <CalendarPlus className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">Agendamentos</span>
+              <Badge variant="secondary" className="text-[10px] h-5">
+                {isLoadingSchedules ? '...' : schedules.length}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1">
+              <Dialog open={isCreateScheduleOpen} onOpenChange={setIsCreateScheduleOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[440px]">
+                  <DialogHeader>
+                    <DialogTitle>Novo Agendamento</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="sched-type">Tipo *</Label>
+                      <Select
+                        value={scheduleForm.type}
+                        onValueChange={(v) => setScheduleForm({ ...scheduleForm, type: v as any })}
+                      >
+                        <SelectTrigger id="sched-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="meeting">Reunião</SelectItem>
+                          <SelectItem value="call">Ligação</SelectItem>
+                          <SelectItem value="task">Tarefa</SelectItem>
+                          <SelectItem value="deadline">Prazo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="sched-title">Título *</Label>
+                      <Input
+                        id="sched-title"
+                        value={scheduleForm.title}
+                        onChange={(e) => setScheduleForm({ ...scheduleForm, title: e.target.value })}
+                        placeholder="Ex: Reunião de apresentação"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="sched-date">Data *</Label>
+                      <Input
+                        id="sched-date"
+                        type="date"
+                        value={scheduleForm.date}
+                        onChange={(e) => setScheduleForm({ ...scheduleForm, date: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="grid gap-2">
+                        <Label htmlFor="sched-start">Início *</Label>
+                        <Input
+                          id="sched-start"
+                          type="time"
+                          value={scheduleForm.startTime}
+                          onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="sched-end">Fim *</Label>
+                        <Input
+                          id="sched-end"
+                          type="time"
+                          value={scheduleForm.endTime}
+                          onChange={(e) => setScheduleForm({ ...scheduleForm, endTime: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="sched-location">Local</Label>
+                      <Input
+                        id="sched-location"
+                        value={scheduleForm.location}
+                        onChange={(e) => setScheduleForm({ ...scheduleForm, location: e.target.value })}
+                        placeholder="Ex: Google Meet, Escritório..."
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="sched-desc">Descrição</Label>
+                      <Textarea
+                        id="sched-desc"
+                        value={scheduleForm.description}
+                        onChange={(e) => setScheduleForm({ ...scheduleForm, description: e.target.value })}
+                        placeholder="Detalhes do agendamento..."
+                        rows={3}
+                        className="resize-none"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancelar</Button>
+                    </DialogClose>
+                    <Button
+                      onClick={handleCreateSchedule}
+                      disabled={isSubmittingSchedule}
+                      className="bg-[#46347F] hover:bg-[#46347F]/90"
+                    >
+                      {isSubmittingSchedule ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Criando...
+                        </>
+                      ) : (
+                        'Criar Agendamento'
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              {schedulesExpanded ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+          </button>
+
+          {schedulesExpanded && (
+            <div className="px-5 pb-4 space-y-2">
+              {isLoadingSchedules ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : schedulesError ? (
+                <div className="flex items-center gap-2 py-3 text-xs text-red-500">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Erro ao carregar agendamentos</span>
+                </div>
+              ) : schedules.length === 0 ? (
+                <div className="py-3 text-xs text-muted-foreground text-center">
+                  Nenhum agendamento encontrado
+                </div>
+              ) : (
+                schedules.map((schedule) => {
+                  const typeLabels: Record<string, string> = {
+                    meeting: 'Reunião',
+                    call: 'Ligação',
+                    task: 'Tarefa',
+                    deadline: 'Prazo',
+                  }
+                  const typeColors: Record<string, string> = {
+                    meeting: 'text-orange-500',
+                    call: 'text-green-500',
+                    task: 'text-yellow-500',
+                    deadline: 'text-red-500',
+                  }
+                  const statusLabels: Record<string, string> = {
+                    pending: 'Pendente',
+                    completed: 'Concluído',
+                    cancelled: 'Cancelado',
+                  }
+                  const start = new Date(schedule.startTime)
+                  return (
+                    <div
+                      key={schedule.id}
+                      className="rounded-lg border border-border bg-background p-3 hover:bg-muted/30 transition-colors group"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <p className="text-xs font-semibold text-foreground line-clamp-2">{schedule.title}</p>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Badge variant="outline" className={cn("text-[9px]", typeColors[schedule.type])}>
+                            {typeLabels[schedule.type] ?? schedule.type}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDeleteSchedule(schedule.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                          {' '}
+                          {start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <Badge
+                          variant="secondary"
+                          className={cn("text-[9px] ml-auto", {
+                            'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400': schedule.status === 'pending',
+                            'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400': schedule.status === 'completed',
+                            'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400': schedule.status === 'cancelled',
+                          })}
+                        >
+                          {statusLabels[schedule.status] ?? schedule.status}
+                        </Badge>
+                      </div>
+                      {schedule.location && (
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-1">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{schedule.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Notes & Observations */}
+        <div className="border-b border-border">
+          <button
+            onClick={() => setNotesExpanded(!notesExpanded)}
+            className="flex w-full items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">Notas e Observações</span>
+              <Badge variant="secondary" className="text-[10px] h-5">
+                {isLoadingNotes ? '...' : notes.length}
+              </Badge>
+            </div>
+            {notesExpanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+
+          {notesExpanded && (
+            <div className="px-5 pb-4 space-y-3">
+              {/* Input para nova nota */}
+              <div className="flex flex-col gap-2">
+                <Textarea
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  placeholder="Adicionar nota ou observação..."
+                  rows={3}
+                  className="resize-none text-xs"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleCreateNote()
+                  }}
+                />
+                <Button
+                  size="sm"
+                  onClick={handleCreateNote}
+                  disabled={isSubmittingNote || !newNoteText.trim()}
+                  className="self-end bg-[#46347F] hover:bg-[#46347F]/90 h-7 text-xs"
+                >
+                  {isSubmittingNote ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    'Salvar nota'
+                  )}
+                </Button>
+              </div>
+
+              {/* Lista de notas */}
+              {isLoadingNotes ? (
+                <div className="flex items-center justify-center py-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : notes.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  Nenhuma nota registrada
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {[...notes].reverse().map((note) => (
+                    <div
+                      key={note.id}
+                      className="group rounded-lg bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 px-3 py-2.5"
+                    >
+                      <p className="text-xs text-foreground leading-snug whitespace-pre-wrap">
+                        {note.text}
+                      </p>
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">
+                          {note.author} · {new Date(note.createdAt).toLocaleDateString('pt-BR', {
+                            day: '2-digit', month: '2-digit', year: '2-digit',
+                            hour: '2-digit', minute: '2-digit',
+                          })}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteNote(note.id)}
+                        >
+                          <Trash2 className="h-3 w-3 text-red-400" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
