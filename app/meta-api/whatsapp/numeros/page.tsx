@@ -58,7 +58,7 @@ export default function WhatsAppNumerosPage() {
               <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
               Atualizar
             </Button>
-            <AddNumberDialog onAdd={addNumber} disabled={isLoading} />
+            <AddNumberDialog onAdd={addNumber} onSuccess={refreshNumbers} disabled={isLoading} />
           </div>
         </div>
 
