@@ -30,13 +30,13 @@ export function ProductSwitcher({ className }: { className?: string }) {
     <div ref={containerRef} className={cn("relative", className)}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/50 transition-colors"
+        className="flex items-center gap-2 rounded-md border border-border bg-white px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/50 transition-colors w-[110px] justify-between"
       >
         <span
           className="h-2.5 w-2.5 rounded-full"
           style={{ backgroundColor: selectedProduct?.color || "#6366f1" }}
         />
-        <span className="max-w-[160px] truncate">{selectedProduct?.name || "Selecionar produto"}</span>
+        <span className="flex-1 truncate text-left">{selectedProduct?.name || "Selecionar produto"}</span>
         <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
 

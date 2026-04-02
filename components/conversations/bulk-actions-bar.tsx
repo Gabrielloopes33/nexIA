@@ -13,7 +13,8 @@ import {
   Archive, 
   Trash2, 
   X,
-  Loader2 
+  Loader2,
+  MailOpen
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -89,6 +90,15 @@ export function BulkActionsBar({
     toast.info("Funcionalidade em desenvolvimento", {
       description: "Arquivamento em lote será implementado em breve",
     })
+  }
+
+  const handleMarkAsUnread = () => {
+    // TODO: Implementar marcar como não lida em lote via API
+    toast.success(`${selectionCount} ${selectionCount === 1 ? 'conversa marcada' : 'conversas marcadas'} como não lida`, {
+      description: "As conversas serão marcadas como não lidas",
+    })
+    clearSelection()
+    onActionComplete?.()
   }
 
   return (
@@ -168,6 +178,18 @@ export function BulkActionsBar({
           >
             <Archive className="h-4 w-4 mr-1" />
             Arquivar
+          </Button>
+
+          {/* Marcar como não lida */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleMarkAsUnread}
+            disabled={isLoading}
+            className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          >
+            <MailOpen className="h-4 w-4 mr-1" />
+            Não lida
           </Button>
         </div>
 

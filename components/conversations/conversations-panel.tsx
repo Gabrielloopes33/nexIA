@@ -151,6 +151,9 @@ export function ConversationsPanel({
   const allSelected = filtered.length > 0 && filtered.every((c) => isSelected(c.id))
   const someSelected = filtered.some((c) => isSelected(c.id)) && !allSelected
 
+  // Contador total de mensagens não lidas
+  const totalUnread = filtered.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+
   const handleSelectAll = useCallback(() => {
     if (allSelected) {
       deselectAll()
@@ -202,10 +205,17 @@ export function ConversationsPanel({
       <div className="flex h-full w-[340px] shrink-0 flex-col border-r border-border bg-background">
         {/* Header */}
         <div className="border-b border-border px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-foreground">
-              {isSelectionMode ? `${selectionCount} selecionadas` : "Conversas"}
-            </h2>
+          <div className="flex items-center justify-between mb-3 gap-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-semibold text-foreground">
+                {isSelectionMode ? `${selectionCount} selecionadas` : "Conversas"}
+              </h2>
+              {!isSelectionMode && totalUnread > 0 && (
+                <span className="flex h-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white min-w-5">
+                  {totalUnread}
+                </span>
+              )}
+            </div>
             <ProductSwitcher />
             <div className="flex items-center gap-2">
               {isSelectionMode ? (
@@ -229,7 +239,6 @@ export function ConversationsPanel({
                   Nova
                 </Button>
               )}
-              <span className="text-xs text-muted-foreground">{filtered.length} total</span>
             </div>
           </div>
 
@@ -314,16 +323,19 @@ export function ConversationsPanel({
                   {allSelected ? "Desmarcar todos" : "Selecionar todos"}
                 </span>
               </div>
-              {isSelectionMode && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearSelection}
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Limpar
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">({filtered.length} total)</span>
+                {isSelectionMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSelection}
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Limpar
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -357,7 +369,8 @@ export function ConversationsPanel({
                         selectedId === conv.id && !isSelectionMode
                           ? "bg-[#46347F]/8 border-l-2 border-[#46347F]"
                           : "hover:bg-accent border-l-2 border-transparent",
-                        selected && isSelectionMode && "bg-[#46347F]/5"
+                        selected && isSelectionMode && "bg-[#46347F]/5",
+                        conv.unreadCount > 0 && selectedId !== conv.id && "bg-blue-50/50 dark:bg-blue-900/10"
                       )}
                     >
                       {/* Priority Indicator */}
@@ -414,7 +427,10 @@ export function ConversationsPanel({
                             {conv.starred && (
                               <Star className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500" />
                             )}
-                            <span className="truncate text-sm font-semibold text-foreground">
+                            <span className={cn(
+                              "truncate text-sm text-foreground",
+                              conv.unreadCount > 0 ? "font-bold" : "font-semibold"
+                            )}>
                               {conv.contactName}
                             </span>
                           </div>
