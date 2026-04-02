@@ -10,6 +10,7 @@ import { AssignConversationDialog } from "@/components/conversations/assign-conv
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useConversation } from "@/hooks/use-conversations"
 import { useCurrentUser } from "@/hooks/use-current-user"
+import { useOrganizationMembers } from "@/hooks/use-organization-members"
 import { useConversationStream } from "@/hooks/use-conversation-stream"
 import { toast } from "sonner"
 import { mutate as globalMutate } from "swr"
@@ -72,6 +73,13 @@ export function ChatWindow({ conversation }: Props) {
 
   // Hook para pegar usuário atual (para auto-atribuição)
   const { user: currentUser } = useCurrentUser()
+  const { members } = useOrganizationMembers()
+
+  // Mapa de userId -> nome para resolver sender de mensagens antigas
+  const memberNameMap = members.reduce((map, member) => {
+    if (member.userId) map[member.userId] = member.name
+    return map
+  }, {} as Record<string, string>)
 
   // Limpa notificação de não lida quando abre a conversa
   useEffect(() => {
@@ -211,8 +219,10 @@ export function ChatWindow({ conversation }: Props) {
     text: msg.content,
     time: new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     status: msg.status,
-    // Fallback: se não tem senderName nos metadados, mostra "Você"
-    senderName: msg.metadata?.senderName || (msg.direction === 'OUTBOUND' ? 'Você' : undefined),
+    // Resolve o nome do sender: primeiro metadata.senderName, depois lookup nos membros, fallback "Você"
+    senderName: msg.direction === 'OUTBOUND'
+      ? (msg.metadata?.senderName || (msg.metadata?.senderId ? memberNameMap[msg.metadata.senderId] : undefined) || 'Você')
+      : undefined,
   }))
 
   return (

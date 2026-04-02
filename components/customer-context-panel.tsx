@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select"
 import { formatDate, formatCurrency } from "@/lib/utils"
 import type { Conversation } from "@/lib/types/conversation"
+import type { Contact } from "@/hooks/use-contacts"
 import { useState, useEffect } from "react"
 import { useContactDeals, ContactDeal } from "@/hooks/use-contact-deals"
 import { useContactTimeline, TimelineEvent } from "@/hooks/use-contact-timeline"
@@ -59,7 +60,8 @@ import {
 } from "@/components/ui/dialog"
 
 interface Props {
-  conversation: Conversation | null
+  conversation?: Conversation | null
+  contact?: Contact | null
 }
 
 // Mapear tipos de atividades do timeline para ícones e cores
@@ -73,7 +75,43 @@ const activityConfig: Record<string, { icon: React.ElementType; color: string; b
   deal: { icon: DollarSign, color: "text-[#46347F]", bgColor: "bg-[#46347F]", label: "Negócio" },
 }
 
-export function CustomerContextPanel({ conversation }: Props) {
+export function CustomerContextPanel({ conversation, contact }: Props) {
+  const contactId = conversation?.contactId || contact?.id || null
+
+  const getContactAvatar = () => {
+    if (conversation?.contactAvatar) return conversation.contactAvatar
+    if (contact?.name) return contact.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    if (contact?.phone) return contact.phone.slice(0, 2)
+    return '??'
+  }
+
+  const getContactName = () => {
+    return conversation?.contactName || contact?.name || contact?.phone || 'Sem nome'
+  }
+
+  const getContactPhone = () => {
+    return conversation?.contactPhone || contact?.phone
+  }
+
+  const getContactPosition = () => {
+    return conversation?.contactPosition || (contact?.metadata?.jobTitle as string) || undefined
+  }
+
+  const getContactCompany = () => {
+    return conversation?.contactCompany || (contact?.metadata?.company as string) || undefined
+  }
+
+  const getTags = () => {
+    return conversation?.tags || contact?.tags || []
+  }
+
+  const getMessageCount = () => {
+    return conversation?.messageCount || 0
+  }
+
+  const getUnreadCount = () => {
+    return conversation?.unreadCount || 0
+  }
   const [showAllActivities, setShowAllActivities] = useState(false)
   const [dealsExpanded, setDealsExpanded] = useState(true)
   const [activitiesExpanded, setActivitiesExpanded] = useState(true)
@@ -115,22 +153,22 @@ export function CustomerContextPanel({ conversation }: Props) {
 
   // Buscar dados do contato (incluindo metadata do Typebot)
   useEffect(() => {
-    if (!conversation?.contactId) return
+    if (!contactId) return
     setIsLoadingContact(true)
-    fetch(`/api/contacts/${conversation.contactId}`)
+    fetch(`/api/contacts/${contactId}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) setContactData(data.data)
       })
       .catch(() => {})
       .finally(() => setIsLoadingContact(false))
-  }, [conversation?.contactId])
+  }, [contactId])
 
   // Buscar notas do contato
-  const fetchNotes = async (contactId: string) => {
+  const fetchNotes = async (targetContactId: string) => {
     setIsLoadingNotes(true)
     try {
-      const res = await fetch(`/api/contacts/${contactId}/notes`)
+      const res = await fetch(`/api/contacts/${targetContactId}/notes`)
       const data = await res.json()
       if (data.success) setNotes(data.data)
     } catch {}
@@ -138,9 +176,9 @@ export function CustomerContextPanel({ conversation }: Props) {
   }
 
   useEffect(() => {
-    if (!conversation?.contactId) { setNotes([]); return }
-    fetchNotes(conversation.contactId)
-  }, [conversation?.contactId])
+    if (!contactId) { setNotes([]); return }
+    fetchNotes(contactId)
+  }, [contactId])
 
   // Buscar dados reais do backend
   const { 
@@ -148,14 +186,14 @@ export function CustomerContextPanel({ conversation }: Props) {
     isLoading: isLoadingDeals, 
     error: dealsError, 
     refresh: refreshDeals 
-  } = useContactDeals(conversation?.contactId)
+  } = useContactDeals(contactId)
 
   const {
     events: timelineEvents,
     isLoading: isLoadingTimeline,
     error: timelineError,
     refresh: refreshTimeline
-  } = useContactTimeline(conversation?.contactId)
+  } = useContactTimeline(contactId)
 
   const {
     schedules,
@@ -164,7 +202,7 @@ export function CustomerContextPanel({ conversation }: Props) {
     refreshSchedules,
     createSchedule,
     deleteSchedule,
-  } = useSchedules(undefined, conversation?.contactId ? { contactId: conversation.contactId } : undefined)
+  } = useSchedules(undefined, contactId ? { contactId } : undefined)
 
   // Filtrar apenas deals abertos para exibição principal
   const openDeals = deals.filter(d => d.status === 'OPEN')
@@ -196,7 +234,7 @@ export function CustomerContextPanel({ conversation }: Props) {
 
   // Criar novo negócio
   const handleCreateDeal = async () => {
-    if (!conversation?.contactId || !organizationId) {
+    if (!contactId || !organizationId) {
       toast.error('Informações incompletas')
       return
     }
@@ -221,7 +259,7 @@ export function CustomerContextPanel({ conversation }: Props) {
           title: dealForm.title,
           value: parseFloat(dealForm.value) || 0,
           description: dealForm.description,
-          contactId: conversation.contactId,
+          contactId: contactId,
           stageId,
           channel: 'whatsapp',
         }),
@@ -268,10 +306,10 @@ export function CustomerContextPanel({ conversation }: Props) {
 
   // Criar nota
   const handleCreateNote = async () => {
-    if (!conversation?.contactId || !newNoteText.trim()) return
+    if (!contactId || !newNoteText.trim()) return
     setIsSubmittingNote(true)
     try {
-      const res = await fetch(`/api/contacts/${conversation.contactId}/notes`, {
+      const res = await fetch(`/api/contacts/${contactId}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: newNoteText }),
@@ -293,10 +331,10 @@ export function CustomerContextPanel({ conversation }: Props) {
 
   // Deletar nota
   const handleDeleteNote = async (noteId: string) => {
-    if (!conversation?.contactId) return
+    if (!contactId) return
     if (!confirm('Excluir esta nota?')) return
     try {
-      const res = await fetch(`/api/contacts/${conversation.contactId}/notes`, {
+      const res = await fetch(`/api/contacts/${contactId}/notes`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ noteId }),
@@ -315,7 +353,7 @@ export function CustomerContextPanel({ conversation }: Props) {
 
   // Criar novo agendamento
   const handleCreateSchedule = async () => {
-    if (!conversation?.contactId || !organizationId) {
+    if (!contactId || !organizationId) {
       toast.error('Informações incompletas')
       return
     }
@@ -342,7 +380,7 @@ export function CustomerContextPanel({ conversation }: Props) {
         type: scheduleForm.type as any,
         title: scheduleForm.title,
         description: scheduleForm.description || undefined,
-        contactId: conversation.contactId,
+        contactId: contactId,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         location: scheduleForm.location || undefined,
@@ -375,17 +413,17 @@ export function CustomerContextPanel({ conversation }: Props) {
     }
   }
 
-  if (!conversation) {
+  if (!conversation && !contact) {
     return (
       <div className="flex w-[320px] shrink-0 flex-col items-center justify-center bg-background border-l border-border px-6 py-12">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#46347F]/10">
           <Building2 className="h-8 w-8 text-[#46347F]" />
         </div>
         <p className="mt-4 text-sm font-semibold text-foreground text-center">
-          Nenhuma conversa selecionada
+          Nenhum contato selecionado
         </p>
         <p className="mt-1 text-xs text-muted-foreground text-center">
-          Selecione uma conversa para ver o contexto do cliente
+          Selecione um contato para ver o contexto do cliente
         </p>
       </div>
     )
@@ -419,21 +457,21 @@ export function CustomerContextPanel({ conversation }: Props) {
         <div className="border-b border-border px-5 py-5">
           <div className="flex items-start gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
-              {conversation.contactAvatar}
+              {getContactAvatar()}
             </div>
             <div className="min-w-0 flex-1">
               <h4 className="text-sm font-semibold text-foreground truncate">
-                {conversation.contactName}
+                {getContactName()}
               </h4>
-              {conversation.contactPosition && (
+              {getContactPosition() && (
                 <p className="text-xs text-muted-foreground truncate">
-                  {conversation.contactPosition}
+                  {getContactPosition()}
                 </p>
               )}
-              {conversation.contactCompany && (
+              {getContactCompany() && (
                 <p className="text-xs font-medium text-foreground mt-1 flex items-center gap-1">
                   <Building2 className="h-3 w-3" />
-                  {conversation.contactCompany}
+                  {getContactCompany()}
                 </p>
               )}
             </div>
@@ -441,20 +479,20 @@ export function CustomerContextPanel({ conversation }: Props) {
 
           {/* Contact Details */}
           <div className="mt-4 space-y-2">
-            {conversation.contactPhone && (
+            {getContactPhone() && (
               <div className="flex items-center gap-2 text-xs">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <a href={`tel:${conversation.contactPhone}`} className="text-foreground hover:underline">
-                  {conversation.contactPhone}
+                <a href={`tel:${getContactPhone()}`} className="text-foreground hover:underline">
+                  {getContactPhone()}
                 </a>
               </div>
             )}
           </div>
 
           {/* Tags */}
-          {conversation.tags && conversation.tags.length > 0 && (
+          {getTags().length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {conversation.tags.map((tag) => (
+              {getTags().map((tag) => (
                 <Badge 
                   key={tag} 
                   variant="secondary" 
@@ -547,7 +585,7 @@ export function CustomerContextPanel({ conversation }: Props) {
               <MessageSquare className="h-3.5 w-3.5" />
               <span className="text-[10px] font-medium uppercase">Mensagens</span>
             </div>
-            <p className="text-lg font-bold text-foreground">{conversation.messageCount || 0}</p>
+            <p className="text-lg font-bold text-foreground">{getMessageCount()}</p>
           </div>
 
           <div className="rounded-lg bg-muted/50 px-3 py-2.5">
@@ -556,7 +594,7 @@ export function CustomerContextPanel({ conversation }: Props) {
               <span className="text-[10px] font-medium uppercase">Não Lidas</span>
             </div>
             <p className="text-lg font-bold text-foreground">
-              {conversation.unreadCount || 0}
+              {getUnreadCount()}
             </p>
           </div>
         </div>

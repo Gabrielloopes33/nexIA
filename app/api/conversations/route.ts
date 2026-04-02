@@ -195,6 +195,14 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Ordenar pela data da última mensagem, não pelo updatedAt da conversa
+    // Isso evita que marcar como lida (unread_count) suba a conversa no topo
+    enrichedConversations.sort((a, b) => {
+      const dateA = new Date(a.lastMessageAt).getTime();
+      const dateB = new Date(b.lastMessageAt).getTime();
+      return dateB - dateA;
+    });
+
     return NextResponse.json({
       success: true,
       data: enrichedConversations,

@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react"
 import { Sidebar } from "@/components/sidebar"
 import { ContactsTable } from "@/components/contacts/contacts-table"
 import { ContactFilters } from "@/components/contacts/contact-filters"
-import { ContactDetailPanel } from "@/components/contact-detail-panel"
+import { CustomerContextPanel } from "@/components/customer-context-panel"
+import { EditContactDialog } from "@/components/contacts/edit-contact-dialog"
 import { Button } from "@/components/ui/button"
 import { Download, Upload, UserPlus, Loader2 } from "lucide-react"
 import Link from "next/link"
@@ -36,6 +37,7 @@ export default function ContactsPage() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   const fetchContacts = useCallback(async () => {
     setIsLoading(true)
@@ -88,7 +90,12 @@ export default function ContactsPage() {
 
   const handleEditContact = (contact: Contact) => {
     setSelectedContact(contact)
-    setIsPanelOpen(true)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleSaveContact = (updated: Contact) => {
+    setSelectedContact(updated)
+    fetchContacts()
   }
 
   const handleDeleteContact = async (contact: Contact) => {
@@ -195,14 +202,20 @@ export default function ContactsPage() {
         </div>
       </main>
 
-      {/* Contact Detail Panel */}
+      {/* Customer Context Panel */}
       {isPanelOpen && selectedContact && (
-        <ContactDetailPanel
+        <CustomerContextPanel
           contact={selectedContact}
-          isOpen={isPanelOpen}
-          onClose={() => setIsPanelOpen(false)}
         />
       )}
+
+      {/* Edit Contact Dialog */}
+      <EditContactDialog
+        contact={selectedContact}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onSave={handleSaveContact}
+      />
     </div>
   )
 }

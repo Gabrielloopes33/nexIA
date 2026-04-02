@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth/server";
 import { decrypt } from "@/lib/crypto";
 import { config } from "@/lib/instagram/config";
 
@@ -9,6 +10,11 @@ import { config } from "@/lib/instagram/config";
  */
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) {
+      return user;
+    }
+
     const body = await request.json();
     const { instanceId, recipientId, message } = body;
 
@@ -91,6 +97,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Busca dados do usuário atual para metadata
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { id: true, name: true, email: true },
+    });
+
     // Save message to database
     const savedMessage = await prisma.message.create({
       data: {
@@ -101,6 +113,11 @@ export async function POST(request: NextRequest) {
         externalId: result.message_id,
         status: "SENT",
         sentAt: new Date(),
+        metadata: currentUser ? {
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          senderEmail: currentUser.email,
+        } : undefined,
       },
     });
 

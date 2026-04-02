@@ -198,6 +198,7 @@ model Message {
   status         String   @default("sent") @db.VarChar(50)
   messageId      String?  @map("message_id") @db.VarChar(255) // ID externo da mensagem (Evolution/Meta)
   direction      String   @default("OUTBOUND") @db.VarChar(20) // INBOUND ou OUTBOUND
+  metadata       Json?    // Dados extras: senderId, senderName, senderEmail, etc.
   createdAt      DateTime @default(now()) @map("created_at")
   updated_at     DateTime @default(now())
 

@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/server';
 import {
   sendTextMessage,
   sendMediaMessage,
@@ -177,6 +178,11 @@ async function findOrCreateConversation(
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) {
+      return user;
+    }
+
     const body = await request.json();
 
     if (!validateMessageBody(body)) {
@@ -339,7 +345,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Get message ID from Meta response
     const messageId = result.messages?.[0]?.id;
 
-    // Create message in database (only fields that exist in the schema)
+    // Busca dados do usuário atual para metadata
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { id: true, name: true, email: true },
+    });
+
+    // Create message in database
     const message = await prisma.message.create({
       data: {
         conversationId: conversation.id,
@@ -348,6 +360,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         direction: 'OUTBOUND',
         content: messageContent,
         status: 'sent',
+        metadata: currentUser ? {
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          senderEmail: currentUser.email,
+        } : undefined,
       },
     });
 

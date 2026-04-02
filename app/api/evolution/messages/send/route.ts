@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/server';
 import { evolutionService } from '@/lib/services/evolution-api';
 
 // POST /api/evolution/messages/send
@@ -7,10 +8,15 @@ import { evolutionService } from '@/lib/services/evolution-api';
 // Nota: instanceId OU instanceName deve ser fornecido
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { instanceId, instanceName, organizationId, phone, message } = body;
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) {
+      return user;
+    }
 
-    console.log('[Evolution Send] Request body:', { instanceId, instanceName, organizationId, phone, message: message?.substring(0, 50) });
+    const body = await request.json();
+    const { instanceId, instanceName, phone, message } = body;
+
+    console.log('[Evolution Send] Request body:', { instanceId, instanceName, organizationId: user.organizationId, phone, message: message?.substring(0, 50) });
 
     if (!phone || !message) {
       console.log('[Evolution Send] Missing fields:', { phone: !!phone, message: !!message });
@@ -28,10 +34,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Precisamos do organizationId para salvar no banco
+    // Usa organizationId do usuário autenticado
+    const organizationId = user.organizationId;
     if (!organizationId) {
       return NextResponse.json(
-        { success: false, error: 'organizationId is required' },
+        { success: false, error: 'No organization selected' },
         { status: 400 }
       );
     }
@@ -130,6 +137,12 @@ export async function POST(request: NextRequest) {
       throw serviceError;
     }
 
+    // Busca dados do usuário atual para metadata
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { id: true, name: true, email: true },
+    });
+
     // Salvar mensagem no banco
     const savedMessage = await prisma.message.create({
       data: {
@@ -139,6 +152,11 @@ export async function POST(request: NextRequest) {
         status: 'SENT',
         messageId: result.key?.id,
         direction: 'OUTBOUND',
+        metadata: currentUser ? {
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          senderEmail: currentUser.email,
+        } : undefined,
       },
     });
     console.log('[Evolution Send] Saved message:', savedMessage.id);
