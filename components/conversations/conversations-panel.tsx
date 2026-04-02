@@ -500,6 +500,13 @@ export function ConversationsPanel({
                             {statusConfig.label}
                           </span>
 
+                          {/* Não Lida Badge */}
+                          {conv.unreadCount > 0 && (
+                            <span className="rounded px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+                              Não lida
+                            </span>
+                          )}
+
                           {/* SLA Warning */}
                           {conv.slaStatus === "breach" && (
                             <AlertCircle className="h-3.5 w-3.5 text-red-500" />
