@@ -211,7 +211,8 @@ export function ChatWindow({ conversation }: Props) {
     text: msg.content,
     time: new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     status: msg.status,
-    senderName: msg.metadata?.senderName,
+    // Fallback: se não tem senderName nos metadados, mostra "Você"
+    senderName: msg.metadata?.senderName || (msg.direction === 'OUTBOUND' ? 'Você' : undefined),
   }))
 
   return (
