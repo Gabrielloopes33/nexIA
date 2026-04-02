@@ -27,27 +27,33 @@ function SectionSeparator({ label }: { label: string }) {
 function SubNavItem({
   child,
   isActive,
+  index = 0,
 }: {
   child: SidebarNavChild
   isActive: boolean
+  index?: number
 }) {
   const content = (
     <span
       className={cn(
-        "flex items-center justify-between py-1.5 pr-3 text-[13px] rounded-md transition-colors relative pl-3",
+        "flex items-center justify-between py-1.5 pr-3 text-[13px] rounded-md transition-all duration-200 ease-out relative pl-3",
+        "hover:translate-x-0.5",
         isActive
-          ? "bg-white/20 text-white font-medium"
+          ? "bg-white/20 text-white font-medium translate-x-1"
           : "text-white/80 hover:bg-white/10 hover:text-white",
-        child.disabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-white/50"
+        child.disabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-white/50 hover:translate-x-0"
       )}
+      style={{
+        animationDelay: `${index * 25}ms`,
+      }}
     >
-      {/* Active indicator bar - yellow */}
+      {/* Active indicator bar - yellow with scale animation */}
       {isActive && (
-        <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
+        <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full origin-left animate-scale-in" />
       )}
       <span className="truncate">{child.label}</span>
       {child.badge !== undefined && child.badge > 0 && (
-        <span className="ml-2 flex-shrink-0 bg-white/25 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full min-w-[22px] text-center">
+        <span className="ml-2 flex-shrink-0 bg-white/25 text-white text-[11px] font-medium px-2.5 py-0.5 rounded-full min-w-[22px] text-center transition-transform duration-200 hover:scale-110">
           {child.badge > 99 ? "99+" : child.badge}
         </span>
       )}
@@ -119,52 +125,72 @@ export function SidebarDropdownGroup({
       <button
         onClick={handleToggle}
         className={cn(
-          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200",
+          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 ease-out group",
           "text-white/95 hover:text-white hover:bg-white/10",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+          "hover:scale-[1.02] active:scale-[0.98]",
           isOpen && "bg-white/10",
           hasActiveChild && !isOpen && "bg-white/5"
         )}
       >
-        <Icon className="h-5 w-5 flex-shrink-0" />
+        <Icon className={cn(
+          "h-5 w-5 flex-shrink-0 transition-all duration-200",
+          isOpen ? "scale-110" : "group-hover:scale-105"
+        )} />
         <span className="text-[14px] font-medium flex-1 text-left truncate">
           {item.label}
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 flex-shrink-0 transition-transform duration-200 text-white/70",
-            isOpen && "rotate-180"
+            "h-4 w-4 flex-shrink-0 transition-all duration-300 ease-out text-white/70",
+            isOpen && "rotate-180",
+            !isOpen && "group-hover:translate-y-0.5"
           )}
         />
       </button>
 
-      {/* Dropdown Content - Child Level */}
+      {/* Dropdown Content - Child Level with smooth animation */}
       <div
         className={cn(
-          "overflow-hidden",
-          isOpen ? "block" : "hidden"
+          "grid transition-all duration-300 ease-out",
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
         )}
       >
-        {/* Tree container - alinhado à esquerda sem indentação */}
-        <div className="relative pl-0">
-          
-          {groupedChildren.map(({ section, items }, sectionIndex) => (
-            <div key={section || `section-${sectionIndex}`} className="relative">
-              {section && <SectionSeparator label={section} />}
-              <div className="space-y-1">
-                {items.map((child) => {
-                  const isActive = pathname === child.href
-                  return (
-                    <SubNavItem
-                      key={child.href}
-                      child={child}
-                      isActive={isActive}
-                    />
-                  )
-                })}
+        <div className="overflow-hidden">
+          {/* Tree container - alinhado à esquerda com padding para o indicador */}
+          <div className="relative pl-3 pt-1">
+            
+            {groupedChildren.map(({ section, items }, sectionIndex) => (
+              <div key={section || `section-${sectionIndex}`} className="relative">
+                {section && <SectionSeparator label={section} />}
+                <div className="space-y-0.5">
+                  {items.map((child, childIndex) => {
+                    const isActive = pathname === child.href
+                    return (
+                      <div
+                        key={child.href}
+                        className={cn(
+                          "transition-all duration-300 ease-out",
+                          isOpen
+                            ? "translate-y-0 opacity-100"
+                            : "-translate-y-2 opacity-0"
+                        )}
+                        style={{
+                          transitionDelay: isOpen ? `${childIndex * 30}ms` : "0ms",
+                        }}
+                      >
+                        <SubNavItem
+                          child={child}
+                          isActive={isActive}
+                          index={childIndex}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

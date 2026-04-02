@@ -33,18 +33,22 @@ function SimpleNavLink({
     <Link
       href={item.href || "#"}
       className={cn(
-        "flex w-full items-center rounded-sm h-9 gap-3 transition-all duration-200 relative",
+        "flex w-full items-center rounded-lg py-2 gap-2.5 transition-all duration-200 ease-out relative group",
+        "hover:scale-[1.02] active:scale-[0.98]",
         isActive
-          ? "bg-white/30 text-white pl-4 pr-3"
-          : "text-white hover:bg-white/15 px-3"
+          ? "bg-white/30 text-white pl-4 pr-3 translate-x-1"
+          : "text-white hover:bg-white/15 px-3 hover:translate-x-0.5"
       )}
     >
-      {/* Active indicator bar - yellow */}
+      {/* Active indicator bar - yellow with animation */}
       {isActive && (
-        <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
+        <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full origin-left animate-scale-in" />
       )}
-      <Icon className="h-4 w-4 text-white shrink-0" />
-      <span className="flex-1 text-left text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
+      <Icon className={cn(
+        "h-5 w-5 text-white shrink-0 transition-transform duration-200",
+        isActive ? "scale-110" : "group-hover:scale-105"
+      )} />
+      <span className="flex-1 text-left text-[14px] font-medium text-white whitespace-nowrap overflow-hidden">
         {item.label}
       </span>
     </Link>
@@ -207,18 +211,22 @@ export const Sidebar = memo(function Sidebar() {
                 key={item.key}
                 href={item.href || "#"}
                 className={cn(
-                  "flex items-center rounded-sm h-9 gap-3 transition-all duration-200 relative",
+                  "flex items-center rounded-lg py-2 gap-2.5 transition-all duration-200 ease-out relative group",
+                  "hover:scale-[1.02] active:scale-[0.98]",
                   isActive
-                    ? "bg-white/30 text-white pl-4 pr-3"
-                    : "text-white hover:bg-white/15 px-3"
+                    ? "bg-white/30 text-white pl-4 pr-3 translate-x-1"
+                    : "text-white hover:bg-white/15 px-3 hover:translate-x-0.5"
                 )}
               >
-                {/* Active indicator bar - yellow */}
+                {/* Active indicator bar - yellow with animation */}
                 {isActive && (
-                  <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full" />
+                  <span className="absolute -left-2 top-0 bottom-0 w-1 bg-[#f3c845] rounded-full origin-left animate-scale-in" />
                 )}
-                <Icon className="h-4 w-4 text-white shrink-0" />
-                <span className="text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
+                <Icon className={cn(
+                  "h-5 w-5 text-white shrink-0 transition-transform duration-200",
+                  isActive ? "scale-110" : "group-hover:scale-105"
+                )} />
+                <span className="text-[14px] font-medium text-white whitespace-nowrap overflow-hidden">
                   {item.label}
                 </span>
               </Link>
@@ -227,10 +235,10 @@ export const Sidebar = memo(function Sidebar() {
           {/* Logout button */}
           <button
             onClick={handleLogout}
-            className="flex items-center rounded-sm h-9 gap-3 transition-all duration-200 relative text-white hover:bg-white/15 px-3 mt-1"
+            className="flex items-center rounded-lg py-2 gap-2.5 transition-all duration-200 ease-out relative text-white hover:bg-white/15 px-3 mt-1 group hover:scale-[1.02] active:scale-[0.98] hover:translate-x-0.5"
           >
-            <LogOut className="h-4 w-4 text-white shrink-0" />
-            <span className="text-[13px] font-medium text-white whitespace-nowrap overflow-hidden">
+            <LogOut className="h-5 w-5 text-white shrink-0 transition-transform duration-200 group-hover:scale-105" />
+            <span className="text-[14px] font-medium text-white whitespace-nowrap overflow-hidden">
               Sair
             </span>
           </button>
