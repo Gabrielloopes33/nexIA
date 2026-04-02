@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useConversationSelection } from "@/lib/contexts/conversation-selection-context"
 import { useBulkAssign } from "@/hooks/use-bulk-assign"
+import { useConversations } from "@/hooks/use-conversations"
 import { AssignConversationDialog } from "./assign-conversation-dialog"
 import { toast } from "sonner"
 
@@ -46,6 +47,7 @@ export function BulkActionsBar({
   } = useConversationSelection()
   
   const { assign, unassign, isLoading } = useBulkAssign()
+  const { markAsUnread } = useConversations()
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
 
   // Se não há seleção, não renderiza
@@ -92,13 +94,23 @@ export function BulkActionsBar({
     })
   }
 
-  const handleMarkAsUnread = () => {
-    // TODO: Implementar marcar como não lida em lote via API
-    toast.success(`${selectionCount} ${selectionCount === 1 ? 'conversa marcada' : 'conversas marcadas'} como não lida`, {
-      description: "As conversas serão marcadas como não lidas",
-    })
-    clearSelection()
-    onActionComplete?.()
+  const handleMarkAsUnread = async () => {
+    const selectedIdsArray = Array.from(selectedIds)
+    let successCount = 0
+    
+    // Marca cada conversa como não lida
+    await Promise.all(
+      selectedIdsArray.map(async (id) => {
+        const success = await markAsUnread(id)
+        if (success) successCount++
+      })
+    )
+    
+    if (successCount > 0) {
+      toast.success(`${successCount} ${successCount === 1 ? 'conversa marcada' : 'conversas marcadas'} como não lida`)
+      clearSelection()
+      onActionComplete?.()
+    }
   }
 
   return (

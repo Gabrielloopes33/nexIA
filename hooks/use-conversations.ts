@@ -44,6 +44,7 @@ export interface Conversation {
   windowEnd: string
   lastMessageAt?: string
   messageCount: number
+  unreadCount?: number
   isWindowActive: boolean
   timeUntilWindowExpires: number
   createdAt: string
@@ -108,6 +109,7 @@ interface UseConversationsReturn {
   getMessages: (conversationId: string, limit?: number, before?: string) => Promise<Message[] | null>
   sendMessage: (conversationId: string, data: SendMessageRequest) => Promise<Message | null>
   getStats: (period?: string) => Promise<ConversationStats | null>
+  markAsUnread: (id: string) => Promise<boolean>
 }
 
 const fetcher = async (url: string) => {
@@ -370,6 +372,35 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
     }
   }, [orgId])
 
+  const markAsUnread = useCallback(async (id: string): Promise<boolean> => {
+    setIsMutating(true)
+    try {
+      const response = await fetch(`/api/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unread_count: 1 }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Erro ao marcar como não lida')
+      }
+
+      // Atualiza o cache local
+      await globalMutate(`/api/conversations/${id}`)
+      await mutate()
+      
+      return true
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao marcar como não lida'
+      toast.error(`Erro: ${message}`)
+      return false
+    } finally {
+      setIsMutating(false)
+    }
+  }, [mutate])
+
   return {
     conversations: data?.data || [],
     isLoading: isLoading || isMutating,
@@ -381,6 +412,7 @@ export function useConversations(options: UseConversationsOptions = {}): UseConv
     getMessages,
     sendMessage,
     getStats,
+    markAsUnread,
   }
 }
 

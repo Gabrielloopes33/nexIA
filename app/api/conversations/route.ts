@@ -178,6 +178,7 @@ export async function GET(request: NextRequest) {
           ? [{ id: lastMsg.id, conversationId: lastMsg.conversation_id, content: lastMsg.content, direction: lastMsg.direction || 'OUTBOUND', createdAt: lastMsg.created_at, status: lastMsg.status }]
           : [],
         messageCount,
+        unreadCount: (conv as any).unread_count || 0,
         lastMessageAt: lastMsg?.created_at || conv.createdAt,
         windowStart: conv.createdAt,
         windowEnd,
@@ -307,6 +308,7 @@ export async function POST(request: NextRequest) {
           messageCount: await prisma.message.count({
             where: { conversationId: existingConversation.id },
           }),
+          unreadCount: (existingConversation as any).unread_count || 0,
           lastMessageAt: messages[0]?.createdAt || existingConversation.createdAt,
           windowStart: existingConversation.createdAt,
           windowEnd,
@@ -358,6 +360,7 @@ export async function POST(request: NextRequest) {
         instance,
         messages: [],
         messageCount: 0,
+        unreadCount: 0,
         lastMessageAt: conversation.createdAt,
         windowStart: conversation.createdAt,
         windowEnd,

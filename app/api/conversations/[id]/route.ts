@@ -71,6 +71,7 @@ async function enrichConversation(conv: any, organizationId: string) {
       direction: m.direction || 'OUTBOUND',
     })),
     messageCount,
+    unreadCount: conv.unread_count || 0,
     lastMessageAt: messages[messages.length - 1]?.createdAt || conv.createdAt,
     windowStart: conv.createdAt,
     windowEnd,
