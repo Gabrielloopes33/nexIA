@@ -1,391 +1,168 @@
-# NexIA Chat
+<p align="center">
+  <img src="public/nexia-logo.png" alt="NexIA Logo" width="180"/>
+</p>
+
+<h1 align="center">NexIA</h1>
 
 <p align="center">
-  <img src="public/nexia-logo.png" alt="NexIA Logo" width="200"/>
+  <strong>CRM completo para equipes que vendem e atendem pelo WhatsApp, Instagram e outros canais</strong>
 </p>
 
 <p align="center">
-  <strong>CRM Completo Multi-Tenant com Inteligência Artificial</strong>
-</p>
-
-<p align="center">
-  <a href="#-funcionalidades">Funcionalidades</a> •
-  <a href="#-stack-tecnológico">Stack</a> •
-  <a href="#-instalação">Instalação</a> •
-  <a href="#-configuração">Configuração</a> •
-  <a href="#-deploy">Deploy</a> •
-  <a href="#-documentação">Docs</a>
+  Centralize conversas, gerencie contatos, acompanhe oportunidades e automatize seu atendimento — tudo em um só lugar.
 </p>
 
 ---
 
-## 📋 Sobre
+## O que é o NexIA?
 
-O **NexIA Chat** é um CRM (Customer Relationship Management) brasileiro multi-tenant, projetado para empresas que precisam gerenciar relacionamentos com clientes através de múltiplos canais de comunicação.
-
-### 🎯 Público-alvo
-- Agências de marketing digital
-- Empresas de vendas e prospecção
-- Suporte técnico e atendimento ao cliente
-- E-commerces que precisam de gestão de leads
+O NexIA é uma plataforma de CRM e comunicação multicanal desenvolvida para empresas brasileiras. Ele conecta seus canais de atendimento (WhatsApp, Instagram, chat) a um sistema completo de gestão de contatos, funil de vendas, agendamentos e automações — eliminando a necessidade de usar várias ferramentas separadas.
 
 ---
 
-## ✨ Funcionalidades
+## Funcionalidades
 
-### 💬 Comunicação Omnichannel
-- **WhatsApp Business API (Oficial)** - Integração direta com Meta
-- **WhatsApp Não Oficial (Evolution API)** - Via QR Code
-- **Instagram Direct** - Mensagens e comentários
-- **Chat Widget** - Para sites
+### Conversas Centralizadas
 
-### 👥 Gestão de Contatos
-- Cadastro completo de contatos
-- Tags e segmentação
-- Listas dinâmicas
-- Campos personalizados
-- Importação/Exportação
+Receba e responda mensagens de todos os seus canais em uma única caixa de entrada.
 
-### 📊 Pipeline de Vendas
-- Funil de vendas customizável
-- Etapas com drag-and-drop
-- Deals (oportunidades) com valor e estimativa
-- Histórico de atividades
+- **WhatsApp Business API (Oficial)** — integração direta com a API da Meta, sem risco de bloqueio
+- **WhatsApp via Evolution API** — conecte pelo QR Code, sem número vinculado a app business
+- **Instagram Direct** — mensagens e comentários no mesmo painel
+- **Chat Widget** — botão de chat para o seu site
 
-### 🤖 Inteligência Artificial
-- Insights automáticos de conversas
-- Análise de sentimento
-- Sugestões de resposta
-- Transcrição de áudio
-
-### 📅 Agendamentos
-- Tarefas, reuniões, ligações e prazos
-- Fila de atendimento
-- Notificações e lembretes
-
-### 💳 Cobranças e Assinaturas
-- Integração com Stripe
-- Gestão de planos e assinaturas
-- Faturas e reembolsos
-- Cupons de desconto
-
-### 📈 Dashboard e Analytics
-- Métricas em tempo real
-- Gráficos de desempenho
-- Análise de funil
-- Relatórios exportáveis
+Organize as conversas por equipes (vendas, suporte), atribua atendentes, filtre por canal ou status, e nunca perca uma mensagem.
 
 ---
 
-## 🛠 Stack Tecnológico
+### CRM e Gestão de Contatos
 
-### Core
-| Tecnologia | Versão | Descrição |
-|------------|--------|-----------|
-| [Next.js](https://nextjs.org/) | 15.5.13 | Framework React com App Router |
-| [React](https://react.dev/) | 18.3.1 | Biblioteca UI |
-| [TypeScript](https://www.typescriptlang.org/) | 5.7.3 | Tipagem estática |
-| [Tailwind CSS](https://tailwindcss.com/) | 4.2.1 | Estilização utilitária |
+Tenha uma visão completa de cada cliente, desde o primeiro contato até o fechamento.
 
-### Banco de Dados
-| Tecnologia | Uso |
-|------------|-----|
-| [PostgreSQL](https://www.postgresql.org/) | 15+ - Banco principal |
-| [Prisma ORM](https://www.prisma.io/) | 5.22.0 - ORM e migrations |
-| [Supabase](https://supabase.com/) | Opção cloud para PostgreSQL |
+- Cadastro completo com campos personalizáveis
+- Tags, listas e segmentos para organizar sua base
+- Histórico de conversas, agendamentos e negociações por contato
+- Importação e exportação de contatos (CSV)
+- Relatórios de desempenho e tendências
 
-### UI/UX
-| Biblioteca | Propósito |
-|------------|-----------|
-| [shadcn/ui](https://ui.shadcn.com/) | Componentes base (Radix UI) |
-| [Lucide React](https://lucide.dev/) | Ícones |
-| [Recharts](https://recharts.org/) | Gráficos e dashboards |
-| [@dnd-kit](https://dndkit.com/) | Drag-and-drop (pipeline) |
-| [date-fns](https://date-fns.org/) | Manipulação de datas |
+---
 
-### Estado e Dados
-| Biblioteca | Uso |
-|------------|-----|
-| [TanStack Query](https://tanstack.com/query) | 5.90+ - Data fetching |
-| [Zod](https://zod.dev/) | Validação de schemas |
-| [React Hook Form](https://react-hook-form.com/) | Formulários |
+### Pipeline de Vendas
+
+Visualize e gerencie oportunidades com um funil de vendas estilo kanban.
+
+- Etapas personalizáveis por produto ou processo
+- Cards de oportunidade com valor estimado e data de fechamento
+- Movimentação por drag-and-drop
+- Histórico de atividades por deal
+- Pipelines separados por produto
+
+---
+
+### Agendamentos
+
+Controle reuniões, ligações, tarefas e prazos diretamente no CRM.
+
+- Calendário de agendamentos com visão geral
+- Fila de atendimento em tempo real
+- Histórico de reuniões realizadas
+- Tipos: reunião, ligação, tarefa, prazo
+- **Integração com Calendly** — quando alguém agenda pelo seu link, o agendamento e o contato são criados automaticamente no CRM
+
+---
+
+### Campanhas de Disparo
+
+Envie mensagens em massa para sua base de contatos via WhatsApp Business API.
+
+- Criação de campanhas com templates aprovados pela Meta
+- Segmentação por tags e listas
+- Agendamento de envio
+- Acompanhamento de entrega e leitura
+
+---
 
 ### Integrações
-| Serviço | Uso |
-|---------|-----|
-| [Meta Business API](https://developers.facebook.com/docs/business-apis) | WhatsApp e Instagram |
-| [Stripe](https://stripe.com/) | Pagamentos e assinaturas |
-| [Evolution API](https://doc.evolution-api.com/) | WhatsApp não oficial |
-| [OpenAI](https://openai.com/) | Insights de IA (opcional) |
+
+Conecte o NexIA às ferramentas que você já usa.
+
+| Integração | O que faz |
+|---|---|
+| **WhatsApp Business API** | Canal oficial da Meta para mensagens e campanhas |
+| **WhatsApp (Evolution API)** | Conexão via QR Code para atendimento |
+| **Instagram** | Mensagens diretas e comentários |
+| **LinkedIn Ads** | Importa leads dos formulários de captação |
+| **Calendly** | Sincroniza agendamentos automaticamente |
+| **Webhooks** | Conecte qualquer sistema externo via HTTP |
 
 ---
 
-## 📦 Instalação
+### Inteligência Artificial
 
-### Pré-requisitos
-- Node.js 20+
-- PostgreSQL 15+
-- pnpm (recomendado) ou npm
+Recursos de IA para acelerar o atendimento e a análise.
 
-### 1. Clone o repositório
-
-```bash
-git clone https://github.com/nexialab/nexIA.git
-cd nexIA
-```
-
-### 2. Instale as dependências
-
-```bash
-pnpm install
-# ou
-npm install
-```
-
-### 3. Configure as variáveis de ambiente
-
-```bash
-cp .env.local.example .env.local
-```
-
-Edite o `.env.local` com suas configurações:
-
-```env
-# ============================================
-# OBRIGATÓRIAS
-# ============================================
-
-# PostgreSQL
-DATABASE_URL=postgresql://user:password@localhost:5432/nexia_chat
-
-# Auth - Chave secreta para sessões (mínimo 32 caracteres)
-AUTH_SECRET=sua_chave_secreta_aqui_minimo_32_caracteres
-
-# ============================================
-# INTEGRAÇÕES (opcionais)
-# ============================================
-
-# Meta/WhatsApp Oficial
-META_APP_ID=seu_app_id
-META_APP_SECRET=seu_app_secret
-
-# Evolution API (WhatsApp Não Oficial)
-EVOLUTION_API_URL=https://sua-evolution-api.com
-EVOLUTION_API_KEY=sua_api_key
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-
-# OpenAI (opcional)
-OPENAI_API_KEY=sk-...
-```
-
-### 4. Execute as migrações do banco
-
-```bash
-npx prisma migrate dev
-# ou
-pnpm db:migrate
-```
-
-### 5. Gere o cliente Prisma
-
-```bash
-npx prisma generate
-```
-
-### 6. Crie um usuário admin
-
-```bash
-pnpm create-admin
-# ou
-node scripts/create-admin.js
-```
-
-### 7. Inicie o servidor de desenvolvimento
-
-```bash
-pnpm dev
-```
-
-Acesse: http://localhost:3000
+- Transcrição automática de mensagens de áudio
+- Insights e resumos de conversas
+- Análise de sentimento
+- Sugestões de resposta
 
 ---
 
-## ⚙️ Configuração
+### Gestão de Assinaturas e Cobranças
 
-### WhatsApp Oficial (Meta Business API)
+Para empresas que gerenciam sua própria base de clientes pagantes.
 
-1. Acesse [Meta for Developers](https://developers.facebook.com/)
-2. Crie um app do tipo "Business"
-3. Adicione o produto "WhatsApp"
-4. Configure o webhook apontando para `https://seudominio.com/api/whatsapp/webhooks`
-5. Copie as credenciais para as variáveis de ambiente
-
-### WhatsApp Não Oficial (Evolution API)
-
-1. Tenha acesso a uma instância da [Evolution API](https://evolution-api.com/)
-2. Configure as variáveis `EVOLUTION_API_URL` e `EVOLUTION_API_KEY`
-3. Configure o webhook para `https://seudominio.com/api/evolution/webhook`
-4. No painel do NexIA, vá em "Integrações > WhatsApp Não Oficial" e crie uma instância
-
-### Stripe (Assinaturas)
-
-1. Crie uma conta em [Stripe](https://stripe.com/)
-2. Copie as chaves de teste/produção
-3. Configure o webhook apontando para `https://seudominio.com/api/stripe/webhook`
-4. Configure os eventos: `invoice.payment_succeeded`, `invoice.payment_failed`, `customer.subscription.deleted`
+- Criação e gestão de planos de assinatura
+- Controle de clientes, faturas e pagamentos
+- Reembolsos, cupons e descontos
+- Histórico financeiro completo
+- Integração com Stripe
 
 ---
 
-## 🚀 Deploy
+### Multi-organização e Controle de Acesso
 
-### Opção 1: Netlify (Recomendado)
+Estruture sua operação com múltiplas organizações e perfis de acesso.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/nexialab/nexIA)
-
-1. Conecte seu repositório GitHub
-2. Configure as variáveis de ambiente no painel
-3. Deploy automático a cada push
-
-**Configurações importantes no Netlify:**
-- Build command: `pnpm install && npx prisma generate && pnpm run build`
-- Publish directory: `.next`
-- Node version: 20
-
-### Opção 2: EasyPanel
-
-Veja o guia completo em [`EASYPANEL.md`](./EASYPANEL.md)
-
-```bash
-# Com Docker Compose
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### Opção 3: VPS com Docker
-
-```bash
-# Build da imagem
-docker build -t nexia-app:latest .
-
-# Run
-docker run -d \
-  -p 3000:3000 \
-  -e DATABASE_URL=postgresql://... \
-  -e AUTH_SECRET=... \
-  --name nexia-app \
-  nexia-app:latest
-```
+- Suporte a múltiplas organizações no mesmo sistema
+- Papéis: Proprietário, Admin, Gerente
+- Convite de usuários por e-mail
+- Visibilidade e permissões por nível de acesso
 
 ---
 
-## 🧪 Testes
+### Dashboard e Relatórios
 
-```bash
-# Testes unitários
-pnpm test
+Acompanhe os números que importam para o seu negócio.
 
-# Testes de integração
-pnpm test:integration
-
-# Testes E2E com Playwright
-pnpm test:e2e
-
-# Cobertura
-pnpm test:coverage
-```
+- Métricas em tempo real: conversas, leads, agendamentos
+- Distribuição por canal
+- Análise de funil de vendas
+- Score de saúde da operação
+- Gráficos exportáveis
 
 ---
 
-## 📚 Documentação
+## Para quem é o NexIA?
 
-- [`AGENTS.md`](./AGENTS.md) - Informações para desenvolvedores/agentes de IA
-- [`DEPLOY.md`](./DEPLOY.md) - Guia completo de deploy
-- [`EASYPANEL.md`](./EASYPANEL.md) - Deploy no EasyPanel
-- [`SUPABASE-EASYPANEL.md`](./SUPABASE-EASYPANEL.md) - Configuração com Supabase
-- [`docs/`](./docs/) - Documentação técnica detalhada
-
----
-
-## 🏗️ Estrutura do Projeto
-
-```
-app/                          # Next.js App Router
-├── (dashboard)/              # Grupo de rotas com layout
-├── api/                      # API Routes
-├── contatos/                 # Páginas de contatos
-├── conversas/                # Páginas de conversas
-├── dashboard/                # Dashboard
-├── pipeline/                 # Pipeline de vendas
-├── integracoes/              # Integrações
-└── ...
-
-components/
-├── ui/                       # Componentes base (shadcn)
-├── chat/                     # Componentes de chat
-├── contacts/                 # Componentes de contatos
-├── dashboard/                # Dashboard
-├── pipeline/                 # Pipeline
-└── evolution/                # WhatsApp Evolution
-
-lib/
-├── auth/                     # Autenticação
-├── db/                       # Database/Prisma
-├── services/                 # Serviços externos
-├── whatsapp/                 # Integração WhatsApp
-├── instagram/                # Integração Instagram
-└── types/                    # Types TypeScript
-
-prisma/
-└── schema.prisma             # Schema do banco
-
-__tests__/                    # Testes
-├── unit/
-├── integration/
-└── e2e/
-```
+- **Agências e consultorias** que gerenciam atendimento de múltiplos clientes
+- **Times de vendas** que prospectam e fecham negócios pelo WhatsApp
+- **Operações de suporte** que precisam organizar filas e histórico de atendimento
+- **Infoprodutores e SaaS** que precisam de CRM + comunicação + cobrança em um só lugar
 
 ---
 
-## 🔐 Segurança
+## Deploy e Infraestrutura
 
-- Autenticação JWT com cookies httpOnly
-- Senhas hasheadas com bcrypt
-- Proteção CSRF via Next.js
-- SQL injection protegido pelo Prisma
-- Headers de segurança configurados
-- Validação de schemas com Zod
+O NexIA roda em qualquer servidor Linux com Node.js 20+ e PostgreSQL 15+. Suporte a deploy via Docker, EasyPanel, VPS ou Vercel.
 
----
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -m 'feat: adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
-
----
-
-## 📄 Licença
-
-Este projeto é proprietário da NexIA Labs. Todos os direitos reservados.
-
----
-
-## 💬 Suporte
-
-Em caso de problemas:
-
-1. Verifique os logs: `docker logs nexia-app`
-2. Health check: `curl https://seudominio.com/api/health`
-3. Abra uma issue no GitHub
+Documentação técnica:
+- [`DEPLOY.md`](./DEPLOY.md) — guia de deploy completo
+- [`EASYPANEL.md`](./EASYPANEL.md) — deploy no EasyPanel
+- [`AGENTS.md`](./AGENTS.md) — referência para desenvolvedores
 
 ---
 
 <p align="center">
-  Desenvolvido com ❤️ pela <strong>NexIA Labs</strong>
+  Desenvolvido pela <strong>NexIA Labs</strong>
 </p>
