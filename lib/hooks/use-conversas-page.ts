@@ -159,7 +159,7 @@ function mapConversation(apiConv: ApiConversation): Conversation {
     } : null,
     tags: apiConv.contact?.tags || [],
     lastMessage,
-    unreadCount: 0, // TODO: Calcular não lidas
+    unreadCount: apiConv.unreadCount || 0,
     messageCount: apiConv.messageCount,
     createdAt: apiConv.createdAt,
     updatedAt: apiConv.createdAt,
