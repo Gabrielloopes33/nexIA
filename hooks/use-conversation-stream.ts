@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { mutate as globalMutate } from 'swr'
+import { playMessageSound } from '@/lib/sounds'
 
 interface StreamState {
   isTyping: boolean
@@ -38,6 +39,9 @@ export function useConversationStream(id: string | null) {
       es.addEventListener('messages', (e: MessageEvent) => {
         const { messages: newMsgs } = JSON.parse(e.data)
         if (!newMsgs?.length) return
+
+        // Toca som de notificação para mensagens novas
+        playMessageSound()
 
         // Atualiza o cache SWR diretamente — sem re-fetch, sem flicker
         globalMutate(
