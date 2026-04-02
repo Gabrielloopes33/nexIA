@@ -79,6 +79,7 @@ interface PipelineColumnProps {
   draggedDealId: string | null
   draggedOverStageId: string | null
   onDragStart: (e: React.DragEvent, dealId: string) => void
+  onDragEnd: () => void
   onDragOver: (e: React.DragEvent, stageId: string) => void
   onDragLeave: (e: React.DragEvent, stageId: string) => void
   onDrop: (e: React.DragEvent, stageId: string) => void
@@ -95,6 +96,7 @@ function PipelineColumn({
   draggedDealId,
   draggedOverStageId,
   onDragStart,
+  onDragEnd,
   onDragOver,
   onDragLeave,
   onDrop,
@@ -140,7 +142,7 @@ function PipelineColumn({
       </div>
 
       {/* Cards */}
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1" style={{ minHeight: 0 }}>
         {deals.map((deal) => (
           <DealCard
             key={deal.id}
@@ -162,6 +164,7 @@ function PipelineColumn({
             }}
             draggable
             onDragStart={(e) => onDragStart(e, deal.id)}
+            onDragEnd={onDragEnd}
             isDragging={draggedDealId === deal.id}
             onClick={() => onDealClick(deal)}
             onEdit={(e) => {
@@ -239,8 +242,16 @@ function DealListView({
             <div 
               key={stage.id}
               className="rounded-lg border border-border bg-white overflow-hidden"
-              onDragOver={onDragOver}
-              onDrop={(e) => onDrop(e, stage.id)}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onDragOver(e)
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onDrop(e, stage.id)
+              }}
             >
               {/* Stage Header */}
               <div 
@@ -1269,6 +1280,7 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
 
   const handleDragOver = (e: React.DragEvent, stageId: string) => {
     e.preventDefault()
+    e.stopPropagation()
     e.dataTransfer.dropEffect = "move"
     setDraggedOverStageId(stageId)
   }
@@ -1286,10 +1298,14 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
 
   const handleDrop = (e: React.DragEvent, stageId: string) => {
     e.preventDefault()
+    e.stopPropagation()
     setDraggedOverStageId(null)
     
     const dealId = e.dataTransfer.getData("text/plain") || draggedDealId
-    if (!dealId) return
+    if (!dealId) {
+      setDraggedDealId(null)
+      return
+    }
 
     // Encontrar o deal atual para verificar se mudou de estágio
     const currentDeal = deals.find(d => d.id === dealId)
@@ -1311,6 +1327,11 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
     // Persist to backend
     handleMoveDeal(dealId, stageId)
     setDraggedDealId(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedDealId(null)
+    setDraggedOverStageId(null)
   }
 
   const handleDealClick = (deal: DealWithRelations) => {
@@ -1510,6 +1531,7 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
               draggedDealId={draggedDealId}
               draggedOverStageId={draggedOverStageId}
               onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}

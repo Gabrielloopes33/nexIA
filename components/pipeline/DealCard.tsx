@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import * as React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LeadScoreBadge } from "./LeadScoreBadge";
 import { formatCurrency } from "@/lib/utils";
@@ -37,6 +37,7 @@ interface DealCardProps {
   onDelete?: (e: React.MouseEvent) => void;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
   isDragging?: boolean;
 }
 
@@ -47,6 +48,7 @@ export function DealCard({
   onDelete, 
   draggable = false,
   onDragStart,
+  onDragEnd,
   isDragging = false
 }: DealCardProps) {
   const getPriorityColor = (priority: string) => {
@@ -71,105 +73,122 @@ export function DealCard({
       .slice(0, 2);
   };
 
+  const formattedValue = formatCurrency(deal.value);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("text/plain", deal.id)
+    onDragStart?.(e)
+  }
+
+  const handleDragHandleMouseDown = (e: React.MouseEvent) => {
+    // Impedir que o click se propague para o card
+    e.stopPropagation()
+  }
+
   return (
-    <Card
-      draggable={draggable}
-      onDragStart={onDragStart}
+    <div
       className={cn(
-        "cursor-pointer hover:shadow-md transition-all border-l-4 group relative",
-        draggable && "cursor-grab active:cursor-grabbing",
-        isDragging && "opacity-50 rotate-2 scale-105 shadow-xl ring-2 ring-[#46347F]/30"
+        "bg-card text-card-foreground flex flex-col gap-2 rounded-xl py-3 px-3",
+        "border border-border hover:shadow-md transition-shadow",
+        "border-l-4 relative select-none group",
+        isDragging && "opacity-50 shadow-lg ring-2 ring-[#46347F]/30"
       )}
       style={{ borderLeftColor: deal.leadScore >= 60 ? "#10b981" : "#3b82f6" }}
       onClick={onClick}
     >
-      <CardContent className="p-3">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-2">
-          {draggable && (
-            <div className="mr-2 text-muted-foreground/50">
-              <GripVertical className="h-4 w-4" />
-            </div>
-          )}
-          <h4 className="font-medium text-sm line-clamp-2 flex-1 mr-2">
-            {deal.title}
-          </h4>
-          <div className="flex items-center gap-1">
-            <LeadScoreBadge score={deal.leadScore} className="shrink-0" />
-            
-            {/* Menu de Ações - 3 Pontinhos */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem onClick={onEdit}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={onDelete}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Value */}
-        <div className="flex items-center gap-1 text-sm font-semibold text-green-600 mb-2">
-          <DollarSign className="h-3.5 w-3.5" />
-          {formatCurrency(deal.value)}
-        </div>
-
-        {/* Contact */}
-        {deal.contact && (
-          <div className="flex items-center gap-2 mb-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={deal.contact.avatar || undefined} />
-              <AvatarFallback className="text-[10px] bg-primary/10">
-                {getInitials(deal.contact.name)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-xs text-muted-foreground truncate">
-              {deal.contact.name}
-            </span>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        {draggable && (
+          <div 
+            className="mr-2 text-muted-foreground/50 flex-shrink-0 cursor-grab active:cursor-grabbing hover:text-[#46347F]"
+            draggable
+            onDragStart={handleDragStart}
+            onDragEnd={onDragEnd}
+            onMouseDown={handleDragHandleMouseDown}
+            title="Arrastar"
+          >
+            <GripVertical className="h-4 w-4" />
           </div>
         )}
-
-        {/* Footer */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            {deal.expectedCloseDate && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {new Date(deal.expectedCloseDate).toLocaleDateString("pt-BR")}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {deal.activitiesCount ? (
-              <span className="flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" />
-                {deal.activitiesCount}
-              </span>
-            ) : null}
-            <span className={getPriorityColor(deal.priority)}>
-              ●
-            </span>
-          </div>
+        <h4 className="font-medium text-sm line-clamp-2 flex-1 mr-2 cursor-pointer">
+          {deal.title}
+        </h4>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <LeadScoreBadge score={deal.leadScore} />
+          
+          {/* Menu de Ações - 3 Pontinhos */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={onDelete}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Value */}
+      <div className="flex items-center gap-1 text-sm font-semibold text-green-600">
+        <DollarSign className="h-3.5 w-3.5" />
+        {formattedValue}
+      </div>
+
+      {/* Contact */}
+      {deal.contact && (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={deal.contact.avatar || undefined} />
+            <AvatarFallback className="text-[10px] bg-primary/10">
+              {getInitials(deal.contact.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-xs text-muted-foreground truncate">
+            {deal.contact.name}
+          </span>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
+        <div className="flex items-center gap-2">
+          {deal.expectedCloseDate && (
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {new Date(deal.expectedCloseDate).toLocaleDateString("pt-BR")}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {deal.activitiesCount ? (
+            <span className="flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" />
+              {deal.activitiesCount}
+            </span>
+          ) : null}
+          <span className={getPriorityColor(deal.priority)}>
+            ●
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
