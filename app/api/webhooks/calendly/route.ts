@@ -29,11 +29,19 @@ interface CalendlyScheduledEvent {
   location?: CalendlyLocation
 }
 
+interface CalendlyQuestionAnswer {
+  question: string
+  answer: string
+  position: number
+}
+
 interface CalendlyInviteePayload {
   uri: string
   name: string
   email: string
   status: string
+  text_reminder_number?: string
+  questions_and_answers?: CalendlyQuestionAnswer[]
   scheduled_event: CalendlyScheduledEvent
   cancel_url?: string
   reschedule_url?: string
@@ -116,8 +124,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Lê o corpo como texto para verificar a assinatura
   const rawBody = await request.text()
 
-  // Verificação de assinatura (opcional em dev, obrigatória em produção)
-  const signingKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY
+  // Busca a signing key no banco (salva na ativação da integração)
+  const integrationRecord = await prisma.calendlyIntegration.findUnique({
+    where: { organizationId },
+    select: { signingKey: true, status: true },
+  })
+
+  const signingKey = integrationRecord?.signingKey ?? process.env.CALENDLY_WEBHOOK_SIGNING_KEY
   const signatureHeader = request.headers.get('Calendly-Webhook-Signature') ?? ''
 
   if (signingKey) {
@@ -136,7 +149,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       )
     }
   } else {
-    console.warn('[Calendly Webhook] CALENDLY_WEBHOOK_SIGNING_KEY não configurada — assinatura não verificada')
+    console.warn('[Calendly Webhook] Signing key não encontrada — assinatura não verificada')
   }
 
   let body: CalendlyWebhookBody
@@ -185,6 +198,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 // ─── invitee.created → cria agendamento no CRM ───────────────────────────────
 
+function extractPhone(payload: CalendlyInviteePayload): string | null {
+  // Prioridade 1: campo nativo de lembrete por SMS
+  if (payload.text_reminder_number) return payload.text_reminder_number
+
+  // Prioridade 2: perguntas customizadas (busca por palavra-chave)
+  if (payload.questions_and_answers) {
+    const phoneKeywords = ['phone', 'telefone', 'celular', 'whatsapp', 'mobile', 'fone']
+    const match = payload.questions_and_answers.find((qa) =>
+      phoneKeywords.some((kw) => qa.question.toLowerCase().includes(kw))
+    )
+    if (match?.answer?.trim()) return match.answer.trim()
+  }
+
+  return null
+}
+
 async function handleInviteeCreated(
   organizationId: string,
   payload: CalendlyInviteePayload
@@ -192,26 +221,46 @@ async function handleInviteeCreated(
   const { name, email, scheduled_event } = payload
   const { name: eventName, start_time, end_time, location, uri: eventUri } = scheduled_event
 
-  // 1. Encontra ou cria o contato pelo e-mail
-  let contact = await prisma.contact.findFirst({
-    where: { organizationId, email: email.toLowerCase() },
-    select: { id: true, name: true },
-  })
+  const phone = extractPhone(payload)
+
+  // 1. Encontra o contato por telefone (se disponível) ou e-mail
+  let contact = null
+
+  if (phone) {
+    contact = await prisma.contact.findFirst({
+      where: { organizationId, phone },
+      select: { id: true, name: true },
+    })
+  }
 
   if (!contact) {
-    // Cria novo contato — phone sintético para satisfazer a constraint única
-    const phone = syntheticPhone(email)
+    contact = await prisma.contact.findFirst({
+      where: { organizationId, email: email.toLowerCase() },
+      select: { id: true, name: true },
+    })
+  }
+
+  if (!contact) {
+    // Cria novo contato usando telefone real se disponível, senão sintético
+    const contactPhone = phone ?? syntheticPhone(email)
     contact = await prisma.contact.create({
       data: {
         organizationId,
         name: name || email,
         email: email.toLowerCase(),
-        phone,
+        phone: contactPhone,
       },
       select: { id: true, name: true },
     })
     console.log(`[Calendly Webhook] Contato criado: ${contact.id} (${email})`)
   } else {
+    // Atualiza telefone real se ainda não tinha
+    if (phone) {
+      await prisma.contact.update({
+        where: { id: contact.id },
+        data: { phone },
+      }).catch(() => {/* ignora conflito de unicidade */})
+    }
     console.log(`[Calendly Webhook] Contato encontrado: ${contact.id} (${email})`)
   }
 
@@ -231,6 +280,12 @@ async function handleInviteeCreated(
   })
 
   console.log(`[Calendly Webhook] Agendamento criado: ${schedule.id} — "${eventName}" em ${start_time}`)
+
+  // Incrementa contador de agendamentos na integração
+  await prisma.calendlyIntegration.updateMany({
+    where: { organizationId },
+    data: { totalBookings: { increment: 1 }, lastBookingAt: new Date() },
+  })
 
   return NextResponse.json({
     success: true,

@@ -932,6 +932,7 @@ enum IntegrationType {
   WHATSAPP
   INSTAGRAM
   LINKEDIN
+  CALENDLY
   N8N
   MAKE
   ZAPIER
@@ -974,6 +975,36 @@ model LinkedInIntegration {
 
   @@index([organizationId])
   @@map("linkedin_integrations")
+}
+
+/// CalendlyIntegration - Conexão via Personal Access Token com Calendly por organização
+model CalendlyIntegration {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId          String    @unique @map("organization_id") @db.Uuid
+
+  /// Token de acesso pessoal do Calendly
+  accessToken             String    @map("access_token")
+
+  /// Dados do usuário Calendly conectado
+  calendlyUserUri         String?   @map("calendly_user_uri") @db.VarChar(500)
+  calendlyOrganizationUri String?   @map("calendly_organization_uri") @db.VarChar(500)
+  calendlyUserName        String?   @map("calendly_user_name") @db.VarChar(255)
+  calendlyUserEmail       String?   @map("calendly_user_email") @db.VarChar(255)
+
+  /// Webhook registrado no Calendly
+  webhookSubscriptionUri  String?   @map("webhook_subscription_uri") @db.VarChar(500)
+  signingKey              String?   @map("signing_key")
+
+  /// Status: PENDING | ACTIVE | ERROR | DISCONNECTED
+  status                  String    @default("PENDING") @db.VarChar(50)
+
+  totalBookings           Int       @default(0) @map("total_bookings")
+  lastBookingAt           DateTime? @map("last_booking_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("calendly_integrations")
 }
 
 enum IntegrationActivityType {

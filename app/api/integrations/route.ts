@@ -130,7 +130,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-type IntegrationType = 'whatsapp' | 'instagram' | 'linkedin' | 'n8n' | 'webhook' | 'api';
+type IntegrationType = 'whatsapp' | 'instagram' | 'linkedin' | 'calendly' | 'n8n' | 'webhook' | 'api';
 
 interface IntegrationItem {
   id: string;
@@ -188,8 +188,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const linkedInWhere: Record<string, unknown> = { organizationId };
     if (status) linkedInWhere.status = status;
 
+    // Buscar Calendly
+    const calendlyWhere: Record<string, unknown> = { organizationId };
+    if (status) calendlyWhere.status = status;
+
     // Buscar em paralelo
-    const [whatsappInstances, instagramInstances, linkedInIntegration] = await Promise.all([
+    const [whatsappInstances, instagramInstances, linkedInIntegration, calendlyIntegration] = await Promise.all([
       (!type || type === 'whatsapp')
         ? prisma.whatsappInstance.findMany({
             where: whatsappWhere,
@@ -205,10 +209,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       (!type || type === 'linkedin')
         ? prisma.linkedInIntegration.findFirst({ where: linkedInWhere })
         : null,
+      (!type || type === 'calendly')
+        ? prisma.calendlyIntegration.findFirst({ where: calendlyWhere })
+        : null,
     ]);
 
     // Combinar resultados
     const integrations: IntegrationItem[] = [
+      ...(calendlyIntegration ? [{
+        id: calendlyIntegration.id,
+        type: 'calendly' as IntegrationType,
+        name: calendlyIntegration.calendlyUserName ?? 'Calendly',
+        status: calendlyIntegration.status === 'ACTIVE' ? 'connected' : 'not_connected',
+        username: calendlyIntegration.calendlyUserEmail ?? undefined,
+        connectedAt: calendlyIntegration.createdAt,
+        lastSyncAt: calendlyIntegration.lastBookingAt ?? null,
+        organizationId: calendlyIntegration.organizationId,
+        createdAt: calendlyIntegration.createdAt,
+        updatedAt: calendlyIntegration.updatedAt,
+        settings: {
+          totalBookings: calendlyIntegration.totalBookings,
+        },
+      } satisfies IntegrationItem] : []),
       ...(linkedInIntegration ? [{
         id: linkedInIntegration.id,
         type: 'linkedin' as IntegrationType,

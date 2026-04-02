@@ -70,20 +70,24 @@ export default function IntegracoesPage() {
   }, [integrations, searchTerm, filterCategory, filterStatus, sortBy])
 
   const handleConnect = async (id: string) => {
-    // Redirecionar para a página de conexão do WhatsApp Oficial
     if (id === 'whatsapp-oficial') {
       router.push('/meta-api/whatsapp/connect')
       return
     }
-    
-    // Para outras integrações, usa o hook
+    if (id.startsWith('calendly') || integrations.find(i => i.id === id && i.type === 'calendly')) {
+      router.push('/integracoes/calendly')
+      return
+    }
     await connectIntegration(id)
-    console.log('Connect integration:', id)
   }
 
   const handleConfigure = async (id: string) => {
+    const integration = integrations.find(i => i.id === id)
+    if (integration?.type === 'calendly') {
+      router.push('/integracoes/calendly')
+      return
+    }
     await configureIntegration(id, {})
-    console.log('Configure integration:', id)
   }
 
   const handleNewIntegration = () => {

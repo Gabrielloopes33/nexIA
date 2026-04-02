@@ -132,6 +132,7 @@ export const topNavItems: SidebarNavItem[] = [
     children: [
       { label: "WhatsApp Não Oficial", href: "/integracoes/whatsapp-nao-oficial", section: "Canais" },
       { label: "LinkedIn Ads", href: "/integracoes/linkedin", section: "Canais" },
+      { label: "Calendly", href: "/integracoes/calendly", section: "Canais" },
       { label: "Webhooks", href: "/integracoes/webhooks", section: "Ações" },
       { label: "Logs", href: "/integracoes/logs", section: "Ações" },
       { label: "Sync", href: "/integracoes/sync", section: "Ações" },
