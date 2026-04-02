@@ -135,13 +135,19 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
-    // Busca dados do contato para obter o telefone
-    const contact = await prisma.contact.findUnique({
-      where: { id: conversation.contactId },
-      select: { phone: true },
-    });
+    // Busca dados do contato e do usuário atual para obter o telefone e nome
+    const [contact, currentUser] = await Promise.all([
+      prisma.contact.findUnique({
+        where: { id: conversation.contactId },
+        select: { phone: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { id: true, name: true, email: true },
+      }),
+    ]);
 
-    // Cria a mensagem no banco
+    // Cria a mensagem no banco com metadata do sender
     let message = await prisma.message.create({
       data: {
         conversationId: id,
@@ -149,6 +155,11 @@ export async function POST(request: NextRequest, { params }: Params) {
         content,
         direction: 'OUTBOUND',
         status: 'sent',
+        metadata: currentUser ? {
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          senderEmail: currentUser.email,
+        } : undefined,
       },
     });
 

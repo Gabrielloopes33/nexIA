@@ -140,7 +140,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     
     const { id } = await params;
     const body = await request.json();
-    const { status, unread_count } = body;
+    const { status, unread_count, archived } = body;
 
     const organizationId = user.organizationId;
     
@@ -170,6 +170,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const data: any = {};
     if (status) data.status = status;
     if (typeof unread_count === 'number') data.unread_count = unread_count;
+    if (typeof archived === 'boolean') data.archived = archived;
 
     const conversation = await prisma.conversation.update({
       where: { id },

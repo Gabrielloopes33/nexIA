@@ -59,10 +59,22 @@ export function formatDate(dateString: string): string {
 export function formatRelativeDate(dateString: string): string {
   const date = new Date(dateString)
   const today = new Date()
-  const diffTime = today.getTime() - date.getTime()
+  
+  // Normaliza as datas para comparar apenas ano/mês/dia (ignora timezone)
+  const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  
+  const diffTime = todayDay.getTime() - dateDay.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 0) return "Hoje"
+  if (diffDays === 0) {
+    // Hoje: mostra a hora (ex: 14:30)
+    return date.toLocaleTimeString('pt-BR', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    })
+  }
   if (diffDays === 1) return "Ontem"
   if (diffDays < 7) return `${diffDays} dias atrás`
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} semanas atrás`

@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getOrganizationId, AuthError, createAuthErrorResponse } from '@/lib/auth/helpers';
+import { requireAuth } from '@/lib/auth/server';
 
 /**
  * POST /api/conversations/[id]/assign
@@ -17,7 +17,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const organizationId = await getOrganizationId();
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
+    const organizationId = user.organizationId;
     const { id: conversationId } = await params;
     const { agentId } = await request.json();
 
@@ -90,10 +95,6 @@ export async function POST(
   } catch (error: any) {
     console.error('[Assign Conversation] Erro:', error);
 
-    if (error instanceof AuthError) {
-      return createAuthErrorResponse(error);
-    }
-
     return NextResponse.json(
       { error: 'Erro interno ao atribuir conversa' },
       { status: 500 }
@@ -110,7 +111,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const organizationId = await getOrganizationId();
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) {
+      return user;
+    }
+    
+    const organizationId = user.organizationId;
     const { id: conversationId } = await params;
 
     // Verifica se a conversa existe e pertence à organização
@@ -144,10 +150,6 @@ export async function DELETE(
 
   } catch (error: any) {
     console.error('[Unassign Conversation] Erro:', error);
-
-    if (error instanceof AuthError) {
-      return createAuthErrorResponse(error);
-    }
 
     return NextResponse.json(
       { error: 'Erro interno ao remover atribuição' },

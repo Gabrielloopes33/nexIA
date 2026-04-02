@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { Search, Star, AlertCircle, Plus, Trash2, MoreVertical, CheckSquare, Square, X } from "lucide-react"
+import { Search, Star, AlertCircle, Plus, Trash2, MoreVertical, CheckSquare, Square, X, Archive, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn, formatRelativeDate } from "@/lib/utils"
@@ -28,6 +28,7 @@ import { useCurrentUser } from "@/hooks/use-current-user"
 import { ProductSwitcher } from "@/components/products/product-switcher"
 
 type AssignmentFilter = 'all' | 'mine' | 'unassigned'
+type ArchiveFilter = 'active' | 'archived'
 
 const avatarColors = [
   "bg-violet-100 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400",
@@ -92,6 +93,7 @@ export function ConversationsPanel({
 }: Props) {
   const [search, setSearch] = useState("")
   const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all')
+  const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>('active')
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null)
@@ -145,7 +147,12 @@ export function ConversationsPanel({
         ? true
         : (c.tags ?? []).some((t) => selectedTags.has(t))
 
-    return searchMatch && assignmentMatch && tagMatch
+    const archiveMatch =
+      archiveFilter === 'archived'
+        ? (c as any).archived === true
+        : (c as any).archived !== true
+
+    return searchMatch && assignmentMatch && tagMatch && archiveMatch
   })
 
   const allSelected = filtered.length > 0 && filtered.every((c) => isSelected(c.id))
@@ -253,28 +260,70 @@ export function ConversationsPanel({
             />
           </div>
 
-          {/* Assignment Filter */}
-          <div className="flex mt-2 rounded-lg border border-border overflow-hidden">
-            {(
-              [
-                { value: 'all' as const, label: 'Todas' },
-                { value: 'mine' as const, label: 'Minhas' },
-                { value: 'unassigned' as const, label: 'Não atribuídas' },
-              ]
-            ).map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setAssignmentFilter(value)}
-                className={cn(
-                  "flex-1 py-1.5 text-[11px] font-medium transition-colors",
-                  assignmentFilter === value
-                    ? "bg-[#46347F] text-white"
-                    : "bg-background text-muted-foreground hover:bg-[#46347F]/10 hover:text-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
+          {/* Assignment Filter + Archive Dropdown */}
+          <div className="flex mt-2 gap-2">
+            <div className="flex flex-1 rounded-lg border border-border overflow-hidden">
+              {(
+                [
+                  { value: 'all' as const, label: 'Todas' },
+                  { value: 'mine' as const, label: 'Minhas' },
+                  { value: 'unassigned' as const, label: 'Não atribuídas' },
+                ]
+              ).map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setAssignmentFilter(value)}
+                  className={cn(
+                    "flex-1 py-1.5 text-[11px] font-medium transition-colors",
+                    assignmentFilter === value
+                      ? "bg-[#46347F] text-white"
+                      : "bg-background text-muted-foreground hover:bg-[#46347F]/10 hover:text-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Archive Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "flex items-center gap-1 px-3 py-1.5 rounded-lg border text-[11px] font-medium transition-colors",
+                    archiveFilter === 'archived'
+                      ? "bg-amber-100 text-amber-700 border-amber-200"
+                      : "bg-background text-muted-foreground border-border hover:bg-[#46347F]/10 hover:text-foreground"
+                  )}
+                >
+                  <Archive className="h-3 w-3" />
+                  {archiveFilter === 'archived' ? 'Arquivadas' : 'Ativas'}
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem 
+                  onClick={() => setArchiveFilter('active')}
+                  className={cn(
+                    "text-xs cursor-pointer",
+                    archiveFilter === 'active' && "bg-[#46347F]/10 text-[#46347F]"
+                  )}
+                >
+                  <span className="flex-1">Ativas</span>
+                  {archiveFilter === 'active' && <span className="text-[#46347F]">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setArchiveFilter('archived')}
+                  className={cn(
+                    "text-xs cursor-pointer",
+                    archiveFilter === 'archived' && "bg-[#46347F]/10 text-[#46347F]"
+                  )}
+                >
+                  <span className="flex-1">Arquivadas</span>
+                  {archiveFilter === 'archived' && <span className="text-[#46347F]">✓</span>}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Tag Filter */}
@@ -345,12 +394,22 @@ export function ConversationsPanel({
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <p className="text-sm text-muted-foreground">
-                {assignmentFilter === 'mine'
+                {archiveFilter === 'archived'
+                  ? 'Nenhuma conversa arquivada.'
+                  : assignmentFilter === 'mine'
                   ? 'Nenhuma conversa atribuída a você.'
                   : assignmentFilter === 'unassigned'
                   ? 'Nenhuma conversa sem atribuição.'
                   : 'Nenhuma conversa encontrada.'}
               </p>
+              {archiveFilter === 'archived' && (
+                <button
+                  onClick={() => setArchiveFilter('active')}
+                  className="mt-2 text-xs text-[#46347F] hover:underline"
+                >
+                  Ver conversas ativas
+                </button>
+              )}
             </div>
           ) : (
             <ul className="divide-y divide-border">
@@ -380,22 +439,26 @@ export function ConversationsPanel({
 
                       {/* Checkbox (visible in selection mode or on hover) */}
                       {enableSelection && (
-                        <div 
+                        <span 
                           className={cn(
-                            "shrink-0 pt-1",
+                            "shrink-0 pt-1 pointer-events-auto",
                             !isSelectionMode && "opacity-0 group-hover:opacity-100 transition-opacity"
                           )}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            if (!isSelectionMode) enterSelectionMode()
+                            toggleSelection(conv.id)
+                          }}
+                          role="button"
+                          tabIndex={0}
                         >
                           <Checkbox
                             checked={selected}
-                            onCheckedChange={() => {
-                              if (!isSelectionMode) enterSelectionMode()
-                              toggleSelection(conv.id)
-                            }}
-                            className="border-[#46347F] data-[state=checked]:bg-[#46347F] data-[state=checked]:text-white"
+                            onCheckedChange={() => {}}
+                            className="border-[#46347F] data-[state=checked]:bg-[#46347F] data-[state=checked]:text-white pointer-events-none"
                           />
-                        </div>
+                        </span>
                       )}
 
                       {/* Avatar */}
@@ -438,7 +501,6 @@ export function ConversationsPanel({
                             <span className="text-[11px] text-muted-foreground">
                               {formatRelativeDate(conv.lastMessageAt)
                                 .replace(" atrás", "")
-                                .replace("Hoje", "hoje")
                                 .replace("Ontem", "ontem")}
                             </span>
                             {/* Delete Button (visible on hover) */}

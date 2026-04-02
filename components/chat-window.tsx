@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { AssignConversationDialog } from "@/components/conversations/assign-conversation-dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useConversation } from "@/hooks/use-conversations"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { useConversationStream } from "@/hooks/use-conversation-stream"
 import { toast } from "sonner"
 
@@ -68,12 +69,31 @@ export function ChatWindow({ conversation }: Props) {
     }
   }, [error])
 
+  // Hook para pegar usuário atual (para auto-atribuição)
+  const { user: currentUser } = useCurrentUser()
+
   // Handler para enviar mensagem
   const handleSend = async () => {
     if (!input.trim() || !conversation) return
 
     const content = input.trim()
     setInput("")
+
+    // Auto-atribuição: se conversa não está atribuída, atribui ao usuário atual
+    if (!conversation.assignedTo && currentUser?.userId) {
+      try {
+        const res = await fetch(`/api/conversations/${conversation.id}/assign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId: currentUser.userId }),
+        })
+        if (res.ok) {
+          toast.success("Conversa atribuída automaticamente a você")
+        }
+      } catch {
+        // Silencioso - não bloqueia envio da mensagem
+      }
+    }
 
     const success = await sendMessage({ content })
     
@@ -173,6 +193,7 @@ export function ChatWindow({ conversation }: Props) {
     text: msg.content,
     time: new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     status: msg.status,
+    senderName: msg.metadata?.senderName,
   }))
 
   return (
@@ -356,6 +377,12 @@ export function ChatWindow({ conversation }: Props) {
                         : "rounded-bl-sm bg-[#F3F2F2] text-foreground"
                     )}
                   >
+                    {/* Nome do sender (só no CRM, não vai pro cliente) */}
+                    {isUser && msg.senderName && (
+                      <p className="text-[10px] font-medium text-white/70 mb-1">
+                        {msg.senderName}
+                      </p>
+                    )}
                     {msg.text}
                     <div className={cn(
                       "mt-1 flex items-center gap-1",

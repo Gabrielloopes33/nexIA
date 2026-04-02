@@ -14,15 +14,24 @@ import {
   Trash2, 
   X,
   Loader2,
-  MailOpen
+  MailOpen,
+  Clock,
+  ChevronDown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useConversationSelection } from "@/lib/contexts/conversation-selection-context"
 import { useBulkAssign } from "@/hooks/use-bulk-assign"
 import { useConversations } from "@/hooks/use-conversations"
+import { useOrganizationId } from "@/lib/contexts/organization-context"
 import { AssignConversationDialog } from "./assign-conversation-dialog"
 import { toast } from "sonner"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface BulkActionsBarProps {
   /** Lista de todos os IDs disponíveis na página atual */
@@ -49,6 +58,9 @@ export function BulkActionsBar({
   const { assign, unassign, isLoading } = useBulkAssign()
   const { markAsUnread } = useConversations()
   const [assignDialogOpen, setAssignDialogOpen] = useState(false)
+  const [isResolving, setIsResolving] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
+  const organizationId = useOrganizationId()
 
   // Se não há seleção, não renderiza
   if (!hasSelection) return null
@@ -80,18 +92,87 @@ export function BulkActionsBar({
     }
   }
 
-  const handleResolve = () => {
-    // TODO: Implementar resolução em lote
-    toast.info("Funcionalidade em desenvolvimento", {
-      description: "Resolução em lote será implementada em breve",
-    })
+  const handleResolve = async () => {
+    setIsResolving(true)
+    try {
+      const promises = selectedIdsArray.map(id =>
+        fetch(`/api/conversations/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'CLOSED' }),
+        })
+      )
+      
+      await Promise.all(promises)
+      toast.success(`${selectionCount} ${selectionCount === 1 ? 'conversa resolvida' : 'conversas resolvidas'}`)
+      clearSelection()
+      onActionComplete?.()
+    } catch {
+      toast.error("Erro ao resolver conversas")
+    } finally {
+      setIsResolving(false)
+    }
   }
 
-  const handleArchive = () => {
-    // TODO: Implementar arquivamento em lote
-    toast.info("Funcionalidade em desenvolvimento", {
-      description: "Arquivamento em lote será implementado em breve",
-    })
+  const handleArchive = async () => {
+    setIsArchiving(true)
+    try {
+      const promises = selectedIdsArray.map(id =>
+        fetch(`/api/conversations/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ archived: true }),
+        })
+      )
+      
+      await Promise.all(promises)
+      toast.success(`${selectionCount} ${selectionCount === 1 ? 'conversa arquivada' : 'conversas arquivadas'}`)
+      clearSelection()
+      onActionComplete?.()
+    } catch {
+      toast.error("Erro ao arquivar conversas")
+    } finally {
+      setIsArchiving(false)
+    }
+  }
+
+  const handleRemind = async (minutes: number, label: string) => {
+    if (!organizationId) {
+      toast.error("Organização não identificada")
+      return
+    }
+    
+    const remindAt = new Date(Date.now() + minutes * 60 * 1000)
+    
+    try {
+      // Cria notificação/lembrete para cada conversa
+      const promises = selectedIdsArray.map(id =>
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            organizationId,
+            type: 'TASK',
+            title: '⏰ Lembrete de conversa',
+            message: `Verificar conversa - lembrete para ${label}`,
+            link: `/conversas?id=${id}`,
+            metadata: {
+              scheduledFor: remindAt.toISOString(),
+              conversationId: id,
+              reminderMinutes: minutes,
+            },
+          }),
+        })
+      )
+      
+      await Promise.all(promises)
+      toast.success(`Lembrete criado para ${label}`, {
+        description: `Você será notificado às ${remindAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+      })
+      clearSelection()
+    } catch {
+      toast.error("Erro ao criar lembrete")
+    }
   }
 
   const handleMarkAsUnread = async () => {
@@ -173,10 +254,14 @@ export function BulkActionsBar({
             variant="ghost"
             size="sm"
             onClick={handleResolve}
-            disabled={isLoading}
+            disabled={isLoading || isResolving}
             className="h-8 px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
           >
-            <CheckCircle className="h-4 w-4 mr-1" />
+            {isResolving ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <CheckCircle className="h-4 w-4 mr-1" />
+            )}
             Resolver
           </Button>
 
@@ -185,10 +270,14 @@ export function BulkActionsBar({
             variant="ghost"
             size="sm"
             onClick={handleArchive}
-            disabled={isLoading}
+            disabled={isLoading || isArchiving}
             className="h-8 px-2 text-muted-foreground hover:text-foreground"
           >
-            <Archive className="h-4 w-4 mr-1" />
+            {isArchiving ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Archive className="h-4 w-4 mr-1" />
+            )}
             Arquivar
           </Button>
 
@@ -203,6 +292,36 @@ export function BulkActionsBar({
             <MailOpen className="h-4 w-4 mr-1" />
             Não lida
           </Button>
+
+          {/* Lembrar-me em */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={isLoading}
+                className="h-8 px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Lembrar-me
+                <ChevronDown className="h-3 w-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleRemind(20, '20 minutos')}>
+                20 minutos
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleRemind(60, '1 hora')}>
+                1 hora
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleRemind(120, '2 horas')}>
+                2 horas
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleRemind(24 * 60, '24 horas')}>
+                24 horas
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Separador */}

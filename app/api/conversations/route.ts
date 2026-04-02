@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const contactId = searchParams.get('contactId');
     const status = searchParams.get('status') as any;
     const assignedTo = searchParams.get('assignedTo') || 'all';
+    const archived = searchParams.get('archived');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 500);
     const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -47,6 +48,13 @@ export async function GET(request: NextRequest) {
 
     if (contactId) where.contactId = contactId;
     if (status) where.status = status;
+    
+    // Filtro de arquivadas
+    if (archived === 'true') {
+      where.archived = true;
+    } else if (archived === 'false') {
+      where.archived = false;
+    }
 
     // Filtro de atribuição
     if (assignedTo === 'me') {
