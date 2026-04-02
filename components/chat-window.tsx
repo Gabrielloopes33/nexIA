@@ -12,6 +12,7 @@ import { useConversation } from "@/hooks/use-conversations"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useConversationStream } from "@/hooks/use-conversation-stream"
 import { toast } from "sonner"
+import { mutate as globalMutate } from "swr"
 
 const STATUS_CONFIG = {
   open: { label: "Aberto", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
@@ -71,6 +72,23 @@ export function ChatWindow({ conversation }: Props) {
 
   // Hook para pegar usuário atual (para auto-atribuição)
   const { user: currentUser } = useCurrentUser()
+
+  // Limpa notificação de não lida quando abre a conversa
+  useEffect(() => {
+    if (conversation?.id && conversation?.unreadCount && conversation.unreadCount > 0) {
+      // Marca como lida (unread_count = 0)
+      fetch(`/api/conversations/${conversation.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unread_count: 0 }),
+      }).then(() => {
+        // Revalida lista de conversas para atualizar a sidebar
+        globalMutate('/api/conversations')
+      }).catch(() => {
+        // Silencioso - não quebra a experiência do usuário
+      })
+    }
+  }, [conversation?.id, conversation?.unreadCount])
 
   // Handler para enviar mensagem
   const handleSend = async () => {
