@@ -395,15 +395,9 @@ export function ChatWindow({ conversation }: Props) {
                         : "rounded-bl-sm bg-[#F3F2F2] text-foreground"
                     )}
                   >
-                    {/* Nome do sender (só no CRM, não vai pro cliente) */}
-                    {isUser && msg.senderName && (
-                      <p className="text-[10px] font-medium text-white/70 mb-1">
-                        {msg.senderName}
-                      </p>
-                    )}
                     {msg.text}
                     <div className={cn(
-                      "mt-1 flex items-center gap-1",
+                      "mt-1.5 flex items-center gap-1.5 flex-wrap",
                       isUser ? "justify-end" : "justify-start"
                     )}>
                       <p
@@ -414,6 +408,17 @@ export function ChatWindow({ conversation }: Props) {
                       >
                         {msg.time}
                       </p>
+                      {/* Nome do sender (só no CRM, não vai pro cliente) */}
+                      {isUser && msg.senderName && (
+                        <span className={cn(
+                          "text-[9px] px-1.5 py-0.5 rounded-full",
+                          isUser 
+                            ? "bg-white/20 text-white/80" 
+                            : "bg-[#46347F]/10 text-[#46347F]/70"
+                        )}>
+                          {msg.senderName}
+                        </span>
+                      )}
                       {isUser && msg.status && (
                         <span className={cn(
                           "text-[10px]",
