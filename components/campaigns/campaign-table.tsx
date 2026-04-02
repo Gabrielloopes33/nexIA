@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { Megaphone, Send, Trash2, Eye, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CampaignStatusBadge } from './campaign-status-badge'
+import { TagBadge } from '@/components/ui/tag-badge'
 import type { Campaign } from '@/hooks/use-campaigns'
+import type { TagColor } from '@/lib/types/tag'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,6 +66,7 @@ export function CampaignTable({ campaigns, onSend, onDelete }: Props) {
           <thead className="bg-muted/50 border-b border-border">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Nome</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Tag</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Template</th>
               <th className="px-4 py-3 text-center font-medium text-muted-foreground">Total</th>
               <th className="px-4 py-3 text-center font-medium text-muted-foreground">Enviados</th>
@@ -77,6 +80,13 @@ export function CampaignTable({ campaigns, onSend, onDelete }: Props) {
             {campaigns.map((campaign) => (
               <tr key={campaign.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3 font-medium">{campaign.name}</td>
+                <td className="px-4 py-3">
+                  {campaign.tag ? (
+                    <TagBadge name={campaign.tag.name} color={campaign.tag.color as TagColor} size="sm" />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{campaign.templateName}</td>
                 <td className="px-4 py-3 text-center">{campaign.totalContacts}</td>
                 <td className="px-4 py-3 text-center text-green-600 font-medium">{campaign.sentCount}</td>

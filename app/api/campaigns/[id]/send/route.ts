@@ -20,7 +20,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     // Fetch campaign
     const campaign = await withRLS(prisma, organizationId, async (tx) => {
-      return tx.campaign.findFirst({ where: { id, organizationId } })
+      return tx.campaign.findFirst({ where: { id, organizationId }, include: { tag: true } })
     })
 
     if (!campaign) {
@@ -132,7 +132,8 @@ export async function POST(request: NextRequest, { params }: Params) {
           )
 
           // Adicionar tag de campanha ao contato
-          await ensureCampaignTag(organizationId, contact.contactId, 'NR1_Disparo Feito', campaign.createdBy)
+          const campaignTagName = campaign.tag?.name || 'NR1_Disparo Feito'
+          await ensureCampaignTag(organizationId, contact.contactId, campaignTagName, campaign.createdBy)
 
           sentCount++
         } catch (err: any) {

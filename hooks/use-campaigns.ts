@@ -19,6 +19,8 @@ export interface Campaign {
   templateComponents?: unknown
   audienceType: AudienceType
   audienceTags: string[]
+  tagId?: string | null
+  tag?: { id: string; name: string; color: string } | null
   totalContacts: number
   sentCount: number
   failedCount: number
@@ -54,6 +56,8 @@ export interface CreateCampaignData {
   audienceType: AudienceType
   audienceTags?: string[]
   contactIds?: string[]
+  tagId?: string
+  newTagName?: string
 }
 
 export function useCampaigns() {

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
           orderBy: { createdAt: 'desc' },
           take: limit,
           skip: offset,
-          include: { _count: { select: { contacts: true } } },
+          include: { tag: true, _count: { select: { contacts: true } } },
         }),
         tx.campaign.count({ where: { organizationId } }),
       ])
@@ -39,10 +39,32 @@ export async function POST(request: NextRequest) {
     const organizationId = user.organizationId
 
     const body = await request.json()
-    const { name, instanceId, templateName, templateLanguage, templateComponents, audienceType, audienceTags, contactIds } = body
+    const { name, instanceId, templateName, templateLanguage, templateComponents, audienceType, audienceTags, contactIds, tagId, newTagName } = body
 
     if (!name || !instanceId || !templateName || !templateLanguage || !audienceType) {
       return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // Resolve campaign tag: create new if needed, otherwise validate existing
+    let resolvedTagId: string | undefined = tagId
+    if (newTagName && !resolvedTagId) {
+      const tag = await withRLS(prisma, organizationId, async (tx) => {
+        return tx.tag.upsert({
+          where: { organizationId_name: { organizationId, name: newTagName.trim() } },
+          update: {},
+          create: {
+            organizationId,
+            name: newTagName.trim(),
+            color: '#f59e0b',
+            source: 'campanha',
+          },
+        })
+      })
+      resolvedTagId = tag.id
+    }
+
+    if (!resolvedTagId) {
+      return NextResponse.json({ success: false, error: 'Missing campaign tag' }, { status: 400 })
     }
 
     // Resolve contacts based on audienceType
@@ -93,6 +115,7 @@ export async function POST(request: NextRequest) {
           templateLanguage,
           templateComponents: templateComponents || undefined,
           audienceType,
+          tagId: resolvedTagId,
           audienceTags: audienceTags || [],
           totalContacts: contacts.length,
           pendingCount: contacts.length,

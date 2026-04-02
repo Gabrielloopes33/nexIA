@@ -17,6 +17,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       return tx.campaign.findFirst({
         where: { id, organizationId },
         include: {
+          tag: true,
           contacts: {
             orderBy: { createdAt: 'asc' },
             take: limit,

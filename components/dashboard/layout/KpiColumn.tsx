@@ -21,7 +21,7 @@ export function KpiColumn() {
     return <KpiColumnSkeleton />;
   }
 
-  if (isError || !data) {
+  if (isError || !data || !data.kpis || !Array.isArray(data.kpis)) {
     return (
       <div className="h-full flex items-center justify-center p-4">
         <p className="text-xs text-red-500 text-center">Erro ao carregar</p>

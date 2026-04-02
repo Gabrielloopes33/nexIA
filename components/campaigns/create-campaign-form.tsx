@@ -13,8 +13,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useCampaigns, type AudienceType } from '@/hooks/use-campaigns'
 import { useWhatsAppInstances } from '@/hooks/use-whatsapp-instances'
+import { useTags } from '@/hooks/use-tags'
 import { useOrganizationId } from '@/lib/contexts/organization-context'
 import { toast } from 'sonner'
+import { TagBadge } from '@/components/ui/tag-badge'
 
 interface Template {
   id: string
@@ -52,7 +54,11 @@ export function CreateCampaignForm() {
   const [allTags, setAllTags] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [previewCount, setPreviewCount] = useState<number | null>(null)
+  const [tagMode, setTagMode] = useState<'existing' | 'new'>('existing')
+  const [selectedTagId, setSelectedTagId] = useState<string>('')
+  const [newTagName, setNewTagName] = useState<string>('')
 
+  const { tags: existingTags, isLoading: loadingTags, createTag } = useTags(orgId)
   const connectedInstances = instances.filter((i) => i.status === 'CONNECTED' && i.type === 'OFFICIAL')
 
   // Load templates when instance changes
@@ -127,10 +133,28 @@ export function CreateCampaignForm() {
     if (!name.trim()) return toast.error('Digite o nome da campanha')
     if (!instanceId) return toast.error('Selecione uma instância WhatsApp')
     if (!selectedTemplate) return toast.error('Selecione um template')
-    if (audienceType === 'BY_TAG' && selectedTags.length === 0) return toast.error('Selecione ao menos uma tag')
+    if (tagMode === 'existing' && !selectedTagId) return toast.error('Selecione uma tag para a campanha')
+    if (tagMode === 'new' && !newTagName.trim()) return toast.error('Digite o nome da nova tag')
+    if (audienceType === 'BY_TAG' && selectedTags.length === 0) return toast.error('Selecione ao menos uma tag de audiência')
     if (audienceType === 'MANUAL' && selectedContactIds.length === 0) return toast.error('Selecione ao menos um contato')
 
     setIsSubmitting(true)
+
+    let resolvedTagId = tagMode === 'existing' ? selectedTagId : undefined
+    let resolvedNewTagName = tagMode === 'new' ? newTagName.trim() : undefined
+
+    // If creating a new tag inline, create it first
+    if (tagMode === 'new' && resolvedNewTagName) {
+      const created = await createTag({ name: resolvedNewTagName, color: '#f59e0b', source: 'campanha' })
+      if (created) {
+        resolvedTagId = created.id
+        resolvedNewTagName = undefined
+      } else {
+        setIsSubmitting(false)
+        return
+      }
+    }
+
     const result = await createCampaign({
       name: name.trim(),
       instanceId,
@@ -140,6 +164,8 @@ export function CreateCampaignForm() {
       audienceType,
       audienceTags: audienceType === 'BY_TAG' ? selectedTags : undefined,
       contactIds: audienceType === 'MANUAL' ? selectedContactIds : undefined,
+      tagId: resolvedTagId,
+      newTagName: resolvedNewTagName,
     })
     setIsSubmitting(false)
 
@@ -165,6 +191,79 @@ export function CreateCampaignForm() {
               onChange={(e) => setName(e.target.value)}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Tag da Campanha */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tag da Campanha</CardTitle>
+          <CardDescription>Toda campanha precisa estar atrelada a uma tag</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTagMode('existing')}
+              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                tagMode === 'existing'
+                  ? 'border-[#46347F] bg-[#46347F]/5 text-[#46347F]'
+                  : 'border-border hover:border-[#46347F]/40'
+              }`}
+            >
+              Tag existente
+            </button>
+            <button
+              type="button"
+              onClick={() => setTagMode('new')}
+              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                tagMode === 'new'
+                  ? 'border-[#46347F] bg-[#46347F]/5 text-[#46347F]'
+                  : 'border-border hover:border-[#46347F]/40'
+              }`}
+            >
+              Criar nova tag
+            </button>
+          </div>
+
+          {tagMode === 'existing' ? (
+            <div className="space-y-2">
+              <Label>Selecione a tag</Label>
+              {loadingTags ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando tags...
+                </div>
+              ) : existingTags.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma tag encontrada. Crie uma nova tag.</p>
+              ) : (
+                <Select value={selectedTagId} onValueChange={setSelectedTagId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingTags.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} />
+                          {t.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="new-tag-name">Nome da nova tag</Label>
+              <Input
+                id="new-tag-name"
+                placeholder="Ex: Black Friday 2026"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -368,7 +467,15 @@ export function CreateCampaignForm() {
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={isSubmitting || !name || !instanceId || !selectedTemplate || previewCount === 0}
+          disabled={
+            isSubmitting ||
+            !name ||
+            !instanceId ||
+            !selectedTemplate ||
+            previewCount === 0 ||
+            (tagMode === 'existing' && !selectedTagId) ||
+            (tagMode === 'new' && !newTagName.trim())
+          }
           className="bg-[#46347F] hover:bg-[#3a2c6b]"
         >
           {isSubmitting ? (

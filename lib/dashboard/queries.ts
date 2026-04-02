@@ -34,5 +34,5 @@ export const dashboardKeys = {
   lossReasons: () => [...dashboardKeys.all, 'loss-reasons'] as const,
   revenue: () => [...dashboardKeys.all, 'revenue'] as const,
   healthScore: () => [...dashboardKeys.all, 'health-score'] as const,
-  kpis: () => [...dashboardKeys.all, 'kpis'] as const,
+  kpis: () => [...dashboardKeys.all, 'kpis', 'v2'] as const,
 };

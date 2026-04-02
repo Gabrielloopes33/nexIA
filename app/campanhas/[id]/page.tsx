@@ -8,8 +8,10 @@ import { Sidebar } from '@/components/sidebar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CampaignStatusBadge } from '@/components/campaigns/campaign-status-badge'
+import { TagBadge } from '@/components/ui/tag-badge'
 import { useCampaigns, type Campaign, type CampaignContact } from '@/hooks/use-campaigns'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { TagColor } from '@/lib/types/tag'
 
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -97,9 +99,12 @@ export default function CampaignDetailPage() {
                   <Megaphone className="h-5 w-5 text-[#46347F]" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-xl font-bold">{campaign.name}</h1>
                     <CampaignStatusBadge status={campaign.status} />
+                    {campaign.tag && (
+                      <TagBadge name={campaign.tag.name} color={campaign.tag.color as TagColor} size="sm" />
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">Template: {campaign.templateName} ({campaign.templateLanguage})</p>
                 </div>

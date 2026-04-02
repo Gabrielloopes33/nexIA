@@ -159,6 +159,35 @@ export interface KPIs {
 }
 
 // ============================================
+// KPIs PARA SIDEBAR (Coluna Vertical)
+// ============================================
+
+export type KpiFormat = 'number' | 'currency' | 'percentage' | 'duration'
+export type KpiTrend = 'up' | 'down' | 'neutral'
+export type KpiChangeType = 'positive' | 'negative' | 'neutral'
+
+export interface KpiItem {
+  id: string
+  label: string
+  value: number
+  previousValue?: number
+  change: number
+  changeType: KpiChangeType
+  format: KpiFormat
+  trend: KpiTrend
+  prefix?: string
+  suffix?: string
+}
+
+// Alias para compatibilidade com componentes existentes
+export type KpiData = KpiItem
+
+export interface KpisData {
+  kpis: KpiItem[]
+  lastUpdated: string
+}
+
+// ============================================
 // MÉTRICAS CONSOLIDADAS
 // ============================================
 

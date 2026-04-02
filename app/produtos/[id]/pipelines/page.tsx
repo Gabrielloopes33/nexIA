@@ -2,7 +2,6 @@ import { Metadata } from "next"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth/session"
-import { Sidebar } from "@/components/sidebar"
 import { PipelineManager } from "./pipeline-manager"
 
 interface PageProps {
@@ -83,26 +82,20 @@ export default async function ProductPipelinesPage({ params }: PageProps) {
 
   if (!productRes.success || !productRes.data) {
     return (
-      <div className="flex min-h-screen bg-background">
-        <aside className="w-[280px] flex-shrink-0 bg-[#46347F]" />
-        <main className="flex-1 p-6 md:p-8">
-          <div className="mx-auto max-w-5xl">
-            <h1 className="text-xl font-semibold text-foreground">Produto não encontrado</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              O produto solicitado não existe ou você não tem permissão para acessá-lo.
-            </p>
-          </div>
-        </main>
+      <div className="p-6 md:p-8">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="text-xl font-semibold text-foreground">Produto não encontrado</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            O produto solicitado não existe ou você não tem permissão para acessá-lo.
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      <main className="flex-1 p-6 md:p-8">
-        <PipelineManager product={productRes.data} initialPipelines={pipelinesRes.data || []} />
-      </main>
+    <div className="p-6 md:p-8">
+      <PipelineManager product={productRes.data} initialPipelines={pipelinesRes.data || []} />
     </div>
   )
 }
