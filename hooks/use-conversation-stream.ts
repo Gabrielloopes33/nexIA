@@ -40,8 +40,9 @@ export function useConversationStream(id: string | null) {
         const { messages: newMsgs } = JSON.parse(e.data)
         if (!newMsgs?.length) return
 
-        // Toca som de notificação para mensagens novas
-        playMessageSound()
+        // Toca som apenas para mensagens recebidas (não enviadas pelo usuário)
+        const hasIncoming = newMsgs.some((m: any) => m.direction === 'INBOUND')
+        if (hasIncoming) playMessageSound()
 
         // Atualiza o cache SWR diretamente — sem re-fetch, sem flicker
         globalMutate(
