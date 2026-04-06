@@ -712,11 +712,13 @@ model CampaignContact {
   errorMessage      String?               @map("error_message") @db.Text
   sentAt            DateTime?             @map("sent_at")
   failedAt          DateTime?             @map("failed_at")
+  conversationId    String?               @map("conversation_id") @db.Uuid
   createdAt         DateTime              @default(now()) @map("created_at")
   campaign          Campaign              @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId])
   @@index([status])
+  @@index([conversationId])
   @@map("campaign_contacts")
 }
 

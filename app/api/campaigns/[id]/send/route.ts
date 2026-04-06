@@ -119,6 +119,12 @@ export async function POST(request: NextRequest, { params }: Params) {
                 messageId: messageId || undefined,
               },
             })
+            // Salvar conversationId no CampaignContact para rastreio de janelas
+            await prisma.$executeRawUnsafe(
+              `UPDATE campaign_contacts SET conversation_id = $1 WHERE id = $2`,
+              existingConversation.id,
+              contact.id
+            )
           } catch (convErr) {
             console.error('Error creating conversation for campaign contact:', convErr)
           }

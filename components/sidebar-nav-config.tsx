@@ -12,6 +12,7 @@ import {
   ListTodo,
   Phone,
   Package,
+  FileBarChart2,
 } from "lucide-react"
 
 export interface SidebarNavChild {
@@ -124,6 +125,12 @@ export const topNavItems: SidebarNavItem[] = [
       { label: "Compliance", href: "/meta-api/compliance", section: "Segurança" },
       { label: "Configurações", href: "/meta-api/configuracoes", section: "Gestão" },
     ],
+  },
+  {
+    key: "relatorios",
+    label: "Relatórios",
+    href: "/relatorios/performance",
+    icon: FileBarChart2,
   },
   {
     key: "integracoes",
