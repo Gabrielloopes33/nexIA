@@ -2,21 +2,14 @@ import { NextResponse } from 'next/server'
 import { getAuthenticatedUser, AuthError } from '@/lib/auth/helpers'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function PATCH() {
   try {
     const user = await getAuthenticatedUser()
-    const dbUser = await prisma.user.findUnique({
+    await prisma.user.update({
       where: { id: user.userId },
-      select: { onboardingTourCompleted: true },
+      data: { onboardingTourCompleted: true },
     })
-    return NextResponse.json({
-      userId: user.userId,
-      email: user.email,
-      name: user.name,
-      organizationId: user.organizationId,
-      setupComplete: user.setupComplete,
-      onboardingTourCompleted: dbUser?.onboardingTourCompleted ?? false,
-    })
+    return NextResponse.json({ ok: true })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.statusCode })

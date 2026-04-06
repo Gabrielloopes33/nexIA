@@ -184,7 +184,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     if (tags?.length) {
-      where.tags = { hasSome: tags };
+      // Filtra usando a relação contactTags (que armazena os IDs corretamente)
+      where.contactTags = {
+        some: {
+          tagId: {
+            in: tags,
+          },
+        },
+      };
     }
 
     // Executa com contexto RLS para isolamento multi-tenant

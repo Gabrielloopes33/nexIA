@@ -165,18 +165,44 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     let sentMessageId: string | undefined;
 
-    // Tenta enviar via instância conectada da organização (oficial tem prioridade)
+    // Tenta enviar via instância associada à conversa ou busca uma disponível
     if (contact?.phone) {
-      const [officialInstance, evolutionInstance] = await Promise.all([
-        prisma.whatsAppInstance.findFirst({
-          where: { organizationId, status: 'CONNECTED' },
-          select: { phoneNumberId: true, accessToken: true },
-        }),
-        prisma.evolutionInstance.findFirst({
-          where: { organizationId, status: 'CONNECTED' },
-          select: { instanceName: true },
-        }),
-      ]);
+      let officialInstance: { phoneNumberId: string | null; accessToken: string | null } | null = null;
+      let evolutionInstance: { instanceName: string } | null = null;
+
+      // Se a conversa tem instanceId e instanceType, usa a instância específica
+      if (conversation.instanceId && conversation.instanceType) {
+        console.log(`Messages POST: Using conversation instance ${conversation.instanceId} (${conversation.instanceType})`);
+        
+        if (conversation.instanceType === 'OFFICIAL') {
+          officialInstance = await prisma.whatsAppInstance.findFirst({
+            where: { id: conversation.instanceId, organizationId, status: 'CONNECTED' },
+            select: { phoneNumberId: true, accessToken: true },
+          });
+        } else if (conversation.instanceType === 'EVOLUTION') {
+          evolutionInstance = await prisma.evolutionInstance.findFirst({
+            where: { id: conversation.instanceId, organizationId, status: 'CONNECTED' },
+            select: { instanceName: true },
+          });
+        }
+      }
+
+      // Se não encontrou a instância específica ou não tem instanceId na conversa, busca qualquer uma conectada
+      if (!officialInstance && !evolutionInstance) {
+        console.log('Messages POST: No specific instance found, searching for any connected instance...');
+        const [offInst, evoInst] = await Promise.all([
+          prisma.whatsAppInstance.findFirst({
+            where: { organizationId, status: 'CONNECTED' },
+            select: { phoneNumberId: true, accessToken: true },
+          }),
+          prisma.evolutionInstance.findFirst({
+            where: { organizationId, status: 'CONNECTED' },
+            select: { instanceName: true },
+          }),
+        ]);
+        officialInstance = offInst;
+        evolutionInstance = evoInst;
+      }
 
       if (officialInstance?.phoneNumberId && officialInstance?.accessToken) {
         try {

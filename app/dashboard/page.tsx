@@ -8,6 +8,7 @@ import { ContactDetailPanel } from '@/components/contact-detail-panel'
 import { DashboardProvider } from '@/hooks/use-dashboard-context'
 import { DashboardFiltersProvider } from '@/hooks/dashboard/use-dashboard-filters-context'
 import { QueryProvider } from '@/components/providers/query-provider'
+import { ProductTour } from '@/components/onboarding/product-tour'
 
 /**
  * Função auxiliar para prefetch de dados no servidor
@@ -80,6 +81,9 @@ export default async function DashboardPage() {
 
               {/* Contact Detail Panel - Right Sidebar */}
               <ContactDetailPanel />
+
+              {/* Onboarding tour — rendered only on first visit */}
+              <ProductTour />
             </div>
           </DashboardFiltersProvider>
         </DashboardProvider>

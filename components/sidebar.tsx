@@ -32,6 +32,7 @@ function SimpleNavLink({
   return (
     <Link
       href={item.href || "#"}
+      data-tour={item.key}
       className={cn(
         "flex w-full items-center rounded-lg py-2 gap-2.5 transition-all duration-200 ease-out relative group",
         "hover:scale-[1.02] active:scale-[0.98]",

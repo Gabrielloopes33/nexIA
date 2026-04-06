@@ -31,26 +31,28 @@ export function DashboardContent() {
     <>
       {/* Dashboard Grid com Sidebar */}
       <DashboardGrid
-        sidebar={<KpiSidebar />}
+        sidebar={<div data-tour="dashboard-kpis" className="h-full"><KpiSidebar /></div>}
       >
-        {/* Row 1: Funil (2fr) + Recuperação (1fr) */}
-        <DashboardRow columns={2}>
-          <FunilPorEtapaCard />
-          <RecuperacaoPerdidosCard />
-        </DashboardRow>
+        <div data-tour="dashboard-cards" className="flex flex-col gap-5">
+          {/* Row 1: Funil (2fr) + Recuperação (1fr) */}
+          <DashboardRow columns={2}>
+            <FunilPorEtapaCard />
+            <RecuperacaoPerdidosCard />
+          </DashboardRow>
 
-        {/* Row 2: Performance Canal (1fr) + Motivos Perda (1fr) */}
-        <DashboardRow columns={2}>
-          <PerformanceCanalCard />
-          <MotivosPerdaCard />
-        </DashboardRow>
+          {/* Row 2: Performance Canal (1fr) + Motivos Perda (1fr) */}
+          <DashboardRow columns={2}>
+            <PerformanceCanalCard />
+            <MotivosPerdaCard />
+          </DashboardRow>
 
-        {/* Row 3: Receita alinhado com sidebar + Health Score */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-5 h-64">
-          <div className="xl:-ml-[176px] h-64"> {/* Puxa para alinhar com sidebar (160px + gap-5) */}
-            <ReceitaSemanalCard />
+          {/* Row 3: Receita alinhado com sidebar + Health Score */}
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-5 h-64">
+            <div className="xl:-ml-[176px] h-64"> {/* Puxa para alinhar com sidebar (160px + gap-5) */}
+              <ReceitaSemanalCard />
+            </div>
+            <HealthScoreCard compact />
           </div>
-          <HealthScoreCard compact />
         </div>
       </DashboardGrid>
     </>

@@ -19,7 +19,6 @@ const CONTACT_STATUS_OPTIONS = [
 ]
 
 interface ContactFiltersProps {
-  organizationId?: string
   onSearch: (query: string) => void
   onFilterTags: (tagIds: string[]) => void
   onFilterStatus: (statuses: string[]) => void
@@ -28,7 +27,6 @@ interface ContactFiltersProps {
 }
 
 export function ContactFilters({
-  organizationId,
   onSearch,
   onFilterTags,
   onFilterStatus,
@@ -36,7 +34,7 @@ export function ContactFilters({
   selectedStatuses,
 }: ContactFiltersProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const { tags, isLoading: tagsLoading } = useTags(organizationId)
+  const { tags, isLoading: tagsLoading } = useTags()
 
   const handleSearch = (value: string) => {
     setSearchQuery(value)

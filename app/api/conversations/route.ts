@@ -84,15 +84,23 @@ export async function GET(request: NextRequest) {
     const assignedUserIds = [...new Set(
       conversations.map(c => (c as any).assignedTo).filter((id: any): id is string => !!id)
     )];
+    
+    // Busca IDs de instâncias únicos das conversas
+    const evolutionInstanceIds = [...new Set(
+      conversations.filter(c => c.instanceType === 'EVOLUTION' && c.instanceId).map(c => c.instanceId!)
+    )];
+    const officialInstanceIds = [...new Set(
+      conversations.filter(c => c.instanceType === 'OFFICIAL' && c.instanceId).map(c => c.instanceId!)
+    )];
 
-    // 6 queries totais independente do número de conversas
+    // 6+ queries totais independente do número de conversas
     const [
       contacts,
       lastMessages,
       messageCounts,
       assignedUsers,
-      waInstance,
-      evoInstance,
+      waInstances,
+      evoInstances,
     ] = await Promise.all([
       // Todos os contatos em uma query
       prisma.contact.findMany({
@@ -135,30 +143,32 @@ export async function GET(request: NextRequest) {
           })
         : Promise.resolve([]),
 
-      // Instância WhatsApp — uma query para toda a org
-      prisma.whatsAppInstance.findFirst({
-        where: { organizationId },
-        select: { id: true, name: true, phoneNumber: true },
-      }),
+      // Todas as instâncias WhatsApp oficiais usadas nas conversas
+      officialInstanceIds.length > 0
+        ? prisma.whatsAppInstance.findMany({
+            where: { id: { in: officialInstanceIds } },
+            select: { id: true, name: true, phoneNumber: true },
+          })
+        : Promise.resolve([]),
 
-      // Instância Evolution — uma query para toda a org
-      prisma.evolutionInstance.findFirst({
-        where: { organizationId, status: 'CONNECTED' },
-        select: { id: true, name: true, phoneNumber: true },
-      }),
+      // Todas as instâncias Evolution usadas nas conversas
+      evolutionInstanceIds.length > 0
+        ? prisma.evolutionInstance.findMany({
+            where: { id: { in: evolutionInstanceIds } },
+            select: { id: true, name: true, phoneNumber: true },
+          })
+        : Promise.resolve([]),
     ]);
+    
+    // Cria mapas para lookup rápido de instâncias
+    const waInstanceMap = new Map(waInstances.map(i => [i.id, i]));
+    const evoInstanceMap = new Map(evoInstances.map(i => [i.id, i]));
 
     // Mapear resultados para lookup rápido por id
     const contactMap = new Map(contacts.map(c => [c.id, c]));
     const lastMessageMap = new Map(lastMessages.map(m => [m.conversation_id, m]));
     const messageCountMap = new Map(messageCounts.map(mc => [mc.conversationId, mc._count.id]));
     const userMap = new Map(assignedUsers.map(u => [u.id, u]));
-
-    const instance = waInstance
-      ? { id: waInstance.id, name: waInstance.name, displayPhoneNumber: waInstance.phoneNumber }
-      : evoInstance
-      ? { id: evoInstance.id, name: evoInstance.name, displayPhoneNumber: evoInstance.phoneNumber }
-      : null;
 
     const now = new Date();
 
@@ -174,6 +184,22 @@ export async function GET(request: NextRequest) {
       const assignedUser = (conv as any).assignedTo ? userMap.get((conv as any).assignedTo) ?? null : null;
 
       const windowEnd = new Date(conv.createdAt.getTime() + 24 * 60 * 60 * 1000);
+      
+      // Resolve a instância específica desta conversa
+      let instance = null;
+      if (conv.instanceId && conv.instanceType) {
+        if (conv.instanceType === 'OFFICIAL') {
+          const waInst = waInstanceMap.get(conv.instanceId);
+          if (waInst) {
+            instance = { id: waInst.id, name: waInst.name, displayPhoneNumber: waInst.phoneNumber };
+          }
+        } else if (conv.instanceType === 'EVOLUTION') {
+          const evoInst = evoInstanceMap.get(conv.instanceId);
+          if (evoInst) {
+            instance = { id: evoInst.id, name: evoInst.name, displayPhoneNumber: evoInst.phoneNumber };
+          }
+        }
+      }
 
       return {
         ...conv,
@@ -346,15 +372,49 @@ export async function POST(request: NextRequest) {
         select: { id: true, name: true, phoneNumber: true },
       }),
     ]);
-    const instSrc = waInst || evoInst;
-    const resolvedInstanceId = instanceId || instSrc?.id || null;
-    const instance = instSrc ? { id: instSrc.id, name: instSrc.name, displayPhoneNumber: instSrc.phoneNumber } : null;
+    
+    // Determina qual instância usar e seu tipo
+    let resolvedInstanceId = instanceId || null;
+    let instanceType: string | null = null;
+    let instance = null;
+    
+    if (instanceId) {
+      // Verifica se é uma instância Evolution
+      const evoCheck = await prisma.evolutionInstance.findFirst({
+        where: { id: instanceId, organizationId },
+        select: { id: true, name: true, phoneNumber: true },
+      });
+      if (evoCheck) {
+        instanceType = 'EVOLUTION';
+        instance = evoCheck;
+      } else {
+        // Verifica se é uma instância oficial
+        const officialCheck = await prisma.whatsAppInstance.findFirst({
+          where: { id: instanceId, organizationId },
+          select: { id: true, name: true, phoneNumber: true },
+        });
+        if (officialCheck) {
+          instanceType = 'OFFICIAL';
+          instance = officialCheck;
+        }
+      }
+    }
+    
+    // Se não encontrou a instância pelo ID, usa a primeira disponível
+    if (!instance) {
+      const instSrc = waInst || evoInst;
+      resolvedInstanceId = instSrc?.id || null;
+      instanceType = waInst ? 'OFFICIAL' : evoInst ? 'EVOLUTION' : null;
+      instance = instSrc ? { id: instSrc.id, name: instSrc.name, displayPhoneNumber: instSrc.phoneNumber } : null;
+    }
 
-    // Cria nova conversa (instanceId não existe no schema — instância é resolvida na hora de enviar)
+    // Cria nova conversa com instanceId e instanceType
     const conversation = await prisma.conversation.create({
       data: {
         organizationId,
         contactId,
+        instanceId: resolvedInstanceId,
+        instanceType,
         status: 'active',
       },
     });

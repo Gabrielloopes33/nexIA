@@ -40,7 +40,8 @@ export interface Message {
 export interface Conversation {
   id: string
   contactId: string
-  instanceId: string
+  instanceId?: string | null
+  instanceType?: 'EVOLUTION' | 'OFFICIAL' | null
   conversationId?: string
   type: ConversationType
   status: ConversationStatus
@@ -73,7 +74,7 @@ export interface ConversationStats {
 
 interface CreateConversationRequest {
   contactId: string
-  instanceId: string
+  instanceId?: string
   type?: ConversationType
 }
 

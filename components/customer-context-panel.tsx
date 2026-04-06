@@ -506,78 +506,6 @@ export function CustomerContextPanel({ conversation, contact }: Props) {
           )}
         </div>
 
-        {/* Typebot Data */}
-        {contactData?.metadata?.typebot && (
-          <div className="border-b border-border px-5 py-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Bot className="h-4 w-4 text-[#46347F]" />
-              <span className="text-xs font-semibold text-foreground">Dados do Typebot (NR-01)</span>
-            </div>
-            <div className="space-y-2">
-              {contactData.metadata.typebot.cargo && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Cargo:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.cargo}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.colaboradores && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Colaboradores:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.colaboradores}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.responsavel && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Responsável:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.responsavel}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.estagio && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Estágio:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.estagio}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.preocupacao && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Preocupação:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.preocupacao}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.afastamento && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Afastamento:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.afastamento}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.levantamento && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Levantamento:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.levantamento}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.decisao && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Decisão:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.decisao}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.problema && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Problema:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.problema}</span>
-                </div>
-              )}
-              {contactData.metadata.typebot.duvida && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground">Dúvida:</span>{' '}
-                  <span className="text-foreground font-medium">{contactData.metadata.typebot.duvida}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-3 border-b border-border px-5 py-4">
           <div className="rounded-lg bg-muted/50 px-3 py-2.5">
@@ -1000,6 +928,53 @@ export function CustomerContextPanel({ conversation, contact }: Props) {
 
           {notesExpanded && (
             <div className="px-5 pb-4 space-y-3">
+              {/* Dados do Typebot (NR-01) - Observação automática */}
+              {contactData?.metadata?.typebot && (
+                <div className="rounded-lg bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800/30 px-3 py-2.5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bot className="h-3.5 w-3.5 text-[#46347F]" />
+                    <span className="text-[10px] font-semibold text-[#46347F] uppercase tracking-wide">
+                      Pesquisa NR-01 (Typebot)
+                    </span>
+                  </div>
+                  <div className="text-xs text-foreground leading-relaxed space-y-1">
+                    {contactData.metadata.typebot.cargo && (
+                      <p><span className="text-muted-foreground">Cargo:</span> <span className="font-medium">{contactData.metadata.typebot.cargo}</span></p>
+                    )}
+                    {contactData.metadata.typebot.colaboradores && (
+                      <p><span className="text-muted-foreground">Colaboradores:</span> <span className="font-medium">{contactData.metadata.typebot.colaboradores}</span></p>
+                    )}
+                    {contactData.metadata.typebot.responsavel && (
+                      <p><span className="text-muted-foreground">Responsável:</span> <span className="font-medium">{contactData.metadata.typebot.responsavel}</span></p>
+                    )}
+                    {contactData.metadata.typebot.estagio && (
+                      <p><span className="text-muted-foreground">Estágio:</span> <span className="font-medium">{contactData.metadata.typebot.estagio}</span></p>
+                    )}
+                    {contactData.metadata.typebot.preocupacao && (
+                      <p><span className="text-muted-foreground">Preocupação:</span> <span className="font-medium">{contactData.metadata.typebot.preocupacao}</span></p>
+                    )}
+                    {contactData.metadata.typebot.afastamento && (
+                      <p><span className="text-muted-foreground">Afastamento:</span> <span className="font-medium">{contactData.metadata.typebot.afastamento}</span></p>
+                    )}
+                    {contactData.metadata.typebot.levantamento && (
+                      <p><span className="text-muted-foreground">Levantamento:</span> <span className="font-medium">{contactData.metadata.typebot.levantamento}</span></p>
+                    )}
+                    {contactData.metadata.typebot.decisao && (
+                      <p><span className="text-muted-foreground">Decisão:</span> <span className="font-medium">{contactData.metadata.typebot.decisao}</span></p>
+                    )}
+                    {contactData.metadata.typebot.problema && (
+                      <p><span className="text-muted-foreground">Problema:</span> <span className="font-medium">{contactData.metadata.typebot.problema}</span></p>
+                    )}
+                    {contactData.metadata.typebot.duvida && (
+                      <p><span className="text-muted-foreground">Dúvida:</span> <span className="font-medium">{contactData.metadata.typebot.duvida}</span></p>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    Capturado automaticamente via Typebot
+                  </p>
+                </div>
+              )}
+
               {/* Input para nova nota */}
               <div className="flex flex-col gap-2">
                 <Textarea
@@ -1031,7 +1006,7 @@ export function CustomerContextPanel({ conversation, contact }: Props) {
                 <div className="flex items-center justify-center py-3">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
-              ) : notes.length === 0 ? (
+              ) : notes.length === 0 && !contactData?.metadata?.typebot ? (
                 <p className="text-xs text-muted-foreground text-center py-2">
                   Nenhuma nota registrada
                 </p>

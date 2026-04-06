@@ -50,18 +50,19 @@ model OrganizationMember {
 
 /// User - Usuário do sistema
 model User {
-  id                 String               @id @default(uuid()) @db.Uuid
-  email              String               @unique
-  name               String?
-  avatarUrl          String?              @map("avatar_url")
-  phone              String?
-  status             String?              @default("ACTIVE")
-  createdAt          DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                        String               @id @default(uuid()) @db.Uuid
+  email                     String               @unique
+  name                      String?
+  avatarUrl                 String?              @map("avatar_url")
+  phone                     String?
+  status                    String?              @default("ACTIVE")
+  onboardingTourCompleted   Boolean              @default(false) @map("onboarding_tour_completed")
+  createdAt                 DateTime?            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   /// Legado: campo usado na migração do Supabase Cloud. Preferir usar memberships.
-  organizationId     String?              @map("organization_id") @db.Uuid
-  memberships        OrganizationMember[]
-  ownedOrganizations Organization[]       @relation("OwnedOrganizations")
+  organizationId            String?              @map("organization_id") @db.Uuid
+  memberships               OrganizationMember[]
+  ownedOrganizations        Organization[]       @relation("OwnedOrganizations")
 
   @@map("users")
 }
@@ -172,6 +173,8 @@ model Conversation {
   organizationId String    @map("organization_id") @db.Uuid
   productId      String?   @map("product_id") @db.Uuid
   contactId      String    @map("contact_id") @db.Uuid
+  instanceId     String?   @map("instance_id") @db.Uuid  // ID da instância Evolution ou WhatsApp usada
+  instanceType   String?   @map("instance_type") @db.VarChar(20) // "EVOLUTION" ou "OFFICIAL"
   status         String    @default("active") @db.VarChar(50)
   unread_count   Int       @default(0)
   archived       Boolean   @default(false)
@@ -186,6 +189,7 @@ model Conversation {
   @@index([organizationId])
   @@index([organizationId, productId])
   @@index([contactId])
+  @@index([instanceId])
   @@map("conversations")
 }
 

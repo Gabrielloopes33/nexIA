@@ -85,6 +85,12 @@ export interface Conversation {
   /** Avatar/iniciais do contato */
   contactAvatar: string
   
+  // Instância WhatsApp
+  /** ID da instância WhatsApp usada para esta conversa */
+  instanceId?: string | null
+  /** Tipo da instância: EVOLUTION ou OFFICIAL */
+  instanceType?: 'EVOLUTION' | 'OFFICIAL' | null
+  
   // Metadados da Conversa
   /** Canal de comunicação */
   channel: Channel

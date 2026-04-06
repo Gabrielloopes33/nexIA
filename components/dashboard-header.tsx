@@ -137,7 +137,7 @@ export function DashboardHeader() {
         {/* Period Selector */}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <button className="flex h-8 items-center gap-2 rounded-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary">
+            <button data-tour="dashboard-filters" className="flex h-8 items-center gap-2 rounded-sm bg-card px-3 text-foreground transition-colors hover:bg-secondary">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-sm">{dateRange.label}</span>
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -237,7 +237,7 @@ export function DashboardHeader() {
         
         {/* New Lead Button */}
         <QuickLeadModal>
-          <button className="flex h-8 items-center gap-2 rounded-sm bg-gradient-to-r from-[#8B7DB8] to-[#8B7DB8] px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90">
+          <button data-tour="novo-lead" className="flex h-8 items-center gap-2 rounded-sm bg-gradient-to-r from-[#8B7DB8] to-[#8B7DB8] px-3 text-xs font-semibold text-white transition-opacity hover:opacity-90">
             <span>Novo Lead</span>
           </button>
         </QuickLeadModal>

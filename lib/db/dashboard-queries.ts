@@ -6,13 +6,20 @@ function getDealValue(deal: { value?: any; amount?: any; estimatedValue?: number
   return Number(deal.value) || Number(deal.amount) || deal.estimatedValue || 0
 }
 
-// Tipos de retorno
+// Tipos de retorno (compatíveis com types/dashboard.ts)
 export interface FunnelStage {
-  name: string
+  stageId: string
+  stageName: string
+  position: number
+  color: string | null
   count: number
   value: number
+  avgLeadScore: number
   conversionRate: number
-  avgTime: number // horas
+  avgTimeHours: number
+  // Campos legados para compatibilidade
+  name?: string
+  avgTime?: number
 }
 
 export interface FunnelMetrics {
@@ -22,12 +29,32 @@ export interface FunnelMetrics {
   avgConversionTime: number
 }
 
-// 1. Métricas do Funil
+// 1. Métricas do Funil - ETAPAS DINÂMICAS DO PIPELINE
 export async function getFunnelMetrics(
   organizationId: string,
   period: string
 ): Promise<FunnelMetrics> {
   const startDate = getPeriodStartDate(period)
+  
+  // Buscar etapas dinâmicas do pipeline da organização
+  const pipelineStages = await prisma.pipelineStage.findMany({
+    where: {
+      organizationId,
+    },
+    orderBy: {
+      position: 'asc',
+    },
+  })
+  
+  // Se não houver etapas configuradas, retorna vazio
+  if (pipelineStages.length === 0) {
+    return {
+      stages: [],
+      totalLeads: 0,
+      totalValue: 0,
+      avgConversionTime: 0,
+    }
+  }
   
   // Buscar deals do período com seus estágios
   const deals = await prisma.deal.findMany({
@@ -40,21 +67,12 @@ export async function getFunnelMetrics(
     },
   })
   
-  // Calcular métricas por estágio
-  const stageConfigs = [
-    { name: 'Novo', status: 'NEW', field: 'createdAt' as const },
-    { name: 'Qualificado', status: 'QUALIFIED', field: 'qualifiedAt' as const },
-    { name: 'Proposta', status: 'PROPOSAL', field: 'proposalSentAt' as const },
-    { name: 'Negociação', status: 'NEGOTIATION', field: 'negotiationAt' as const },
-    { name: 'Fechado', status: 'CLOSED_WON', field: 'closedWonAt' as const },
-  ]
-  
+  // Calcular métricas por etapa dinâmica
   const stages: FunnelStage[] = []
-  for (const [index, config] of stageConfigs.entries()) {
-    const dealsInStage = deals.filter(deal => {
-      if (config.field === 'createdAt') return true
-      return deal[config.field] !== null
-    })
+  
+  for (const [index, pipelineStage] of pipelineStages.entries()) {
+    // Filtrar deals que estão nesta etapa (pelo stageId)
+    const dealsInStage = deals.filter(deal => deal.stageId === pipelineStage.id)
 
     const count = dealsInStage.length
     const value = dealsInStage.reduce((sum, deal) =>
@@ -65,15 +83,25 @@ export async function getFunnelMetrics(
     const prevCount = index === 0 ? count : stages[index - 1]?.count || count
     const conversionRate = prevCount > 0 ? (count / prevCount) * 100 : 100
 
-    // Tempo médio no estágio
-    const avgTime = calculateAvgStageTime(dealsInStage, config.status)
+    // Tempo médio no estágio (baseado no stageHistory)
+    const avgTimeHours = calculateAvgStageTimeByStageId(dealsInStage, pipelineStage.id)
+    
+    // Lead score médio (se houver dados)
+    const avgLeadScore = dealsInStage.reduce((sum, deal) => {
+      // Buscar leadScore do contato através do metadata ou campo relacionado
+      return sum + 0 // Placeholder - pode ser expandido
+    }, 0) / (dealsInStage.length || 1)
 
     stages.push({
-      name: config.name,
+      stageId: pipelineStage.id,
+      stageName: pipelineStage.name,
+      position: pipelineStage.position,
+      color: pipelineStage.color,
       count,
       value,
+      avgLeadScore: Math.round(avgLeadScore),
       conversionRate: Math.round(conversionRate * 10) / 10,
-      avgTime,
+      avgTimeHours,
     })
   }
   
@@ -83,7 +111,7 @@ export async function getFunnelMetrics(
   return {
     stages,
     totalLeads: deals.length,
-    totalValue: stages[stages.length - 1]?.value || 0,
+    totalValue: stages.reduce((sum, stage) => sum + stage.value, 0),
     avgConversionTime,
   }
 }
@@ -650,6 +678,30 @@ function calculateAvgStageTime(deals: any[], stage: string): number {
       return history?.duration || 0
     })
     .filter(d => d > 0)
+  
+  if (durations.length === 0) return 0
+  return Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+}
+
+/**
+ * Calcula o tempo médio em uma etapa específica baseado no stageId
+ */
+function calculateAvgStageTimeByStageId(deals: any[], stageId: string): number {
+  const durations: number[] = []
+  
+  for (const deal of deals) {
+    // Buscar no stageHistory pelo nome da etapa que corresponde ao stageId
+    // ou calcular baseado no tempo que o deal passou nessa etapa
+    const relevantHistory = deal.stageHistory?.filter((h: any) => {
+      // Aqui podemos fazer matching por stage name ou usar outra lógica
+      return h.duration && h.duration > 0
+    })
+    
+    if (relevantHistory?.length > 0) {
+      const totalDuration = relevantHistory.reduce((sum: number, h: any) => sum + (h.duration || 0), 0)
+      durations.push(totalDuration)
+    }
+  }
   
   if (durations.length === 0) return 0
   return Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)

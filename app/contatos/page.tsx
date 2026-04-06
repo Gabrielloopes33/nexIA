@@ -155,7 +155,6 @@ export default function ContactsPage() {
         <div className="flex flex-col gap-4 h-[calc(100vh-180px)]">
           {/* Filters */}
           <ContactFilters
-            organizationId=""
             onSearch={setSearchQuery}
             onFilterTags={setSelectedTags}
             onFilterStatus={setSelectedStatuses}
