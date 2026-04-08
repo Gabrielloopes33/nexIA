@@ -105,6 +105,15 @@ export function ProductTour() {
   const [run, setRun] = useState(false)
   const [mounted, setMounted] = useState(false)
 
+  // Hook must be called before any conditional return
+  const handleCallback = useCallback((data: CallBackProps) => {
+    const { status } = data
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+      setRun(false)
+      markTourComplete()
+    }
+  }, [])
+
   useEffect(() => {
     setMounted(true)
     fetch('/api/auth/me')
@@ -119,14 +128,6 @@ export function ProductTour() {
 
   // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) return null
-
-  const handleCallback = useCallback((data: CallBackProps) => {
-    const { status } = data
-    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-      setRun(false)
-      markTourComplete()
-    }
-  }, [])
 
   if (!run) return null
 
