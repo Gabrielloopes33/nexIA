@@ -1,7 +1,14 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride'
+import dynamic from 'next/dynamic'
+import { CallBackProps, STATUS, Step } from 'react-joyride'
+
+// Dynamic import to avoid SSR issues
+const Joyride = dynamic(() => import('react-joyride').then((mod) => mod.default), {
+  ssr: false,
+  loading: () => null,
+})
 
 const TOUR_STEPS: Step[] = [
   {
@@ -96,8 +103,10 @@ async function markTourComplete() {
 
 export function ProductTour() {
   const [run, setRun] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((data) => {
@@ -107,6 +116,9 @@ export function ProductTour() {
       })
       .catch(() => {})
   }, [])
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) return null
 
   const handleCallback = useCallback((data: CallBackProps) => {
     const { status } = data

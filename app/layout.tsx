@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Figtree } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { ContactPanelProvider } from '@/lib/contexts/contact-panel-context'
 import { OrganizationProviderWrapper } from '@/components/providers/organization-provider-wrapper'
@@ -36,6 +35,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
           rel="stylesheet"
         />
+        {/* Previne cache agressivo do navegador */}
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
       </head>
       <body className={`${figtree.className} antialiased`}>
         <QueryProvider>
@@ -46,7 +49,6 @@ export default function RootLayout({
           </OrganizationProviderWrapper>
         </QueryProvider>
         <Toaster position="top-right" richColors />
-        <Analytics />
       </body>
     </html>
   )

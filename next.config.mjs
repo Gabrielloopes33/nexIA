@@ -17,6 +17,41 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Headers para controle de cache - evita que HTML fique desatualizado
+  async headers() {
+    return [
+      {
+        // Aplica a todas as rotas
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
+      {
+        // Arquivos estáticos com hash podem ser cacheados indefinidamente
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Assets públicos
+        source: '/:path*.@(jpg|jpeg|gif|png|svg|ico|css|js|woff|woff2)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400',
+          },
+        ],
+      },
+    ]
+  },
   async redirects() {
     return [
       // Redirecionar rotas antigas do Instagram para a nova estrutura Meta API
