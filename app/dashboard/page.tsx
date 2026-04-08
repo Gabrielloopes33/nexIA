@@ -6,7 +6,8 @@ import { Sidebar } from '@/components/sidebar'
 import { ContactDetailPanel } from '@/components/contact-detail-panel'
 import { DashboardProvider } from '@/hooks/use-dashboard-context'
 import { DashboardFiltersProvider } from '@/hooks/dashboard/use-dashboard-filters-context'
-import { ProductTour } from '@/components/onboarding/product-tour'
+// Temporarily disabled to test error source
+// import { ProductTour } from '@/components/onboarding/product-tour'
 
 /**
  * DashboardPage - Client Component
@@ -35,8 +36,8 @@ export default function DashboardPage() {
           {/* Contact Detail Panel - Right Sidebar */}
           <ContactDetailPanel />
 
-          {/* Onboarding tour — rendered only on first visit */}
-          <ProductTour />
+          {/* Onboarding tour — temporarily disabled for testing */}
+          {/* <ProductTour /> */}
         </div>
       </DashboardFiltersProvider>
     </DashboardProvider>
