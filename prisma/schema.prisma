@@ -7,12 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum OrganizationType {
+  REGULAR
+  RESELLER
+}
+
 /// Organization - Tenant principal do sistema
 /// Cada organização pode ter múltiplos usuários com diferentes roles
 model Organization {
   id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String
   slug           String               @unique
+  type           OrganizationType     @default(REGULAR)
   ownerId        String?              @map("owner_id") @db.Uuid
   status         String?              @default("ACTIVE")
   settings       Json?                @default("{}")
@@ -26,6 +32,7 @@ model Organization {
   pipelineStages PipelineStage[]
   products         Product[]
   pipelines        Pipeline[]
+  pipelineAutomations PipelineAutomation[]
 
   @@map("organizations")
 }
@@ -247,6 +254,7 @@ model Pipeline {
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   stages         PipelineStage[]
   deals          Deal[]
+  targetAutomations   PipelineAutomation[] @relation("TargetPipeline")
 
   @@unique([productId, name])
   @@index([organizationId])
@@ -269,6 +277,8 @@ model PipelineStage {
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   pipeline       Pipeline?     @relation(fields: [pipelineId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   deals          Deal[]
+  triggerAutomations  PipelineAutomation[] @relation("TriggerStage")
+  targetAutomations   PipelineAutomation[] @relation("TargetStage")
 
   @@index([pipelineId])
   @@map("pipeline_stages")
@@ -330,6 +340,70 @@ model Deal {
   @@index([proposalSentAt])
   @@index([lostReason, closedLostAt])
   @@map("deals")
+}
+
+/// PipelineAutomation - Automações entre pipelines
+/// Permite mover, copiar ou criar deals automaticamente entre pipelines
+model PipelineAutomation {
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId      String                 @map("organization_id") @db.Uuid
+  name                String                 @db.VarChar(255)
+  description         String?
+  triggerType         AutomationTriggerType  @default(STAGE_ENTRY) @map("trigger_type")
+  triggerStageId      String?                @map("trigger_stage_id") @db.Uuid
+  idleDays            Int?                   @default(0) @map("idle_days")
+  triggerStatus       String?                @map("trigger_status") @db.VarChar(50)
+  actionType          AutomationActionType   @default(MOVE) @map("action_type")
+  targetPipelineId    String                 @map("target_pipeline_id") @db.Uuid
+  targetStageId       String                 @map("target_stage_id") @db.Uuid
+  conditions          Json?                  @default("{}")
+  actionConfig        Json?                  @default("{}") @map("action_config")
+  status              AutomationStatus       @default(ACTIVE)
+  isActive            Boolean                @default(true) @map("is_active")
+  executionCount      Int                    @default(0) @map("execution_count")
+  successCount        Int                    @default(0) @map("success_count")
+  failureCount        Int                    @default(0) @map("failure_count")
+  lastExecutionAt     DateTime?              @map("last_execution_at")
+  createdBy           String                 @map("created_by") @db.Uuid
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @default(now()) @updatedAt @map("updated_at")
+  
+  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  triggerStage        PipelineStage?         @relation("TriggerStage", fields: [triggerStageId], references: [id])
+  targetPipeline      Pipeline               @relation("TargetPipeline", fields: [targetPipelineId], references: [id])
+  targetStage         PipelineStage          @relation("TargetStage", fields: [targetStageId], references: [id])
+  logs                AutomationLog[]
+  
+  @@index([organizationId, isActive])
+  @@index([triggerStageId, triggerType])
+  @@map("pipeline_automations")
+}
+
+/// AutomationLog - Logs de execução das automações
+/// Registra o histórico de todas as execuções de automações
+model AutomationLog {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId      String                @map("organization_id") @db.Uuid
+  automationId        String                @map("automation_id") @db.Uuid
+  dealId              String                @map("deal_id") @db.Uuid
+  triggerStageId      String?               @map("trigger_stage_id") @db.Uuid
+  targetPipelineId    String                @map("target_pipeline_id") @db.Uuid
+  targetStageId       String                @map("target_stage_id") @db.Uuid
+  status              AutomationLogStatus
+  actionType          AutomationActionType  @map("action_type")
+  conditionsMatched   Boolean               @default(false) @map("conditions_matched")
+  previousData        Json?                 @map("previous_data")
+  resultData          Json?                 @map("result_data")
+  errorMessage        String?               @map("error_message") @db.Text
+  startedAt           DateTime              @map("started_at")
+  completedAt         DateTime?             @map("completed_at")
+  durationMs          Int?                  @map("duration_ms")
+  
+  automation          PipelineAutomation    @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  
+  @@index([organizationId, dealId])
+  @@index([automationId, startedAt])
+  @@map("automation_logs")
 }
 
 model PipelineStageHistory {
@@ -1072,6 +1146,33 @@ enum dealstatus {
   OPEN
   WON
   LOST
+}
+
+enum AutomationTriggerType {
+  STAGE_ENTRY
+  STAGE_EXIT
+  STAGE_IDLE
+  STATUS_CHANGE
+  MANUAL
+}
+
+enum AutomationActionType {
+  MOVE
+  COPY
+  CREATE
+}
+
+enum AutomationStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum AutomationLogStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  SKIPPED
 }
 
 /// Notification - Notificações do sistema para usuários

@@ -5,10 +5,13 @@
 
 import { prisma } from '@/lib/prisma'
 
+export type OrganizationType = 'REGULAR' | 'RESELLER'
+
 export interface OrganizationData {
   id: string
   name: string
   slug: string
+  type: OrganizationType
   setupComplete: boolean
   logoUrl: string | null
   segment: string | null
@@ -29,6 +32,7 @@ export async function getOrganization(
       id: true,
       name: true,
       slug: true,
+      type: true,
       setupComplete: true,
       logoUrl: true,
       segment: true,

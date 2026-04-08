@@ -54,8 +54,11 @@ import { PrismaClient, Prisma } from '@prisma/client';
 export async function withRLS<T>(
   prisma: PrismaClient,
   organizationId: string,
-  operation: (tx: PrismaTransaction) => Promise<T>
+  operation: (tx: PrismaTransaction) => Promise<T>,
+  options?: { timeout?: number }
 ): Promise<T> {
+  const timeout = options?.timeout || 30000; // Default 30s (era 5s)
+  
   return prisma.$transaction(async (tx) => {
     // Configura o organization_id na sessão do PostgreSQL
     // O RLS usará este valor nas políticas de segurança
@@ -72,6 +75,9 @@ export async function withRLS<T>(
       // Opcional: limpar o setting (geralmente não necessário pois SET LOCAL é por transação)
       // await tx.$executeRawUnsafe('RESET app.current_org_id');
     }
+  }, {
+    maxWait: timeout,
+    timeout: timeout,
   });
 }
 

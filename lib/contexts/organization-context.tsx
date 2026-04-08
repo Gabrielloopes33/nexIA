@@ -2,10 +2,13 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
 
+export type OrganizationType = 'REGULAR' | 'RESELLER'
+
 interface Organization {
   id: string
   name: string
   slug: string
+  type: OrganizationType
   status: string
   role?: string | null
 }

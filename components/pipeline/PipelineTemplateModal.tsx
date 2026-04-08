@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
-type Category = 'todos' | 'infoprodutos' | 'negocios-fisicos' | 'saude' | 'do-zero'
+type Category = 'todos' | 'follow-up' | 'infoprodutos' | 'negocios-fisicos' | 'saude' | 'do-zero'
 
 interface PipelineTemplateStage {
   id: string
@@ -57,21 +57,24 @@ interface PipelineTemplate {
 interface PipelineTemplateModalProps {
   isOpen: boolean
   onClose: () => void
+  productId: string
 }
 
 const categoryIcons: Record<string, React.ReactNode> = {
+  'follow-up': <Sparkles className="size-5" />,
   'infoprodutos': <BookOpen className="size-5" />,
   'negocios-fisicos': <Store className="size-5" />,
   'saude': <Heart className="size-5" />,
 }
 
 const categoryLabels: Record<string, string> = {
+  'follow-up': 'Follow Up / Pós-venda',
   'infoprodutos': 'Infoprodutos',
   'negocios-fisicos': 'Negócios Físicos',
   'saude': 'Saúde',
 }
 
-export function PipelineTemplateModal({ isOpen, onClose }: PipelineTemplateModalProps) {
+export function PipelineTemplateModal({ isOpen, onClose, productId }: PipelineTemplateModalProps) {
   const router = useRouter()
   const [templates, setTemplates] = React.useState<PipelineTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = React.useState<PipelineTemplate | null>(null)
@@ -109,6 +112,10 @@ export function PipelineTemplateModal({ isOpen, onClose }: PipelineTemplateModal
 
   const handleApplyTemplate = async () => {
     if (!selectedTemplate) return
+    if (!productId) {
+      alert('Selecione um produto primeiro')
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -117,7 +124,7 @@ export function PipelineTemplateModal({ isOpen, onClose }: PipelineTemplateModal
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           templateId: selectedTemplate.id,
-          organizationId: 'default_org_id', // TODO: Pegar da context/auth
+          productId: productId,
           customName: customName || selectedTemplate.name,
         }),
       })
@@ -266,8 +273,9 @@ export function PipelineTemplateModal({ isOpen, onClose }: PipelineTemplateModal
           // Lista de templates
           <>
             <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as Category)} className="px-6">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="todos">Todos</TabsTrigger>
+                <TabsTrigger value="follow-up">Follow Up</TabsTrigger>
                 <TabsTrigger value="infoprodutos">Infoprodutos</TabsTrigger>
                 <TabsTrigger value="negocios-fisicos">Físicos</TabsTrigger>
                 <TabsTrigger value="saude">Saúde</TabsTrigger>

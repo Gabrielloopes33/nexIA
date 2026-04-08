@@ -9,7 +9,7 @@ import { User, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useMainSidebar } from "@/hooks/use-main-sidebar"
 import { useSidebarDropdowns } from "@/hooks/use-sidebar-dropdowns"
-import { useOrganization } from "@/lib/contexts/organization-context"
+import { useOrganization, OrganizationType } from "@/lib/contexts/organization-context"
 import { SidebarDropdownGroup } from "@/components/sidebar-dropdown-group"
 import {
   topNavItems,
@@ -109,17 +109,69 @@ function filterNavItemsByRole(items: SidebarNavItem[], userRole: string | null):
   }).filter((item): item is SidebarNavItem => item !== null)
 }
 
+// Seções que apenas RESELLER pode ver
+const RESELLER_ONLY_SECTIONS = ['Assinaturas']
+const RESELLER_ONLY_ITEMS = ['Organizações']
+
+// Função para filtrar itens baseado no tipo de organização
+function filterNavItemsByType(items: SidebarNavItem[], orgType: OrganizationType | null | undefined): SidebarNavItem[] {
+  // Se não souber o tipo ainda, mostra tudo (evita flicker)
+  if (!orgType) return items
+  
+  // RESELLER vê tudo
+  if (orgType === 'RESELLER') return items
+  
+  // REGULAR: esconde seções de revenda
+  return items.map(item => {
+    // Verifica se o item pai é restrito
+    if (RESELLER_ONLY_ITEMS.includes(item.label)) {
+      return null
+    }
+    
+    // Filtra children se existirem
+    if (item.children) {
+      const filteredChildren = item.children.filter((child: SidebarNavChild) => {
+        // Remove children de seções restritas
+        if (child.section && RESELLER_ONLY_SECTIONS.includes(child.section)) {
+          return false
+        }
+        // Remove item específico
+        if (RESELLER_ONLY_ITEMS.includes(child.label)) {
+          return false
+        }
+        return true
+      })
+      
+      // Se todos os children foram filtrados, retorna null
+      if (filteredChildren.length === 0) {
+        return null
+      }
+      
+      return { ...item, children: filteredChildren }
+    }
+    
+    return item
+  }).filter((item): item is SidebarNavItem => item !== null)
+}
+
 // Memoized sidebar to prevent unnecessary re-renders when parent state changes
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { isReady } = useMainSidebar()
-  const { role } = useOrganization()
+  const { role, organization } = useOrganization()
   const [mounted, setMounted] = useState(false)
   
-  // Filtra os itens baseado na role do usuário
-  const filteredNavItems = useMemo(() => filterNavItemsByRole(navItems, role), [role])
-  const filteredTopNavItems = useMemo(() => filterNavItemsByRole(topNavItems, role), [role])
+  // Filtra os itens baseado na role do usuário e no tipo de organização
+  const filteredNavItems = useMemo(() => {
+    const byRole = filterNavItemsByRole(navItems, role)
+    return filterNavItemsByType(byRole, organization?.type)
+  }, [role, organization?.type])
+  
+  const filteredTopNavItems = useMemo(() => {
+    const byRole = filterNavItemsByRole(topNavItems, role)
+    return filterNavItemsByType(byRole, organization?.type)
+  }, [role, organization?.type])
   
   const { openGroups, toggleGroup, isGroupOpen } = useSidebarDropdowns(filteredNavItems)
 

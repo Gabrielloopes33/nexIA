@@ -43,20 +43,10 @@ import {
 } from "@/components/ui/tooltip"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
+import type { PipelineStage } from "@/types/pipeline-config"
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface PipelineStage {
-  id: string
-  name: string
-  color: string
-  probability: number
-  isClosed: boolean
-  order: number
-  dealsCount?: number
-}
+// Re-export for backwards compatibility
+export type { PipelineStage }
 
 interface PipelineStageManagerProps {
   organizationId: string

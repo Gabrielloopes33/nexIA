@@ -22,7 +22,8 @@ import {
   Calendar,
   User,
   Tag,
-  Pencil
+  Pencil,
+  GripVertical
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -31,10 +32,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { DealCard } from "./DealCard"
 import { DealDetailModal } from "./DealDetailModal"
-import { PipelineStage, Deal, DealActivity, DealPriority, DealStatus } from "@prisma/client"
+import { PipelineStage, Deal, DealActivity, DealStatus } from "@prisma/client"
 import { useProductSelection } from "@/hooks/use-product-selection"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { ProductSwitcher } from "@/components/products/product-switcher"
 import { PipelineSwitcher } from "@/components/products/pipeline-switcher"
+import { toast } from "sonner"
+
+// Multi-Pipeline & Automações
+import { PipelineConfigButton } from "./PipelineConfigButton"
+import { PipelineConfigDrawer } from "./PipelineConfigDrawer"
+import { StageAutomationIndicator } from "./StageAutomationIndicator"
+import { AutomationWizard } from "./AutomationWizard"
+import { usePipelineConfig } from "@/hooks/use-pipeline-config"
+import { Pipeline, Automation, CreateAutomationInput } from "@/types/pipeline-config"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -88,6 +99,7 @@ interface PipelineColumnProps {
   onAddDeal?: (stageId: string) => void
   onEditDeal?: (deal: DealWithRelations) => void
   onDeleteDeal?: (deal: DealWithRelations) => void
+  automations?: Automation[]
 }
 
 function PipelineColumn({
@@ -105,6 +117,7 @@ function PipelineColumn({
   onAddDeal,
   onEditDeal,
   onDeleteDeal,
+  automations = [],
 }: PipelineColumnProps) {
   const totalValue = deals.reduce((sum, d) => sum + Number(d.value ?? d.amount ?? 0), 0)
   const openDeals = deals.filter(d => d.status === "OPEN")
@@ -129,6 +142,11 @@ function PipelineColumn({
             <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
               {deals.length}
             </span>
+            {automations.filter(a => a.trigger?.stageId === stage.id).length > 0 && (
+              <StageAutomationIndicator 
+                count={automations.filter(a => a.trigger?.stageId === stage.id).length}
+              />
+            )}
           </div>
           <div 
             className="h-2.5 w-2.5 rounded-full"
@@ -1121,7 +1139,37 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
     valorMax: null
   })
 
+  // Multi-Pipeline & Automações
+  const [configDrawerOpen, setConfigDrawerOpen] = useState(false)
+  const [automationWizardOpen, setAutomationWizardOpen] = useState(false)
+  const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null)
+
   const { productId, pipelineId } = useProductSelection()
+  const { user, isLoading: isLoadingUser } = useCurrentUser()
+  const organizationId = user?.organizationId || ""
+
+  // Hook para Multi-Pipelines e Automações
+  const {
+    pipelines,
+    automations,
+    isLoading: isLoadingConfig,
+    fetchPipelines,
+    fetchAutomations,
+    createPipeline,
+    updatePipeline,
+    deletePipeline,
+    togglePipeline,
+    createAutomation,
+    updateAutomation,
+    deleteAutomation,
+    toggleAutomation,
+    duplicateAutomation,
+    refresh: refreshConfig,
+  } = usePipelineConfig({
+    organizationId,
+    productId: productId || undefined,
+    autoFetch: true, // Buscar automaticamente quando tiver organizationId
+  })
 
   // Fetch data on mount and when product/pipeline changes
   useEffect(() => {
@@ -1182,6 +1230,115 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
     }
   }
 
+  // ─── Multi-Pipeline & Automações Handlers ────────────────────────────────────
+
+  const handleCreatePipeline = async (data: { name: string; color: string; type: string; stages?: any[] }) => {
+    try {
+      await createPipeline({
+        ...data,
+        productId: productId || "",
+      })
+      refreshConfig()
+    } catch (error) {
+      console.error("Erro ao criar pipeline:", error)
+    }
+  }
+
+  const handleUpdatePipeline = async (id: string, data: { name?: string; color?: string; isActive?: boolean }) => {
+    try {
+      await updatePipeline(id, data)
+      refreshConfig()
+    } catch (error) {
+      console.error("Erro ao atualizar pipeline:", error)
+    }
+  }
+
+  const handleDeletePipeline = async (pipeline: Pipeline) => {
+    try {
+      await deletePipeline(pipeline.id)
+      refreshConfig()
+    } catch (error) {
+      console.error("Erro ao excluir pipeline:", error)
+    }
+  }
+
+  const handleTogglePipeline = async (pipeline: Pipeline, isActive: boolean) => {
+    try {
+      await togglePipeline(pipeline.id, isActive)
+      refreshConfig()
+    } catch (error) {
+      console.error("Erro ao alterar estado do pipeline:", error)
+    }
+  }
+
+  const handleCreateAutomation = async (data: CreateAutomationInput) => {
+    try {
+      await createAutomation(data)
+      setAutomationWizardOpen(false)
+      refreshConfig()
+      toast.success("Automação criada com sucesso!")
+    } catch (error) {
+      console.error("Erro ao criar automação:", error)
+      toast.error("Erro ao criar automação")
+    }
+  }
+
+  const handleUpdateAutomation = async (automation: Automation) => {
+    try {
+      await updateAutomation(automation.id, {
+        name: automation.name,
+        trigger: automation.trigger,
+        conditions: automation.conditions,
+        action: automation.action,
+      })
+      setEditingAutomation(null)
+      setAutomationWizardOpen(false)
+      refreshConfig()
+      toast.success("Automação atualizada!")
+    } catch (error) {
+      console.error("Erro ao atualizar automação:", error)
+      toast.error("Erro ao atualizar automação")
+    }
+  }
+
+  const handleDeleteAutomation = async (automation: Automation) => {
+    try {
+      await deleteAutomation(automation.id)
+      refreshConfig()
+      toast.success("Automação excluída")
+    } catch (error) {
+      console.error("Erro ao excluir automação:", error)
+      toast.error("Erro ao excluir automação")
+    }
+  }
+
+  const handleToggleAutomation = async (automation: Automation, isActive: boolean) => {
+    try {
+      await toggleAutomation(automation.id, isActive)
+      refreshConfig()
+      toast.success(isActive ? "Automação ativada" : "Automação pausada")
+    } catch (error) {
+      console.error("Erro ao alterar estado da automação:", error)
+      toast.error("Erro ao alterar estado")
+    }
+  }
+
+  const handleDuplicateAutomation = async (automation: Automation) => {
+    try {
+      await duplicateAutomation(automation.id)
+      refreshConfig()
+      toast.success("Automação duplicada!")
+    } catch (error) {
+      console.error("Erro ao duplicar automação:", error)
+      toast.error("Erro ao duplicar")
+    }
+  }
+
+  const handleEditAutomation = (automation: Automation) => {
+    setEditingAutomation(automation)
+    setAutomationWizardOpen(true)
+  }
+
   const handleMoveDeal = async (dealId: string, newStageId: string) => {
     try {
       const response = await fetch(`/api/pipeline/deals/${dealId}`, {
@@ -1191,11 +1348,33 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
       })
 
       if (response.ok) {
-        // Refresh deals to get updated data
+        const data = await response.json()
+        
+        // Refresh deals to get updated data (incluindo resultado de automações)
+        await fetchDeals()
+        
+        // Feedback de sucesso
+        const stageName = stages.find(s => s.id === newStageId)?.name || 'novo estágio'
+        toast.success(`Negócio movido para "${stageName}"`)
+        
+        // Se houver automações executadas, mostrar notificação adicional
+        // (as automações são processadas async no backend)
+        setTimeout(() => {
+          toast.info('Verificando automações...', { duration: 2000 })
+        }, 500)
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Erro ao mover negócio')
+        
+        // Reverter o optimistic update em caso de erro
         await fetchDeals()
       }
     } catch (error) {
       console.error("Failed to move deal:", error)
+      toast.error('Erro ao mover negócio')
+      
+      // Reverter o optimistic update
+      await fetchDeals()
     }
   }
 
@@ -1442,6 +1621,13 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
           <div className="h-4 w-px bg-border" />
           <ProductSwitcher />
           <PipelineSwitcher />
+          
+          {/* Botão de Configuração de Pipelines e Automações */}
+          <PipelineConfigButton 
+            automationCount={automations.filter(a => a.isActive).length}
+            onClick={() => setConfigDrawerOpen(true)}
+            isLoading={isLoadingConfig}
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -1543,6 +1729,7 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
               }}
               onEditDeal={handleEditDeal}
               onDeleteDeal={handleDeleteDeal}
+              automations={automations}
             />
           ))}
         </div>
@@ -1628,6 +1815,57 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
           onUpdateDeal={async () => {}}
         />
       )}
+
+      {/* Pipeline Config Drawer */}
+      <PipelineConfigDrawer
+        isOpen={configDrawerOpen}
+        onClose={() => setConfigDrawerOpen(false)}
+        pipelines={pipelines}
+        automations={automations}
+        onCreatePipeline={onNewPipeline || (() => {})}
+        onEditPipeline={(p) => {}}
+        onDeletePipeline={handleDeletePipeline}
+        onTogglePipeline={handleTogglePipeline}
+        onSetDefaultPipeline={(p) => {}}
+        onCreateAutomation={() => {
+          setEditingAutomation(null)
+          setAutomationWizardOpen(true)
+        }}
+        onEditAutomation={handleEditAutomation}
+        onDeleteAutomation={handleDeleteAutomation}
+        onToggleAutomation={handleToggleAutomation}
+        onDuplicateAutomation={handleDuplicateAutomation}
+        isLoadingPipelines={isLoadingConfig}
+        isLoadingAutomations={isLoadingConfig}
+        organizationId={organizationId}
+      />
+
+      {/* Automation Wizard */}
+      <AutomationWizard
+        isOpen={automationWizardOpen}
+        onClose={() => {
+          setAutomationWizardOpen(false)
+          setEditingAutomation(null)
+        }}
+        onSave={editingAutomation ? 
+          (data) => handleUpdateAutomation({ ...editingAutomation, ...data } as Automation) :
+          handleCreateAutomation
+        }
+        automation={editingAutomation}
+        pipelines={(pipelines || []).map(p => ({
+          ...p,
+          stages: stages.filter(s => s.pipelineId === p.id).map(s => ({
+            id: s.id,
+            name: s.name,
+            color: s.color,
+            position: s.position,
+            probability: s.probability,
+            isDefault: s.isDefault,
+            isClosed: s.isClosed,
+          }))
+        }))}
+        isSaving={false}
+      />
     </div>
   )
 }

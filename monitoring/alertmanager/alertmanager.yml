@@ -1,0 +1,48 @@
+# ============================================
+# Alertmanager Configuration - NexIA
+# ============================================
+
+global:
+  smtp_smarthost: '${SMTP_HOST:-smtp.gmail.com:587}'
+  smtp_from: '${ALERT_EMAIL_FROM:-alertas@nexiachat.com.br}'
+  smtp_auth_username: '${SMTP_USER:-}'
+  smtp_auth_password: '${SMTP_PASSWORD:-}'
+
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default'
+  
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 30m
+
+receivers:
+  - name: 'default'
+    email_configs:
+      - to: '${ALERT_EMAIL_TO:-}'
+        subject: '[NexIA] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alerta: {{ .Annotations.summary }}
+          Descrição: {{ .Annotations.description }}
+          Severidade: {{ .Labels.severity }}
+          {{ end }}
+
+  - name: 'critical-alerts'
+    email_configs:
+      - to: '${ALERT_EMAIL_TO:-}'
+        subject: '🚨 CRÍTICO: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          🚨 ALERTA CRÍTICO 🚨
+          
+          Alerta: {{ .Annotations.summary }}
+          Descrição: {{ .Annotations.description }}
+          Hora: {{ .StartsAt }}
+          {{ end }}

@@ -1,0 +1,36 @@
+server:
+  http_listen_port: 9080
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Logs do sistema
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system
+          __path__: /var/log/syslog
+
+  # Logs da aplicação NexIA (PM2)
+  - job_name: nexia-app
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nexia-app
+          __path__: /var/www/nexIA/logs/*.log
+
+  # Logs do PostgreSQL
+  - job_name: postgresql
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: postgresql
+          __path__: /var/log/postgresql/*.log

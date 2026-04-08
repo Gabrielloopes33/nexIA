@@ -1,0 +1,166 @@
+# ============================================
+# Docker Compose - NexIA Monitoring (PM2 Compatible)
+# ============================================
+# Versões atualizadas e estáveis - Abril 2025
+
+services:
+  # ----------------------------------------
+  # Prometheus - Coleta de Métricas
+  # ----------------------------------------
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: nexia-prometheus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring
+
+  # ----------------------------------------
+  # Grafana - Dashboards
+  # ----------------------------------------
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: nexia-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3001}
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=${SMTP_HOST:-}
+      - GF_SMTP_USER=${SMTP_USER:-}
+      - GF_SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - GF_SMTP_FROM_ADDRESS=${ALERT_EMAIL_FROM:-}
+      - GF_ALERTING_ENABLED=true
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - monitoring
+
+  # ----------------------------------------
+  # Loki - Agregação de Logs
+  # ----------------------------------------
+  loki:
+    image: grafana/loki:3.3.4
+    container_name: nexia-loki
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+
+  # ----------------------------------------
+  # Promtail - Coleta de Logs
+  # ----------------------------------------
+  promtail:
+    image: grafana/promtail:3.3.4
+    container_name: nexia-promtail
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/www/nexIA/logs:/var/www/nexIA/logs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+
+  # ----------------------------------------
+  # Node Exporter - Métricas do Host
+  # ----------------------------------------
+  node-exporter:
+    image: prom/node-exporter:v1.9.0
+    container_name: nexia-node-exporter
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+    networks:
+      - monitoring
+
+  # ----------------------------------------
+  # PostgreSQL Exporter - Métricas do Banco
+  # ----------------------------------------
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.17.1
+    container_name: nexia-postgres-exporter
+    restart: unless-stopped
+    environment:
+      - DATA_SOURCE_NAME=postgresql://root:jVmcWsmLrxHr@49.13.228.89:5432/nexia_chat?sslmode=disable
+    ports:
+      - "127.0.0.1:9187:9187"
+    networks:
+      - monitoring
+
+  # ----------------------------------------
+  # Alertmanager - Gestão de Alertas
+  # ----------------------------------------
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    container_name: nexia-alertmanager
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    networks:
+      - monitoring
+
+  # ----------------------------------------
+  # Uptime Kuma - Monitoramento de Uptime
+  # ----------------------------------------
+  uptime-kuma:
+    image: louislam/uptime-kuma:1.23.16
+    container_name: nexia-uptime
+    restart: unless-stopped
+    ports:
+      - "3002:3001"
+    volumes:
+      - uptime_data:/app/data
+    networks:
+      - monitoring
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  alertmanager_data:
+  uptime_data:
+
+networks:
+  monitoring:
+    driver: bridge

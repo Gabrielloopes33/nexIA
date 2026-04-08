@@ -1,0 +1,125 @@
+# ============================================
+# Docker Compose - NexIA Backup & Recovery
+# ============================================
+#
+# Stack de backup automatizado para PostgreSQL
+# - Backups automáticos diários
+# - Upload para S3 (AWS, Cloudflare R2, etc)
+# - Retenção configurável
+# - Notificações de sucesso/falha
+#
+# Uso:
+#   docker-compose -f docker-compose.backup.yml up -d
+#
+# ============================================
+
+version: '3.8'
+
+services:
+  # ----------------------------------------
+  # PostgreSQL Backup Service
+  # ----------------------------------------
+  postgres-backup:
+    image: offen/docker-volume-backup:v2.39.0
+    container_name: nexia-backup
+    restart: unless-stopped
+    environment:
+      # ----------------------------------------
+      # Configuração do Backup
+      # ----------------------------------------
+      BACKUP_CRON_EXPRESSION: "${BACKUP_CRON:-0 2 * * *}"
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-7}"
+      BACKUP_FILENAME: "nexia-backup-%Y%m%d-%H%M%S"
+      BACKUP_ARCHIVE: "${BACKUP_ARCHIVE:-/backup}"
+      
+      # ----------------------------------------
+      # Notificações (Webhook Discord/Slack)
+      # ----------------------------------------
+      NOTIFICATION_URLS: "${NOTIFICATION_WEBHOOK_URL:-}"
+      NOTIFICATION_LEVEL: "${NOTIFICATION_LEVEL:-error}"
+      
+      # ----------------------------------------
+      # AWS S3 / Cloudflare R2 Config
+      # ----------------------------------------
+      AWS_S3_BUCKET_NAME: "${S3_BUCKET_NAME:-}"
+      AWS_ACCESS_KEY_ID: "${S3_ACCESS_KEY:-}"
+      AWS_SECRET_ACCESS_KEY: "${S3_SECRET_KEY:-}"
+      AWS_S3_ENDPOINT: "${S3_ENDPOINT:-}"
+      AWS_S3_PATH: "${S3_PATH:-backups/nexia}"
+      AWS_S3_REGION: "${S3_REGION:-us-east-1}"
+      
+      # ----------------------------------------
+      # GPG Encryption (opcional)
+      # ----------------------------------------
+      GPG_PASSPHRASE: "${BACKUP_GPG_PASSPHRASE:-}"
+      
+      # ----------------------------------------
+      # PostgreSQL Connection
+      # ----------------------------------------
+      POSTGRES_HOST: "${DB_HOST:-db}"
+      POSTGRES_PORT: "${DB_PORT:-5432}"
+      POSTGRES_DB: "${DB_NAME:-nexia}"
+      POSTGRES_USER: "${DB_USER:-nexia}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-}"
+      
+    volumes:
+      # Volume para armazenar backups localmente
+      - ./backups:/backup
+      # Backup do volume do PostgreSQL
+      - postgres_data:/backup/data:ro
+      # Scripts customizados
+      - ./scripts/backup:/scripts:ro
+      
+    networks:
+      - nexia-network
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "${DB_HOST:-db}", "-U", "${DB_USER:-nexia}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------
+  # Backup Exporter (métricas Prometheus)
+  # ----------------------------------------
+  backup-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: nexia-backup-exporter
+    restart: unless-stopped
+    environment:
+      - DATA_SOURCE_NAME=${DATABASE_URL:-postgresql://nexia:${DB_PASSWORD:-}@db:5432/nexia?sslmode=disable}
+    ports:
+      - "9188:9187"
+    networks:
+      - nexia-network
+    profiles:
+      - monitoring
+
+  # ----------------------------------------
+  # Pruning Service (limpeza de backups antigos)
+  # ----------------------------------------
+  backup-prune:
+    image: offen/docker-volume-backup:v2.39.0
+    container_name: nexia-backup-prune
+    restart: unless-stopped
+    environment:
+      BACKUP_CRON_EXPRESSION: "0 3 * * 0"  # Semanal aos domingos 3am
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
+      PRUNE_ONLY: "true"
+    volumes:
+      - ./backups:/backup
+    networks:
+      - nexia-network
+    profiles:
+      - prune
+
+volumes:
+  postgres_data:
+    external: true
+    name: nexia_postgres_data
+
+networks:
+  nexia-network:
+    external: true

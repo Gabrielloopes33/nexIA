@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth/server';
 import { evolutionService } from '@/lib/services/evolution-api';
-import { sendTextMessage } from '@/lib/whatsapp/cloud-api';
+import { sendTextMessage, WhatsAppApiError } from '@/lib/whatsapp/cloud-api';
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -204,24 +204,64 @@ export async function POST(request: NextRequest, { params }: Params) {
         evolutionInstance = evoInst;
       }
 
+      let sendError: Error | null = null;
+
       if (officialInstance?.phoneNumberId && officialInstance?.accessToken) {
         try {
           const result = await sendTextMessage(officialInstance.phoneNumberId, contact.phone, content, officialInstance.accessToken);
           sentMessageId = (result as any).messages?.[0]?.id;
           console.log('Messages POST: Sent via WhatsApp Cloud API. messageId:', sentMessageId);
-        } catch (sendError) {
+        } catch (err) {
+          sendError = err instanceof Error ? err : new Error(String(err));
           console.error('Messages POST: WhatsApp Cloud API send failed:', sendError);
+          
+          // Atualiza mensagem com erro
+          await prisma.message.update({
+            where: { id: message.id },
+            data: {
+              status: 'failed',
+              metadata: {
+                ...((message.metadata as object) || {}),
+                error: sendError.message,
+                errorType: err instanceof WhatsAppApiError ? err.type : 'Unknown',
+                errorCode: err instanceof WhatsAppApiError ? err.code : undefined,
+              },
+            },
+          });
         }
       } else if (evolutionInstance) {
         try {
           const result = await evolutionService.sendText(evolutionInstance.instanceName, contact.phone, content);
           sentMessageId = (result as any).key?.id;
           console.log('Messages POST: Sent via Evolution API. messageId:', sentMessageId);
-        } catch (sendError) {
+        } catch (err) {
+          sendError = err instanceof Error ? err : new Error(String(err));
           console.error('Messages POST: Evolution API send failed:', sendError);
+          
+          // Atualiza mensagem com erro
+          await prisma.message.update({
+            where: { id: message.id },
+            data: {
+              status: 'failed',
+              metadata: {
+                ...((message.metadata as object) || {}),
+                error: sendError.message,
+              },
+            },
+          });
         }
       } else {
         console.warn('Messages POST: No connected instance found for org', organizationId);
+        await prisma.message.update({
+          where: { id: message.id },
+          data: {
+            status: 'failed',
+            metadata: {
+              ...((message.metadata as object) || {}),
+              error: 'Nenhuma instância WhatsApp conectada encontrada',
+            },
+          },
+        });
       }
     }
 
@@ -243,6 +283,38 @@ export async function POST(request: NextRequest, { params }: Params) {
         updatedAt: new Date(),
       },
     });
+
+    // Retorna erro se falhou o envio
+    if (!sentMessageId) {
+      const errorMessage = sendError?.message || '';
+      
+      // Detecta erro específico de API desativada
+      if (errorMessage.includes('API access deactivated') || errorMessage.includes('developer registration')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Acesso à API do WhatsApp desativado. O administrador precisa completar o registro em developer.facebook.com ou reconectar a conta.',
+          errorCode: 'WHATSAPP_API_DEACTIVATED',
+          data: message,
+        }, { status: 403 });
+      }
+      
+      // Detecta erro de objeto não existe (phoneNumberId inválido)
+      if (errorMessage.includes('does not exist') || errorMessage.includes('missing permissions')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Instância WhatsApp inválida ou sem permissões. Tente reconectar a conta em Configurações > Integrações > WhatsApp.',
+          errorCode: 'WHATSAPP_INVALID_INSTANCE',
+          data: message,
+        }, { status: 403 });
+      }
+
+      return NextResponse.json({
+        success: false,
+        error: 'Falha ao enviar mensagem para o WhatsApp. A mensagem foi salva mas não entregue.',
+        details: sendError?.message,
+        data: message,
+      }, { status: 502 });
+    }
 
     return NextResponse.json({
       success: true,

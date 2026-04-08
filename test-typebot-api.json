@@ -1,0 +1,26 @@
+{
+  "_note": "Exemplo de payload para criar contato via API",
+  "endpoint": "POST /api/contacts",
+  "payload": {
+    "name": "Maria Souza - Teste Typebot",
+    "phone": "5511987654321",
+    "organizationId": "733221c6-4f41-43bc-82ad-d81ae29b51d6",
+    "metadata": {
+      "source": "typebot",
+      "typebot": {
+        "cargo": "Diretora de Operações",
+        "colaboradores": "200-500 funcionários",
+        "responsavel": "Não, temos uma consultoria",
+        "estagio": "Contemplado",
+        "preocupacao": "Gestão de documentação e adequação aos prazos legais",
+        "afastamento": "Não tivemos casos recentes",
+        "levantamento": "Sim, fizemos em 2024",
+        "decisao": "Precisamos renovar nosso programa",
+        "problema": "Dificuldade em acompanhar as mudanças na legislação",
+        "duvida": "Vocês oferecem suporte contínuo?",
+        "submittedAt": "01 de abr., 14:22",
+        "email": "maria@empresa-exemplo.com"
+      }
+    }
+  }
+}

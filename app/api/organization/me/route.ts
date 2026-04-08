@@ -28,6 +28,7 @@ export async function GET() {
         id: true,
         name: true,
         slug: true,
+        type: true,
         status: true,
         members: {
           where: { userId: user.userId },
@@ -43,6 +44,7 @@ export async function GET() {
         id: user.organizationId,
         name: '',
         slug: '',
+        type: 'REGULAR',
         status: 'ACTIVE',
         role: null,
       })
@@ -52,6 +54,7 @@ export async function GET() {
       id: org.id,
       name: org.name,
       slug: org.slug,
+      type: org.type,
       status: org.status,
       role: org.members[0]?.role || null,
     })

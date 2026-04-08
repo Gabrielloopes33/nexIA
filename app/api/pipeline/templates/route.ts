@@ -30,12 +30,30 @@ interface PipelineTemplate {
 interface ApplyTemplateRequest {
   templateId: string;
   customName?: string;
+  productId: string;
 }
 
 // ============================================
 // Templates Pré-definidos em Memória
 // ============================================
 const PIPELINE_TEMPLATES: PipelineTemplate[] = [
+  {
+    id: "follow-up-v1",
+    name: "Pipeline de Follow Up / Pós-venda",
+    category: "follow-up",
+    description: "Processo de acompanhamento pós-venda, onboarding e retenção de clientes",
+    stages: [
+      { name: "Novo Cliente", position: 0, color: "#22c55e", probability: 100, isDefault: true, isClosed: false },
+      { name: "Onboarding", position: 1, color: "#3b82f6", probability: 100, isDefault: false, isClosed: false },
+      { name: "Implementação", position: 2, color: "#8b5cf6", probability: 90, isDefault: false, isClosed: false },
+      { name: "Adoção / Uso Ativo", position: 3, color: "#06b6d4", probability: 85, isDefault: false, isClosed: false },
+      { name: "Suporte Técnico", position: 4, color: "#f59e0b", probability: 80, isDefault: false, isClosed: false },
+      { name: "Renovação / Upsell", position: 5, color: "#10b981", probability: 70, isDefault: false, isClosed: false },
+      { name: "Cliente Fidelizado", position: 6, color: "#14b8a6", probability: 95, isDefault: false, isClosed: false },
+      { name: "Churn / Cancelado", position: 7, color: "#ef4444", probability: 0, isDefault: false, isClosed: true },
+      { name: "Inativo", position: 8, color: "#6b7280", probability: 0, isDefault: false, isClosed: true },
+    ],
+  },
   {
     id: "infoprodutos-v1",
     name: "Pipeline de Infoprodutos",
@@ -166,26 +184,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verifica se já existem estágios para esta organização
-    const existingStages = await prisma.pipelineStage.findMany({
-      where: { organizationId },
-      orderBy: { position: 'asc' },
-    });
-
-    if (existingStages.length > 0) {
+    // Verifica se o productId foi fornecido
+    if (!body.productId || typeof body.productId !== "string") {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Esta organização já possui etapas de pipeline configuradas",
-          existingStages: existingStages.map((s) => ({
-            id: s.id,
-            name: s.name,
-            position: s.position,
-          })),
-        },
-        { status: 409 }
+        { success: false, error: "Campo obrigatório: productId" },
+        { status: 400 }
       );
     }
+
+    // Verifica se o produto existe e pertence à organização
+    const product = await prisma.product.findFirst({
+      where: { 
+        id: body.productId,
+        organizationId 
+      },
+    });
+
+    if (!product) {
+      return NextResponse.json(
+        { success: false, error: "Produto não encontrado ou não pertence à organização" },
+        { status: 404 }
+      );
+    }
+
+    // Cria o pipeline primeiro
+    const pipeline = await prisma.pipeline.create({
+      data: {
+        organizationId,
+        productId: body.productId,
+        name: body.customName || template.name,
+        isDefault: false,
+        status: "ACTIVE",
+      },
+    });
+
+    console.log('[PIPELINE_TEMPLATES_APPLY] Created pipeline:', pipeline.id);
 
     // Cria as etapas do pipeline baseado no template
     const createdStages = await prisma.$transaction(
@@ -193,6 +226,7 @@ export async function POST(request: NextRequest) {
         prisma.pipelineStage.create({
           data: {
             organizationId,
+            pipelineId: pipeline.id,
             name: stage.name,
             position: stage.position,
             color: stage.color,

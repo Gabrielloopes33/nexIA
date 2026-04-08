@@ -12,6 +12,7 @@ import {
   checkPermission,
   getCurrentMemberWithRole
 } from '@/lib/auth/permissions';
+import { triggerStageAutomations } from '@/lib/automation/trigger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -203,7 +204,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     // Create activity if stage changed
-    if (stageId && stageId !== currentDeal.stageId) {
+    const stageChanged = stageId && stageId !== currentDeal.stageId;
+    
+    if (stageChanged) {
       const newStage = await prisma.pipelineStage.findUnique({
         where: { id: stageId },
       });
@@ -221,6 +224,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             toStageName: newStage?.name,
           },
         },
+      });
+      
+      // Trigger automações (fire and forget - não bloqueia a resposta)
+      triggerStageAutomations({
+        dealId: id,
+        previousStageId: currentDeal.stageId,
+        newStageId: stageId,
+        triggerType: 'STAGE_ENTRY',
+        organizationId
+      }).catch((error) => {
+        console.error('[Pipeline Deal] Erro ao acionar automações:', error);
       });
     }
 
