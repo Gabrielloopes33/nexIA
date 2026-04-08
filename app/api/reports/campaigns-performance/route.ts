@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { withRLS } from '@/lib/db/rls'
 import { getOrganizationId, AuthError } from '@/lib/auth/helpers'
 
+// Logger simples para debug
+function log(stage: string, data: Record<string, unknown>) {
+  console.log(`[campaigns-performance] ${stage}:`, JSON.stringify(data, null, 2))
+}
+
 function getPeriodStart(period: string): Date {
   const now = new Date()
   const hoursMap: Record<string, number> = {
@@ -17,7 +22,10 @@ export async function GET(request: NextRequest) {
     const period     = request.nextUrl.searchParams.get('period')     ?? '7d'
     const campaignId = request.nextUrl.searchParams.get('campaignId') ?? null
 
+    log('request', { organizationId: organizationId?.slice(0, 8) + '...', period, campaignId: campaignId?.slice(0, 8) + '...' })
+
     const periodStart = getPeriodStart(period)
+    log('period', { periodStart: periodStart.toISOString() })
     const now = new Date()
     const windowMs = 24 * 3_600_000
 
@@ -35,13 +43,18 @@ export async function GET(request: NextRequest) {
           ],
         },
         include: { tag: true },
-        orderBy: { startedAt: 'desc' },
+        orderBy: [
+          { startedAt: { sort: 'desc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
       })
     })
+    
+    log('campaigns_found', { count: campaigns.length, ids: campaigns.map(c => ({ id: c.id.slice(0, 8), status: c.status, startedAt: c.startedAt })) })
 
     const campanhasComMetricas = await Promise.all(campaigns.map(async (campaign) => {
       // Contatos da campanha — conversation_id vem da coluna adicionada via migration
-      const contacts = await prisma.$queryRawUnsafe<Array<{
+      let contacts: Array<{
         id: string
         contact_id: string
         phone: string
@@ -50,12 +63,30 @@ export async function GET(request: NextRequest) {
         sent_at: Date | null
         failed_at: Date | null
         conversation_id: string | null
-      }>>(
-        `SELECT id, contact_id::text, phone, name, status, sent_at, failed_at, conversation_id::text
-         FROM campaign_contacts
-         WHERE campaign_id = $1::uuid`,
-        campaign.id
-      )
+      }> = []
+      
+      try {
+        contacts = await prisma.$queryRawUnsafe<
+          Array<{
+            id: string
+            contact_id: string
+            phone: string
+            name: string | null
+            status: string
+            sent_at: Date | null
+            failed_at: Date | null
+            conversation_id: string | null
+          }>
+        >(
+          `SELECT id, contact_id::text, phone, name, status, sent_at, failed_at, conversation_id::text
+           FROM campaign_contacts
+           WHERE campaign_id = $1::uuid`,
+          campaign.id
+        )
+      } catch (contactErr) {
+        log('contact_query_error', { campaignId: campaign.id, error: (contactErr as Error).message })
+        // Continua com array vazio para não quebrar a campanha
+      }
 
       const enviados = contacts.filter(c => c.status === 'SENT')
       const falhas   = contacts.filter(c => c.status === 'FAILED')
@@ -202,6 +233,12 @@ export async function GET(request: NextRequest) {
         : 0,
     }
 
+    log('response', { 
+      totalCampanhas: consolidado.totalCampanhas, 
+      totalEnviados: consolidado.totalEnviados,
+      totalFalhas: consolidado.totalFalhas 
+    })
+
     return NextResponse.json({
       success: true,
       data: { period, periodStart, consolidado, campanhas: campanhasComMetricas },
@@ -210,6 +247,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof AuthError) {
       return NextResponse.json({ success: false, error: error.message }, { status: error.statusCode })
     }
+    log('fatal_error', { error: (error as Error).message, stack: (error as Error).stack })
     console.error('GET /api/reports/campaigns-performance error:', error)
     return NextResponse.json({ success: false, error: 'Erro ao buscar performance de campanhas' }, { status: 500 })
   }

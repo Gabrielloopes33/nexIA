@@ -205,7 +205,7 @@ export default function PerformancePage() {
 
   const { data: atendimento, isLoading: loadingAtendimento } = useAtendimentoReport(period)
   const { data: leadFlow, isLoading: loadingLeadFlow } = useLeadFlowReport(period, groupBy)
-  const { data: campaigns, isLoading: loadingCampaigns } = useCampaignPerformance(period)
+  const { data: campaigns, isLoading: loadingCampaigns, error: campaignsError } = useCampaignPerformance(period)
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -486,7 +486,15 @@ export default function PerformancePage() {
                   </Card>
                 )}
               </>
-            ) : null}
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground text-sm">
+                    {campaignsError ? 'Erro ao carregar campanhas. Verifique o console para mais detalhes.' : 'Nenhuma campanha encontrada.'}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* ── ABA 4: Heatmap ──────────────────────────────── */}
