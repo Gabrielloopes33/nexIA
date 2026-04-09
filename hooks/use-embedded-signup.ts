@@ -298,65 +298,52 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
       
       if (loginStatus.status === "unknown") {
         console.warn("[EmbeddedSignup] User is not logged in to Facebook")
-        // Still try to login - FB.login should prompt for login
+        
+        // Open Facebook login in a new tab first
+        toast.info("Redirecionando para login do Facebook...", {
+          description: "Você precisa estar logado no Facebook para continuar.",
+          duration: 5000,
+        })
+        
+        // Open Facebook in a popup to trigger login
+        const fbLoginWindow = window.open(
+          "https://www.facebook.com/login.php",
+          "facebookLogin",
+          "width=600,height=600,top=100,left=100"
+        )
+        
+        if (!fbLoginWindow) {
+          setError("Popup bloqueado! Por favor, permita popups para este site ou faça login no Facebook manualmente em outra aba.")
+          setStatus("error")
+          processingRef.current = false
+          return
+        }
+        
+        // Wait for user to potentially login, then try again
+        setTimeout(() => {
+          if (fbLoginWindow && !fbLoginWindow.closed) {
+            fbLoginWindow.close()
+          }
+          
+          // Try to check login status again
+          window.FB!.getLoginStatus((newStatus) => {
+            console.log("[EmbeddedSignup] Login status after popup:", newStatus)
+            
+            if (newStatus.status === "unknown") {
+              setError("Você não está logado no Facebook. Por favor:\n1. Abra facebook.com em outra aba\n2. Faça login na sua conta\n3. Volte aqui e tente novamente")
+              setStatus("error")
+              processingRef.current = false
+            } else {
+              // User is now logged in, proceed with FB.login
+              proceedWithFBLogin(appConfig)
+            }
+          })
+        }, 10000) // Wait 10 seconds for user to login
+        
+        return
       }
 
-      console.log("[EmbeddedSignup] Calling FB.login with config_id:", appConfig.configId)
-      
-      window.FB.login(
-        (response: FacebookLoginResponse) => {
-          console.log("[EmbeddedSignup] Facebook Login response:", response)
-
-          if (response.error) {
-            const errorMsg = response.errorMessage || response.error
-            console.error("[EmbeddedSignup] Facebook Login error:", errorMsg)
-            
-            // Check for specific error types
-            if (errorMsg.includes("indisponível") || errorMsg.includes("unavailable")) {
-              setError(`Login do Facebook indisponível. Verifique se você está logado no Facebook em outra aba. Se o problema persistir, o App ID (${appConfig.appId}) ou Configuration ID podem estar incorretos.`)
-            } else {
-              setError(`Erro no login do Facebook: ${errorMsg}`)
-            }
-            
-            setStatus("error")
-            toast.error("Erro na autenticação", {
-              description: errorMsg,
-            })
-            processingRef.current = false
-            return
-          }
-
-          if (response.status === "connected" && response.authResponse?.code) {
-            const authCode = response.authResponse.code
-            console.log("[EmbeddedSignup] Received auth code, exchanging for token...")
-            
-            // Exchange code for token
-            exchangeCodeForToken(authCode)
-          } else if (response.status === "not_authorized") {
-            setError("Usuário não autorizou o aplicativo")
-            setStatus("error")
-            toast.error("Permissão negada", {
-              description: "Você precisa autorizar o aplicativo para continuar.",
-            })
-            processingRef.current = false
-          } else {
-            console.log("[EmbeddedSignup] Unexpected response status:", response.status)
-            setError("Autenticação cancelada ou falhou. Verifique se você está logado no Facebook.")
-            setStatus("error")
-            processingRef.current = false
-          }
-        },
-        {
-          config_id: appConfig.configId,
-          response_type: "code",
-          override_default_response_type: true,
-          extras: {
-            setup: {
-              solution: "whatsapp_business_account",
-            },
-          },
-        }
-      )
+      proceedWithFBLogin(appConfig)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
       console.error("[EmbeddedSignup] Error:", errorMessage)
@@ -368,6 +355,75 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
       processingRef.current = false
     }
   }, [fetchConfig, loadFacebookSDK, initializeFacebookSDK])
+
+  /**
+   * Proceed with FB.login after ensuring user is logged in
+   */
+  const proceedWithFBLogin = useCallback((appConfig: EmbeddedSignupConfig): void => {
+    console.log("[EmbeddedSignup] Calling FB.login with config_id:", appConfig.configId)
+    
+    if (!window.FB) {
+      setError("Facebook SDK não está disponível")
+      setStatus("error")
+      processingRef.current = false
+      return
+    }
+      
+    window.FB.login(
+      (response: FacebookLoginResponse) => {
+        console.log("[EmbeddedSignup] Facebook Login response:", response)
+
+        if (response.error) {
+          const errorMsg = response.errorMessage || response.error
+          console.error("[EmbeddedSignup] Facebook Login error:", errorMsg)
+          
+          // Check for specific error types
+          if (errorMsg.includes("indisponível") || errorMsg.includes("unavailable")) {
+            setError(`Login do Facebook indisponível. Verifique se você está logado no Facebook em outra aba. Se o problema persistir, o App ID (${appConfig.appId}) ou Configuration ID podem estar incorretos.`)
+          } else {
+            setError(`Erro no login do Facebook: ${errorMsg}`)
+          }
+          
+          setStatus("error")
+          toast.error("Erro na autenticação", {
+            description: errorMsg,
+          })
+          processingRef.current = false
+          return
+        }
+
+        if (response.status === "connected" && response.authResponse?.code) {
+          const authCode = response.authResponse.code
+          console.log("[EmbeddedSignup] Received auth code, exchanging for token...")
+          
+          // Exchange code for token
+          exchangeCodeForToken(authCode)
+        } else if (response.status === "not_authorized") {
+          setError("Usuário não autorizou o aplicativo")
+          setStatus("error")
+          toast.error("Permissão negada", {
+            description: "Você precisa autorizar o aplicativo para continuar.",
+          })
+          processingRef.current = false
+        } else {
+          console.log("[EmbeddedSignup] Unexpected response status:", response.status)
+          setError("Autenticação cancelada ou falhou. Verifique se você está logado no Facebook.")
+          setStatus("error")
+          processingRef.current = false
+        }
+      },
+      {
+        config_id: appConfig.configId,
+        response_type: "code",
+        override_default_response_type: true,
+        extras: {
+          setup: {
+            solution: "whatsapp_business_account",
+          },
+        },
+      }
+    )
+  }, [exchangeCodeForToken])
 
   /**
    * Exchange authorization code for access token
