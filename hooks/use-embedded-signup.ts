@@ -90,7 +90,7 @@ interface FacebookLoginParams {
   override_default_response_type: boolean
   extras: {
     feature?: string
-    version?: number
+    version?: string | number
     sessionInfoVersion?: number
     setup?: {
       solution?: string
@@ -456,7 +456,7 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         override_default_response_type: true,
         extras: {
           feature: "whatsapp_embedded_signup",
-          version: 2,
+          version: "v4",
           sessionInfoVersion: 3,
           setup: {
             solution: "whatsapp_business_account",
