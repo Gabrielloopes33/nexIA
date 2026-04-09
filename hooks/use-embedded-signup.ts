@@ -358,8 +358,9 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
 
   /**
    * Proceed with FB.login after ensuring user is logged in
+   * NOT a useCallback to avoid circular dependency issues
    */
-  const proceedWithFBLogin = useCallback((appConfig: EmbeddedSignupConfig): void => {
+  const proceedWithFBLogin = (appConfig: EmbeddedSignupConfig): void => {
     console.log("[EmbeddedSignup] Calling FB.login with config_id:", appConfig.configId)
     
     if (!window.FB) {
@@ -423,7 +424,7 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         },
       }
     )
-  }, [exchangeCodeForToken])
+  }
 
   /**
    * Exchange authorization code for access token
