@@ -149,6 +149,7 @@ function mapConversation(apiConv: ApiConversation): Conversation {
     contactPhone: apiConv.contact?.phone,
     contactAvatar,
     channel,
+    instanceType: apiConv.instanceType,
     status: mapStatus(apiConv.status),
     priority,
     assignedTo: apiConv.assignedTo ? {

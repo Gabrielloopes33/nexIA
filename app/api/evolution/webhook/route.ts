@@ -321,6 +321,8 @@ async function handleMessageReceived(instanceId: string, data: Record<string, un
           organizationId,
           contactId: contact.id,
           status: 'active',
+          instanceId: instanceId,
+          instanceType: 'EVOLUTION',
         },
       });
       console.log('[Evolution Webhook] Created new conversation:', conversation.id);

@@ -133,7 +133,9 @@ async function findOrCreateContact(
  */
 async function findOrCreateConversation(
   organizationId: string,
-  contactId: string
+  contactId: string,
+  instanceId?: string,
+  instanceType?: string
 ) {
   let conversation = await prisma.conversation.findFirst({
     where: {
@@ -150,6 +152,8 @@ async function findOrCreateConversation(
         organizationId,
         contactId,
         status: 'active',
+        instanceId,
+        instanceType,
       },
     });
     console.log('[Webhook] Created new conversation:', conversation.id);
@@ -298,7 +302,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
           const conversation = await findOrCreateConversation(
             instance.organizationId,
-            contactRecord.id
+            contactRecord.id,
+            instance.id,
+            'OFFICIAL'
           );
 
           await prisma.message.create({
