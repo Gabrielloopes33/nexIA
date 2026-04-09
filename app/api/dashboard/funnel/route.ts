@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 const querySchema = z.object({
   period: z.enum(['today', '7d', '30d', '90d']).default('30d'),
+  pipelineId: z.string().optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -19,11 +20,12 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const { period } = querySchema.parse({
+    const { period, pipelineId } = querySchema.parse({
       period: searchParams.get('period') || '30d',
+      pipelineId: searchParams.get('pipelineId') || undefined,
     })
 
-    const data = await getFunnelMetrics(user.organizationId, period)
+    const data = await getFunnelMetrics(user.organizationId, period, pipelineId)
 
     return NextResponse.json({
       success: true,

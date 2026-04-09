@@ -34,7 +34,7 @@ export default async function ProdutosPage() {
   })
 
   return (
-    <div className="p-6 md:p-8">
+    <div className="pt-14 px-6 pb-6">
       <div className="mx-auto max-w-5xl">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">

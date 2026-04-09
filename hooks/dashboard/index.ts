@@ -20,6 +20,12 @@ export {
   prefetchFunnel 
 } from './use-funnel'
 
+export {
+  useDashboardPipelines,
+  type Pipeline,
+  type PipelineStage
+} from './use-pipelines'
+
 export { 
   useLostDeals, 
   prefetchLostDeals,

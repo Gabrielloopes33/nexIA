@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query'
+import { useQuery, UseQueryResult, QueryClient } from '@tanstack/react-query'
 import { FunnelMetrics } from '@/types/dashboard'
 import { DashboardPeriod } from '@/types/dashboard-hooks'
 
@@ -9,10 +9,16 @@ const FUNNEL_QUERY_KEY = 'dashboard-funnel'
 /**
  * Faz o fetch dos dados do funil
  * @param period - Período selecionado
+ * @param pipelineId - ID do pipeline (opcional, usa o padrão se não informado)
  * @returns Dados do funil
  */
-async function fetchFunnel(period: DashboardPeriod): Promise<FunnelMetrics> {
-  const response = await fetch(`/api/dashboard/funnel?period=${period}`)
+async function fetchFunnel(period: DashboardPeriod, pipelineId?: string | null): Promise<FunnelMetrics> {
+  const params = new URLSearchParams({ period })
+  if (pipelineId) {
+    params.append('pipelineId', pipelineId)
+  }
+  
+  const response = await fetch(`/api/dashboard/funnel?${params.toString()}`)
   
   if (!response.ok) {
     throw new Error('Failed to fetch funnel data')
@@ -31,29 +37,26 @@ async function fetchFunnel(period: DashboardPeriod): Promise<FunnelMetrics> {
  * Hook para buscar dados do funil de vendas
  * 
  * @param period - Período selecionado ('today', '7d', '30d', '90d')
+ * @param pipelineId - ID do pipeline para filtrar (opcional)
  * @returns Query result com dados do funil e funções de controle
  * 
  * @example
  * ```typescript
  * const { data, isLoading, error, refetch } = useFunnel('30d')
+ * // ou com pipeline específico
+ * const { data } = useFunnel('30d', 'pipeline-id-123')
  * ```
  */
-export function useFunnel(period: DashboardPeriod): UseQueryResult<FunnelMetrics, Error> & { refetch: () => Promise<void> } {
-  const queryClient = useQueryClient()
-  
-  const query = useQuery({
-    queryKey: [FUNNEL_QUERY_KEY, period],
-    queryFn: () => fetchFunnel(period),
+export function useFunnel(
+  period: DashboardPeriod, 
+  pipelineId?: string | null
+): UseQueryResult<FunnelMetrics, Error> {
+  return useQuery({
+    queryKey: [FUNNEL_QUERY_KEY, period, pipelineId],
+    queryFn: () => fetchFunnel(period, pipelineId),
     staleTime: 5 * 60 * 1000, // 5 minutos
     refetchOnWindowFocus: false,
   })
-  
-  return {
-    ...query,
-    refetch: async () => {
-      await queryClient.invalidateQueries({ queryKey: [FUNNEL_QUERY_KEY, period] })
-    },
-  }
 }
 
 /**
@@ -61,11 +64,16 @@ export function useFunnel(period: DashboardPeriod): UseQueryResult<FunnelMetrics
  * 
  * @param queryClient - Instância do QueryClient
  * @param period - Período selecionado
+ * @param pipelineId - ID do pipeline (opcional)
  */
-export async function prefetchFunnel(queryClient: ReturnType<typeof useQueryClient>, period: DashboardPeriod): Promise<void> {
+export async function prefetchFunnel(
+  queryClient: QueryClient, 
+  period: DashboardPeriod,
+  pipelineId?: string | null
+): Promise<void> {
   await queryClient.prefetchQuery({
-    queryKey: [FUNNEL_QUERY_KEY, period],
-    queryFn: () => fetchFunnel(period),
+    queryKey: [FUNNEL_QUERY_KEY, period, pipelineId],
+    queryFn: () => fetchFunnel(period, pipelineId),
   })
 }
 

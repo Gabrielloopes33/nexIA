@@ -32,15 +32,36 @@ export interface FunnelMetrics {
 // 1. Métricas do Funil - ETAPAS DINÂMICAS DO PIPELINE
 export async function getFunnelMetrics(
   organizationId: string,
-  period: string
+  period: string,
+  pipelineId?: string | null
 ): Promise<FunnelMetrics> {
   const startDate = getPeriodStartDate(period)
   
-  // Buscar etapas dinâmicas do pipeline da organização
+  // Construir where clause para buscar etapas
+  const stagesWhere: Prisma.PipelineStageWhereInput = {
+    organizationId,
+  }
+  
+  // Se um pipelineId específico foi fornecido, filtra por ele
+  // Senão, busca apenas etapas do pipeline padrão (isDefault = true)
+  if (pipelineId) {
+    stagesWhere.pipelineId = pipelineId
+  } else {
+    // Busca o pipeline padrão da organização
+    const defaultPipeline = await prisma.pipeline.findFirst({
+      where: { organizationId, isDefault: true },
+      select: { id: true }
+    })
+    
+    if (defaultPipeline) {
+      stagesWhere.pipelineId = defaultPipeline.id
+    }
+    // Se não houver pipeline padrão, busca todas as etapas (comportamento legado)
+  }
+  
+  // Buscar etapas dinâmicas do pipeline
   const pipelineStages = await prisma.pipelineStage.findMany({
-    where: {
-      organizationId,
-    },
+    where: stagesWhere,
     orderBy: {
       position: 'asc',
     },

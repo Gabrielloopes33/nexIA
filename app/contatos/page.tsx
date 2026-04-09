@@ -120,7 +120,7 @@ export default function ContactsPage() {
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
 
-      <main className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 min-w-0">
+      <main className="flex-1 overflow-y-auto px-6 pt-14 pb-6 min-w-0">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>

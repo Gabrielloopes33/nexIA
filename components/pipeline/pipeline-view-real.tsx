@@ -1613,7 +1613,7 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="flex h-full flex-col overflow-hidden bg-background pt-6">
       {/* Top Toolbar */}
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <div className="flex items-center gap-3">
