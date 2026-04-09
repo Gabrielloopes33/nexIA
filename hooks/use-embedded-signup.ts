@@ -289,26 +289,22 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         throw new Error("Facebook SDK não está disponível")
       }
 
-      // Check login status first
+      // Check login status first (for logging purposes only)
       const loginStatus = await new Promise<FacebookLoginResponse>((resolve) => {
         window.FB!.getLoginStatus(resolve)
       })
       
       console.log("[EmbeddedSignup] Initial login status:", loginStatus)
       
+      // Note: status 'unknown' usually means third-party cookies are blocked
+      // We'll try FB.login anyway - if user is logged in to Facebook in another tab,
+      // the popup will just ask for permissions. If not, they'll see login screen.
       if (loginStatus.status === "unknown") {
-        console.warn("[EmbeddedSignup] User is not logged in to Facebook")
-        
-        // Show clear instructions to user
-        toast.error("Você não está logado no Facebook", {
-          description: "Por favor, faça login no Facebook em outra aba e tente novamente.",
-          duration: 10000,
+        console.warn("[EmbeddedSignup] Login status unknown (likely third-party cookies blocked). Attempting FB.login anyway...")
+        toast.info("Abrindo login do Facebook...", {
+          description: "Se você já está logado no Facebook, apenas autorize o aplicativo. Caso contrário, faça login primeiro.",
+          duration: 8000,
         })
-        
-        setError("Você não está logado no Facebook.\n\nPor favor:\n1. Abra facebook.com em outra aba do navegador\n2. Faça login na sua conta do Facebook\n3. Volte aqui e clique em 'Tentar novamente'")
-        setStatus("error")
-        processingRef.current = false
-        return
       }
 
       proceedWithFBLogin(appConfig)
