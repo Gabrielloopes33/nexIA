@@ -89,8 +89,12 @@ interface FacebookLoginParams {
   response_type: string
   override_default_response_type: boolean
   extras: {
-    setup: {
-      solution: string
+    feature?: string
+    version?: number
+    sessionInfoVersion?: number
+    setup?: {
+      solution?: string
+      solutionID?: string
     }
   }
 }
@@ -122,6 +126,7 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
   const [config, setConfig] = useState<EmbeddedSignupConfig | null>(null)
   const sdkLoadedRef = useRef<boolean>(false)
   const processingRef = useRef<boolean>(false)
+  const messageHandlerRef = useRef<((event: MessageEvent) => void) | null>(null)
 
   /**
    * Fetch configuration from backend
@@ -242,6 +247,61 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
   }, [])
 
   /**
+   * Setup message listener for WhatsApp Embedded Signup events
+   * This is the recommended way to handle Embedded Signup completion
+   */
+  const setupMessageListener = useCallback(() => {
+    // Remove existing listener if any
+    if (messageHandlerRef.current) {
+      window.removeEventListener("message", messageHandlerRef.current)
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from Facebook domains
+      if (!event.origin.includes("facebook.com")) {
+        return
+      }
+
+      try {
+        // WhatsApp Embedded Signup events are sent as JSON strings
+        if (typeof event.data !== "string") return
+
+        const data = JSON.parse(event.data)
+        console.log("[EmbeddedSignup] Received message from Facebook:", data)
+
+        // Handle WhatsApp Embedded Signup events
+        if (data.type === "WA_EMBEDDED_SIGNUP") {
+          switch (data.event) {
+            case "FINISH":
+            case "FINISH_ONLY_WABA":
+              console.log("[EmbeddedSignup] WhatsApp signup completed:", data.data)
+              toast.success("WhatsApp configurado com sucesso!")
+              break
+            case "CANCEL":
+              console.log("[EmbeddedSignup] User cancelled")
+              setStatus("error")
+              setError("Configuração cancelada pelo usuário")
+              processingRef.current = false
+              break
+            case "ERROR":
+              console.error("[EmbeddedSignup] Error during signup:", data.data)
+              setStatus("error")
+              setError(data.data?.error || "Erro durante a configuração do WhatsApp")
+              processingRef.current = false
+              break
+          }
+        }
+      } catch {
+        // Not a JSON message or not our expected format, ignore
+      }
+    }
+
+    window.addEventListener("message", handleMessage)
+    messageHandlerRef.current = handleMessage
+    console.log("[EmbeddedSignup] Message listener setup complete")
+  }, [])
+
+  /**
    * Launch the Embedded Signup flow
    */
   const launchSignup = useCallback(async (): Promise<void> => {
@@ -275,10 +335,13 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
       setStatus("initializing")
       await loadFacebookSDK()
 
-      // Step 3: Initialize SDK
+      // Step 3: Setup message listener for WhatsApp Embedded Signup events
+      setupMessageListener()
+
+      // Step 4: Initialize SDK
       initializeFacebookSDK(appConfig)
 
-      // Step 3.5: Small delay to ensure SDK is fully ready
+      // Step 4.5: Small delay to ensure SDK is fully ready
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Step 4: Check if user is already logged in to Facebook
@@ -318,7 +381,7 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
       })
       processingRef.current = false
     }
-  }, [fetchConfig, loadFacebookSDK, initializeFacebookSDK])
+  }, [fetchConfig, loadFacebookSDK, initializeFacebookSDK, setupMessageListener])
 
   /**
    * Proceed with FB.login after ensuring user is logged in
@@ -344,7 +407,17 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
           
           // Check for specific error types
           if (errorMsg.includes("indisponível") || errorMsg.includes("unavailable")) {
-            setError(`Login do Facebook indisponível. Verifique se você está logado no Facebook em outra aba. Se o problema persistir, o App ID (${appConfig.appId}) ou Configuration ID podem estar incorretos.`)
+            setError(
+              `Login do Facebook indisponível para este app.\n\n` +
+              `Causas prováveis:\n` +
+              `1. O app não está em modo "Live" no Meta Developers\n` +
+              `2. As permissões "public_profile" e "email" não têm "Advanced Access"\n` +
+              `3. Seu usuário não está na lista de testadores (se app em desenvolvimento)\n\n` +
+              `Solução:\n` +
+              `• Acesse: https://developers.facebook.com/apps/${appConfig.appId}/app-review/permissions/\n` +
+              `• Clique em "Get Advanced Access" para public_profile e email\n` +
+              `• Ou adicione seu usuário como Testador em Roles`
+            )
           } else {
             setError(`Erro no login do Facebook: ${errorMsg}`)
           }
@@ -382,6 +455,9 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         response_type: "code",
         override_default_response_type: true,
         extras: {
+          feature: "whatsapp_embedded_signup",
+          version: 2,
+          sessionInfoVersion: 3,
           setup: {
             solution: "whatsapp_business_account",
           },
@@ -478,11 +554,15 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
   }, [])
 
   /**
-   * Cleanup SDK on unmount
+   * Cleanup SDK and listeners on unmount
    */
   useEffect(() => {
     return () => {
-      // Cleanup if needed
+      // Cleanup message listener
+      if (messageHandlerRef.current) {
+        window.removeEventListener("message", messageHandlerRef.current)
+      }
+      // Cleanup FB events if needed
       if (window.FB?.Event) {
         // Unsubscribe from any events if we subscribed to them
       }
