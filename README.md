@@ -31,7 +31,7 @@ Receba e responda mensagens de todos os seus canais em uma única caixa de entra
 - **Instagram Direct** — mensagens e comentários no mesmo painel
 - **Chat Widget** — botão de chat para o seu site
 
-Organize as conversas por equipes (vendas, suporte), atribua atendentes, filtre por canal ou status, e nunca perca uma mensagem.
+Organize as conversas por equipes (vendas, suporte), atribua atendentes, filtre por canal ou status, e nunca perca uma mensagem. Identificação visual de qual canal a conversa veio (logos do WhatsApp, Facebook e Instagram).
 
 ---
 
@@ -56,6 +56,7 @@ Visualize e gerencie oportunidades com um funil de vendas estilo kanban.
 - Movimentação por drag-and-drop
 - Histórico de atividades por deal
 - Pipelines separados por produto
+- **Automações de pipeline**: execute ações automáticas quando deals mudam de etapa (enviar mensagem, criar tarefa, mover para outra etapa)
 
 ---
 
@@ -79,6 +80,8 @@ Envie mensagens em massa para sua base de contatos via WhatsApp Business API.
 - Segmentação por tags e listas
 - Agendamento de envio
 - Acompanhamento de entrega e leitura
+- Rastreamento de janelas de 24h: abertas, aproveitadas e expiradas
+- Correlação automática entre campanhas e conversas iniciadas
 
 ---
 
@@ -106,6 +109,14 @@ Recursos de IA para acelerar o atendimento e a análise.
 - Análise de sentimento
 - Sugestões de resposta
 
+### Onboarding Guiado
+
+Tour interativo para novos usuários aprenderem a usar o sistema.
+
+- Passo a passo pelas principais funcionalidades
+- Destaque de elementos da interface
+- Progresso salvo automaticamente
+
 ---
 
 ### Gestão de Assinaturas e Cobranças
@@ -128,6 +139,7 @@ Estruture sua operação com múltiplas organizações e perfis de acesso.
 - Papéis: Proprietário, Admin, Gerente
 - Convite de usuários por e-mail
 - Visibilidade e permissões por nível de acesso
+- Recuperação de senha por e-mail
 
 ---
 
@@ -135,11 +147,21 @@ Estruture sua operação com múltiplas organizações e perfis de acesso.
 
 Acompanhe os números que importam para o seu negócio.
 
-- Métricas em tempo real: conversas, leads, agendamentos
-- Distribuição por canal
-- Análise de funil de vendas
-- Score de saúde da operação
-- Gráficos exportáveis
+- **Métricas em tempo real**: conversas, leads, agendamentos
+- **Distribuição por canal** com identificação visual (WhatsApp Oficial, Evolution, Instagram)
+- **Análise de funil de vendas** filtrada por pipeline
+- **Score de saúde da operação**
+- **Gráficos exportáveis**
+
+### Relatório de Performance de Atendimento
+
+Métricas detalhadas para otimizar sua operação de vendas e suporte.
+
+- **Tempo médio de primeira resposta (TMR)** da equipe
+- **Fluxo de leads**: conversões e perdas por etapa
+- **Performance de campanhas**: taxa de engajamento, janelas de 24h abertas e aproveitadas
+- **Heatmap** de distribuição de atendimentos
+- Correlação automática entre campanhas disparadas e conversas iniciadas
 
 ---
 
