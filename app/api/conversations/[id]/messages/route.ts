@@ -164,20 +164,36 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
 
     let sentMessageId: string | undefined;
+    let sendError: Error | null = null;
 
-    // Tenta enviar via instância associada à conversa ou busca uma disponível
+    // Tenta enviar via instância vinculada à conversa
     if (contact?.phone) {
-      let officialInstance: { phoneNumberId: string | null; accessToken: string | null } | null = null;
-      let evolutionInstance: { instanceName: string } | null = null;
+      // Toda conversa deve estar vinculada a uma instância específica.
+      // Fallback para "qualquer instância conectada" foi removido — risco multi-tenant.
+      if (!conversation.instanceId || !conversation.instanceType) {
+        console.warn(`Messages POST: Conversa ${id} sem instância vinculada. org=${organizationId}`);
+        sendError = new Error('Conversa sem instância WhatsApp vinculada. Reconecte a conta em Configurações.');
+        await prisma.message.update({
+          where: { id: message.id },
+          data: {
+            status: 'failed',
+            metadata: {
+              ...((message.metadata as object) || {}),
+              error: sendError.message,
+              errorCode: 'NO_INSTANCE_LINKED',
+            },
+          },
+        });
+      } else {
+        console.log(`Messages POST: instanceId=${conversation.instanceId} instanceType=${conversation.instanceType} org=${organizationId}`);
 
-      // Se a conversa tem instanceId e instanceType, usa a instância específica
-      if (conversation.instanceId && conversation.instanceType) {
-        console.log(`Messages POST: Using conversation instance ${conversation.instanceId} (${conversation.instanceType})`);
-        
+        let officialInstance: { id: string; phoneNumberId: string | null; accessToken: string | null } | null = null;
+        let evolutionInstance: { instanceName: string } | null = null;
+
         if (conversation.instanceType === 'OFFICIAL') {
           officialInstance = await prisma.whatsAppInstance.findFirst({
             where: { id: conversation.instanceId, organizationId, status: 'CONNECTED' },
-            select: { phoneNumberId: true, accessToken: true },
+            select: { id: true, phoneNumberId: true, accessToken: true },
           });
         } else if (conversation.instanceType === 'EVOLUTION') {
           evolutionInstance = await prisma.evolutionInstance.findFirst({
@@ -185,37 +201,10 @@ export async function POST(request: NextRequest, { params }: Params) {
             select: { instanceName: true },
           });
         }
-      }
 
-      // Se não encontrou a instância específica ou não tem instanceId na conversa, busca qualquer uma conectada
-      if (!officialInstance && !evolutionInstance) {
-        console.log('Messages POST: No specific instance found, searching for any connected instance...');
-        const [offInst, evoInst] = await Promise.all([
-          prisma.whatsAppInstance.findFirst({
-            where: { organizationId, status: 'CONNECTED' },
-            select: { phoneNumberId: true, accessToken: true },
-          }),
-          prisma.evolutionInstance.findFirst({
-            where: { organizationId, status: 'CONNECTED' },
-            select: { instanceName: true },
-          }),
-        ]);
-        officialInstance = offInst;
-        evolutionInstance = evoInst;
-      }
-
-      let sendError: Error | null = null;
-
-      if (officialInstance?.phoneNumberId && officialInstance?.accessToken) {
-        try {
-          const result = await sendTextMessage(officialInstance.phoneNumberId, contact.phone, content, officialInstance.accessToken);
-          sentMessageId = (result as any).messages?.[0]?.id;
-          console.log('Messages POST: Sent via WhatsApp Cloud API. messageId:', sentMessageId);
-        } catch (err) {
-          sendError = err instanceof Error ? err : new Error(String(err));
-          console.error('Messages POST: WhatsApp Cloud API send failed:', sendError);
-          
-          // Atualiza mensagem com erro
+        if (!officialInstance && !evolutionInstance) {
+          console.warn(`Messages POST: Instância ${conversation.instanceId} não encontrada ou desconectada. org=${organizationId}`);
+          sendError = new Error('Instância WhatsApp vinculada não está conectada. Reconecte a conta.');
           await prisma.message.update({
             where: { id: message.id },
             data: {
@@ -223,45 +212,56 @@ export async function POST(request: NextRequest, { params }: Params) {
               metadata: {
                 ...((message.metadata as object) || {}),
                 error: sendError.message,
-                errorType: err instanceof WhatsAppApiError ? err.type : 'Unknown',
-                errorCode: err instanceof WhatsAppApiError ? err.code : undefined,
+                errorCode: 'INSTANCE_NOT_CONNECTED',
+                instanceId: conversation.instanceId,
+                instanceType: conversation.instanceType,
               },
             },
           });
-        }
-      } else if (evolutionInstance) {
-        try {
-          const result = await evolutionService.sendText(evolutionInstance.instanceName, contact.phone, content);
-          sentMessageId = (result as any).key?.id;
-          console.log('Messages POST: Sent via Evolution API. messageId:', sentMessageId);
-        } catch (err) {
-          sendError = err instanceof Error ? err : new Error(String(err));
-          console.error('Messages POST: Evolution API send failed:', sendError);
-          
-          // Atualiza mensagem com erro
-          await prisma.message.update({
-            where: { id: message.id },
-            data: {
-              status: 'failed',
-              metadata: {
-                ...((message.metadata as object) || {}),
-                error: sendError.message,
+        } else if (officialInstance?.phoneNumberId && officialInstance?.accessToken) {
+          console.log(`Messages POST: Enviando via Cloud API. phoneNumberId=${officialInstance.phoneNumberId} instanceId=${officialInstance.id}`);
+          try {
+            const result = await sendTextMessage(officialInstance.phoneNumberId, contact.phone, content, officialInstance.accessToken);
+            sentMessageId = (result as any).messages?.[0]?.id;
+            console.log('Messages POST: Enviado via Cloud API. messageId:', sentMessageId);
+          } catch (err) {
+            sendError = err instanceof Error ? err : new Error(String(err));
+            console.error(`Messages POST: Falha Cloud API. phoneNumberId=${officialInstance.phoneNumberId} instanceId=${officialInstance.id}:`, sendError.message);
+            await prisma.message.update({
+              where: { id: message.id },
+              data: {
+                status: 'failed',
+                metadata: {
+                  ...((message.metadata as object) || {}),
+                  error: sendError.message,
+                  errorType: err instanceof WhatsAppApiError ? err.type : 'Unknown',
+                  errorCode: err instanceof WhatsAppApiError ? err.code : undefined,
+                  phoneNumberId: officialInstance.phoneNumberId,
+                  instanceId: officialInstance.id,
+                },
               },
-            },
-          });
+            });
+          }
+        } else if (evolutionInstance) {
+          try {
+            const result = await evolutionService.sendText(evolutionInstance.instanceName, contact.phone, content);
+            sentMessageId = (result as any).key?.id;
+            console.log('Messages POST: Enviado via Evolution API. messageId:', sentMessageId);
+          } catch (err) {
+            sendError = err instanceof Error ? err : new Error(String(err));
+            console.error('Messages POST: Falha Evolution API:', sendError.message);
+            await prisma.message.update({
+              where: { id: message.id },
+              data: {
+                status: 'failed',
+                metadata: {
+                  ...((message.metadata as object) || {}),
+                  error: sendError.message,
+                },
+              },
+            });
+          }
         }
-      } else {
-        console.warn('Messages POST: No connected instance found for org', organizationId);
-        await prisma.message.update({
-          where: { id: message.id },
-          data: {
-            status: 'failed',
-            metadata: {
-              ...((message.metadata as object) || {}),
-              error: 'Nenhuma instância WhatsApp conectada encontrada',
-            },
-          },
-        });
       }
     }
 
@@ -285,9 +285,30 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
 
     // Retorna erro se falhou o envio
+    // Retorna erro se falhou o envio
     if (!sentMessageId) {
       const errorMessage = sendError?.message || '';
-      
+
+      // Conversa sem instância vinculada
+      if (errorMessage.includes('NO_INSTANCE_LINKED') || errorMessage.includes('sem instância WhatsApp vinculada')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Esta conversa não tem uma conta WhatsApp vinculada. Conecte uma conta em Configurações > Integrações > WhatsApp e reinicie a conversa.',
+          errorCode: 'NO_INSTANCE_LINKED',
+          data: message,
+        }, { status: 422 });
+      }
+
+      // Instância vinculada mas desconectada
+      if (errorMessage.includes('INSTANCE_NOT_CONNECTED') || errorMessage.includes('não está conectada')) {
+        return NextResponse.json({
+          success: false,
+          error: 'A conta WhatsApp vinculada a esta conversa está desconectada. Reconecte em Configurações > Integrações > WhatsApp.',
+          errorCode: 'INSTANCE_NOT_CONNECTED',
+          data: message,
+        }, { status: 422 });
+      }
+
       // Detecta erro específico de API desativada
       if (errorMessage.includes('API access deactivated') || errorMessage.includes('developer registration')) {
         return NextResponse.json({
@@ -297,7 +318,7 @@ export async function POST(request: NextRequest, { params }: Params) {
           data: message,
         }, { status: 403 });
       }
-      
+
       // Detecta erro de objeto não existe (phoneNumberId inválido)
       if (errorMessage.includes('does not exist') || errorMessage.includes('missing permissions')) {
         return NextResponse.json({

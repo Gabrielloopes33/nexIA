@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth/server';
 import { upsertWhatsAppInstance, CreateInstanceInput } from '@/lib/db/whatsapp';
 import {
   exchangeCodeForTokenEmbedded,
@@ -178,9 +179,12 @@ async function buildInstanceData(
         displayPhoneNumber = phoneInfo.display_phone_number || null;
         verifiedName = phoneInfo.verified_name || verifiedName;
         qualityRating = mapQualityRating(phoneInfo.quality_rating);
+        console.log(`[EmbeddedSignup][org=${organizationId}] Stage: asset_validation wabaId=${wabaId} phoneNumberId=${phoneNumberId} displayPhone=${displayPhoneNumber} qualityRating=${qualityRating}`);
+      } else {
+        console.warn(`[EmbeddedSignup][org=${organizationId}] Stage: asset_validation NO phone numbers found for wabaId=${wabaId}`);
       }
     } catch (error) {
-      console.warn("[EmbeddedSignup] Could not fetch phone numbers:", error);
+      console.error(`[EmbeddedSignup][org=${organizationId}] Stage: asset_validation FAILED for wabaId=${wabaId}:`, error);
     }
   }
 
@@ -258,13 +262,14 @@ async function handleEmbeddedSignupComplete(
 ): Promise<NextResponse> {
   const { code, organizationId, wabaId, phoneNumberId, agentId, unitId } = data;
 
-  console.log("[EmbeddedSignup] Processing embedded_signup_complete");
-  console.log(`[EmbeddedSignup] organizationId=${organizationId}, wabaId=${wabaId}, phoneNumberId=${phoneNumberId}`);
+  const correlationLog = `[EmbeddedSignup][org=${organizationId}][waba=${wabaId ?? "?"}][phone=${phoneNumberId ?? "?"}]`;
+  console.log(`${correlationLog} Processing embedded_signup_complete`);
 
   // 1. Trocar código por access_token (SEM redirect_uri para Tech Provider)
+  console.log(`${correlationLog} Stage: token_exchange`);
   const exchange: ExchangeResult = await exchangeCodeForTokenEmbedded(code);
   if (!exchange.ok) {
-    console.error("[EmbeddedSignup] Token exchange failed:", exchange.details);
+    console.error(`${correlationLog} Stage: token_exchange FAILED:`, exchange.details);
     return NextResponse.json(
       { 
         success: false, 
@@ -300,7 +305,7 @@ async function handleEmbeddedSignupComplete(
     data: instanceData,
   });
 
-  console.log("[EmbeddedSignup] Instance upserted successfully:", instance.id);
+  console.log(`${correlationLog} Stage: upsert instanceId=${instance.id} status=${instanceData.status} wabaId=${instanceData.wabaId ?? "?"} phoneNumberId=${instanceData.phoneNumberId ?? "?"}`);
 
   return NextResponse.json({
     success: true,
@@ -437,6 +442,17 @@ export async function POST(
   console.log("[EmbeddedSignup] Request received");
 
   try {
+    // Authenticate request and get organizationId from session
+    const user = await requireAuth(request);
+    if (user instanceof NextResponse) return user;
+
+    if (!user.organizationId) {
+      return NextResponse.json(
+        { success: false, error: "Usuário sem organização na sessão. Faça login novamente." },
+        { status: 401 }
+      );
+    }
+
     // Parse request body
     let body: unknown;
     try {
@@ -446,6 +462,11 @@ export async function POST(
         { success: false, error: "Invalid JSON body" },
         { status: 400 }
       );
+    }
+
+    // Inject organizationId from authenticated session (always trust session, not body)
+    if (typeof body === "object" && body !== null) {
+      (body as Record<string, unknown>).organizationId = user.organizationId;
     }
 
     // Validar request

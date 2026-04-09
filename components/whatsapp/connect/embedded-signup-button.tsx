@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import { Facebook, Loader2, AlertCircle, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -357,14 +357,14 @@ export function EmbeddedSignupButton({
   }, [result, connect, onSuccess, onError])
 
   // Watch for success state
-  useCallback(() => {
+  useEffect(() => {
     if (status === "success") {
       handleSuccess()
     }
   }, [status, handleSuccess])
 
   // Watch for error state
-  useCallback(() => {
+  useEffect(() => {
     if (status === "error" && error) {
       onError?.(error)
     }

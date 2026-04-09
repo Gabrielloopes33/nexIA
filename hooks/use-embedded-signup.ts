@@ -479,7 +479,7 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ action: "embedded_signup_complete", code }),
       })
 
       const data = await response.json()
@@ -523,7 +523,7 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ action: "exchange_code", code }),
       })
 
       const data = await response.json()
