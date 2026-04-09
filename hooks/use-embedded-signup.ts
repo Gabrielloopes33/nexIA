@@ -176,7 +176,8 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
 
       // Setup init callback
       window.fbAsyncInit = () => {
-        console.log("[EmbeddedSignup] Facebook SDK initialized")
+        console.log("[EmbeddedSignup] Facebook SDK script loaded, fbAsyncInit called")
+        // SDK loaded but not initialized yet - will be initialized in initializeFacebookSDK
         sdkLoadedRef.current = true
         resolve()
       }
@@ -189,7 +190,8 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
       script.defer = true
       script.crossOrigin = "anonymous"
       
-      script.onerror = () => {
+      script.onerror = (error) => {
+        console.error("[EmbeddedSignup] Failed to load Facebook SDK script:", error)
         reject(new Error("Falha ao carregar Facebook SDK"))
       }
 
@@ -209,19 +211,34 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
    */
   const initializeFacebookSDK = useCallback((appConfig: EmbeddedSignupConfig): void => {
     if (!window.FB) {
-      throw new Error("Facebook SDK não está carregado")
+      throw new Error("Facebook SDK não está carregado - window.FB is undefined")
     }
 
     console.log("[EmbeddedSignup] Initializing Facebook SDK with appId:", appConfig.appId)
+    console.log("[EmbeddedSignup] API Version:", appConfig.apiVersion)
 
-    window.FB.init({
-      appId: appConfig.appId,
-      cookie: true,
-      xfbml: true,
-      version: appConfig.apiVersion,
-    })
+    try {
+      window.FB.init({
+        appId: appConfig.appId,
+        cookie: true,
+        xfbml: true,
+        version: appConfig.apiVersion,
+      })
 
-    console.log("[EmbeddedSignup] Facebook SDK initialized successfully")
+      console.log("[EmbeddedSignup] Facebook SDK initialized successfully")
+      console.log("[EmbeddedSignup] window.FB object keys:", Object.keys(window.FB))
+      
+      // Check login status
+      window.FB.getLoginStatus((response) => {
+        console.log("[EmbeddedSignup] FB.getLoginStatus response:", {
+          status: response.status,
+          authResponse: response.authResponse ? "present" : "null",
+        })
+      })
+    } catch (error) {
+      console.error("[EmbeddedSignup] Error initializing Facebook SDK:", error)
+      throw error
+    }
   }, [])
 
   /**
@@ -243,7 +260,16 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
       console.log("[EmbeddedSignup] Fetching configuration...")
       const appConfig = await fetchConfig()
       setConfig(appConfig)
-      console.log("[EmbeddedSignup] Configuration loaded:", appConfig)
+      console.log("[EmbeddedSignup] Configuration loaded:", {
+        appId: appConfig.appId ? `${appConfig.appId.substring(0, 6)}...` : "EMPTY",
+        configId: appConfig.configId ? `${appConfig.configId.substring(0, 8)}...` : "EMPTY",
+        apiVersion: appConfig.apiVersion,
+      })
+
+      // Validate App ID format
+      if (!appConfig.appId || !/^[0-9]+$/.test(appConfig.appId)) {
+        throw new Error(`Invalid App ID: "${appConfig.appId}". App ID should be a numeric string.`)
+      }
 
       // Step 2: Load Facebook SDK
       setStatus("initializing")
@@ -252,7 +278,10 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
       // Step 3: Initialize SDK
       initializeFacebookSDK(appConfig)
 
-      // Step 4: Launch the signup flow
+      // Step 3.5: Small delay to ensure SDK is fully ready
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Step 4: Check if user is already logged in to Facebook
       setStatus("waiting_auth")
       console.log("[EmbeddedSignup] Launching Facebook Login...")
 
@@ -260,6 +289,20 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         throw new Error("Facebook SDK não está disponível")
       }
 
+      // Check login status first
+      const loginStatus = await new Promise<FacebookLoginResponse>((resolve) => {
+        window.FB!.getLoginStatus(resolve)
+      })
+      
+      console.log("[EmbeddedSignup] Initial login status:", loginStatus)
+      
+      if (loginStatus.status === "unknown") {
+        console.warn("[EmbeddedSignup] User is not logged in to Facebook")
+        // Still try to login - FB.login should prompt for login
+      }
+
+      console.log("[EmbeddedSignup] Calling FB.login with config_id:", appConfig.configId)
+      
       window.FB.login(
         (response: FacebookLoginResponse) => {
           console.log("[EmbeddedSignup] Facebook Login response:", response)
@@ -267,7 +310,14 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
           if (response.error) {
             const errorMsg = response.errorMessage || response.error
             console.error("[EmbeddedSignup] Facebook Login error:", errorMsg)
-            setError(`Erro no login do Facebook: ${errorMsg}`)
+            
+            // Check for specific error types
+            if (errorMsg.includes("indisponível") || errorMsg.includes("unavailable")) {
+              setError(`Login do Facebook indisponível. Verifique se você está logado no Facebook em outra aba. Se o problema persistir, o App ID (${appConfig.appId}) ou Configuration ID podem estar incorretos.`)
+            } else {
+              setError(`Erro no login do Facebook: ${errorMsg}`)
+            }
+            
             setStatus("error")
             toast.error("Erro na autenticação", {
               description: errorMsg,
@@ -290,7 +340,8 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
             })
             processingRef.current = false
           } else {
-            setError("Autenticação cancelada ou falhou")
+            console.log("[EmbeddedSignup] Unexpected response status:", response.status)
+            setError("Autenticação cancelada ou falhou. Verifique se você está logado no Facebook.")
             setStatus("error")
             processingRef.current = false
           }

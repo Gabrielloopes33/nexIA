@@ -88,11 +88,25 @@ export async function GET(
       apiVersion: FACEBOOK_CONFIG.apiVersion,
     }
 
+    // Log actual values for debugging (mask only part of sensitive data)
     console.log("[EmbeddedSignup Config] Returning configuration:", {
-      ...response,
-      configId: "***", // Mask sensitive data in logs
-      appId: "***",
+      configId: response.configId ? `${response.configId.substring(0, 8)}...` : "EMPTY",
+      appId: response.appId ? `${response.appId.substring(0, 6)}...` : "EMPTY",
+      apiVersion: response.apiVersion,
+      fullAppId: response.appId, // Temporarily log full app ID for debugging
     })
+
+    // Validate appId format (should be numeric)
+    if (!/^[0-9]+$/.test(response.appId)) {
+      console.error("[EmbeddedSignup Config] Invalid App ID format:", response.appId)
+      return NextResponse.json(
+        {
+          error: "Configuration error",
+          details: "Invalid App ID format. App ID should be numeric.",
+        },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(response, { status: 200 })
   } catch (error) {
