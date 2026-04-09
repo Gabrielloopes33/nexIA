@@ -299,47 +299,15 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
       if (loginStatus.status === "unknown") {
         console.warn("[EmbeddedSignup] User is not logged in to Facebook")
         
-        // Open Facebook login in a new tab first
-        toast.info("Redirecionando para login do Facebook...", {
-          description: "Você precisa estar logado no Facebook para continuar.",
-          duration: 5000,
+        // Show clear instructions to user
+        toast.error("Você não está logado no Facebook", {
+          description: "Por favor, faça login no Facebook em outra aba e tente novamente.",
+          duration: 10000,
         })
         
-        // Open Facebook in a popup to trigger login
-        const fbLoginWindow = window.open(
-          "https://www.facebook.com/login.php",
-          "facebookLogin",
-          "width=600,height=600,top=100,left=100"
-        )
-        
-        if (!fbLoginWindow) {
-          setError("Popup bloqueado! Por favor, permita popups para este site ou faça login no Facebook manualmente em outra aba.")
-          setStatus("error")
-          processingRef.current = false
-          return
-        }
-        
-        // Wait for user to potentially login, then try again
-        setTimeout(() => {
-          if (fbLoginWindow && !fbLoginWindow.closed) {
-            fbLoginWindow.close()
-          }
-          
-          // Try to check login status again
-          window.FB!.getLoginStatus((newStatus) => {
-            console.log("[EmbeddedSignup] Login status after popup:", newStatus)
-            
-            if (newStatus.status === "unknown") {
-              setError("Você não está logado no Facebook. Por favor:\n1. Abra facebook.com em outra aba\n2. Faça login na sua conta\n3. Volte aqui e tente novamente")
-              setStatus("error")
-              processingRef.current = false
-            } else {
-              // User is now logged in, proceed with FB.login
-              proceedWithFBLogin(appConfig)
-            }
-          })
-        }, 10000) // Wait 10 seconds for user to login
-        
+        setError("Você não está logado no Facebook.\n\nPor favor:\n1. Abra facebook.com em outra aba do navegador\n2. Faça login na sua conta do Facebook\n3. Volte aqui e clique em 'Tentar novamente'")
+        setStatus("error")
+        processingRef.current = false
         return
       }
 
