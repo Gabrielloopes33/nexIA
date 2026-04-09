@@ -10,13 +10,23 @@ import { prisma } from '@/lib/prisma'
 
 // ─── Helpers Calendly API ─────────────────────────────────────────────────────
 
+class CalendlyApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+    this.name = 'CalendlyApiError'
+  }
+}
+
 async function calendlyGet(path: string, token: string) {
   const res = await fetch(`https://api.calendly.com${path}`, {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
   })
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Calendly API ${path}: ${res.status} ${err}`)
+    throw new CalendlyApiError(res.status, `Calendly API ${path}: ${res.status} ${err}`)
   }
   return res.json()
 }
@@ -29,8 +39,13 @@ async function calendlyDelete(path: string, token: string) {
   // 204 No Content é sucesso
   if (!res.ok && res.status !== 204) {
     const err = await res.text()
-    throw new Error(`Calendly DELETE ${path}: ${res.status} ${err}`)
+    throw new CalendlyApiError(res.status, `Calendly DELETE ${path}: ${res.status} ${err}`)
   }
+}
+
+function toCalendlyPath(uriOrPath: string): string {
+  if (uriOrPath.startsWith('/')) return uriOrPath
+  return new URL(uriOrPath).pathname
 }
 
 // ─── GET ──────────────────────────────────────────────────────────────────────
@@ -45,22 +60,58 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const integration = await prisma.calendlyIntegration.findUnique({
     where: { organizationId },
-    select: {
-      id: true,
-      organizationId: true,
-      calendlyUserName: true,
-      calendlyUserEmail: true,
-      webhookSubscriptionUri: true,
-      status: true,
-      totalBookings: true,
-      lastBookingAt: true,
-      createdAt: true,
-      updatedAt: true,
+  })
+
+  if (!integration) {
+    return NextResponse.json({ success: true, data: null })
+  }
+
+  let resolvedStatus = integration.status
+
+  // Reconcilia status local com o estado real no Calendly
+  if (integration.accessToken && integration.webhookSubscriptionUri) {
+    try {
+      const webhookPath = toCalendlyPath(integration.webhookSubscriptionUri)
+      await calendlyGet(webhookPath, integration.accessToken)
+      resolvedStatus = 'ACTIVE'
+    } catch (error) {
+      if (error instanceof CalendlyApiError) {
+        if ([401, 403, 404].includes(error.status)) {
+          resolvedStatus = 'DISCONNECTED'
+        } else {
+          resolvedStatus = 'ERROR'
+        }
+      } else {
+        resolvedStatus = 'ERROR'
+      }
+    }
+  } else if (integration.status === 'ACTIVE') {
+    resolvedStatus = 'DISCONNECTED'
+  }
+
+  if (resolvedStatus !== integration.status) {
+    await prisma.calendlyIntegration.update({
+      where: { organizationId },
+      data: { status: resolvedStatus },
+    })
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      id: integration.id,
+      organizationId: integration.organizationId,
+      calendlyUserName: integration.calendlyUserName,
+      calendlyUserEmail: integration.calendlyUserEmail,
+      webhookSubscriptionUri: integration.webhookSubscriptionUri,
+      status: resolvedStatus,
+      totalBookings: integration.totalBookings,
+      lastBookingAt: integration.lastBookingAt,
+      createdAt: integration.createdAt,
+      updatedAt: integration.updatedAt,
       // Não retorna accessToken nem signingKey por segurança
     },
   })
-
-  return NextResponse.json({ success: true, data: integration })
 }
 
 // ─── POST — conectar / reconectar ─────────────────────────────────────────────
@@ -119,7 +170,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
       body: JSON.stringify({
         url: webhookUrl,
-        events: ['invitee.created', 'invitee.canceled'],
+        events: [
+          'invitee.created',
+          'invitee.canceled',
+          'scheduled_event.created',
+          'scheduled_event.canceled',
+          'invitee_no_show.created',
+          'invitee_no_show.deleted',
+        ],
         organization: orgUri,
         scope: 'organization',
       }),

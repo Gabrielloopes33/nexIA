@@ -17,8 +17,16 @@ import {
 } from '@/lib/whatsapp/webhook-handler';
 
 // Environment variables
-const WEBHOOK_VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || '';
-const APP_SECRET = process.env.WHATSAPP_APP_SECRET || '';
+const WEBHOOK_VERIFY_TOKEN =
+  process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ||
+  process.env.META_WEBHOOK_VERIFY_TOKEN ||
+  '';
+
+const APP_SECRET =
+  process.env.WHATSAPP_APP_SECRET ||
+  process.env.META_APP_SECRET ||
+  process.env.FACEBOOK_APP_SECRET ||
+  '';
 
 /**
  * GET /api/whatsapp/webhooks

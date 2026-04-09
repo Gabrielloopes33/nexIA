@@ -18,8 +18,15 @@ const GRAPH_API_VERSION = process.env.FACEBOOK_API_VERSION || "v25.0";
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 const FACEBOOK_CONFIG = {
-  appId: process.env.FACEBOOK_APP_ID || "",
-  appSecret: process.env.FACEBOOK_APP_SECRET || "",
+  appId:
+    process.env.FACEBOOK_APP_ID ||
+    process.env.META_APP_ID ||
+    process.env.VITE_META_APP_ID ||
+    "",
+  appSecret:
+    process.env.FACEBOOK_APP_SECRET ||
+    process.env.META_APP_SECRET ||
+    "",
 };
 
 // ============================================

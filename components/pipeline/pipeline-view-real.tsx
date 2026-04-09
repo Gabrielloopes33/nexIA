@@ -1854,15 +1854,14 @@ export function PipelineViewReal({ onNewPipeline }: PipelineViewRealProps) {
         automation={editingAutomation}
         pipelines={(pipelines || []).map(p => ({
           ...p,
-          stages: stages.filter(s => s.pipelineId === p.id).map(s => ({
+          stages: Array.isArray(p.stages) ? p.stages.map(s => ({
             id: s.id,
             name: s.name,
-            color: s.color,
-            position: s.position,
-            probability: s.probability,
-            isDefault: s.isDefault,
-            isClosed: s.isClosed,
-          }))
+            color: s.color || '#6366f1',
+            order: s.position,
+            probability: s.probability ?? 0,
+            isClosed: s.isClosed ?? false,
+          })) : []
         }))}
         isSaving={false}
       />

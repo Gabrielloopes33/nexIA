@@ -76,7 +76,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             },
           },
           targetPipeline: {
-            select: { id: true, name: true, color: true },
+            select: { id: true, name: true },
           },
           targetStage: {
             select: { id: true, name: true, color: true },

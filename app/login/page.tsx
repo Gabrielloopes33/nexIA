@@ -31,16 +31,12 @@ function AuroraBackground({ children }: { children: React.ReactNode }) {
   )
 }
 
-// Toggle entre Login e Sign Up
-type AuthMode = 'login' | 'signup'
-
 function AuthCard() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const fromParam = searchParams.get('from')
   const from = fromParam && fromParam !== '/' ? fromParam : '/dashboard'
   
-  const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -98,48 +94,8 @@ function AuthCard() {
       return
     }
 
-    if (mode === 'signup') {
-      // Criar conta via API
-      try {
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name: email.split('@')[0] }),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          setError(getErrorMessage(data, response.status))
-          setLoading(false)
-          return
-        }
-
-        // Login automático após signup
-        const loginResponse = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        })
-
-        if (!loginResponse.ok) {
-          const loginData = await loginResponse.json().catch(() => ({}))
-          console.log('[Login] Erro no login automático:', loginResponse.status, loginData)
-          setError('Conta criada! Faça login para continuar.')
-          setMode('login')
-          setLoading(false)
-          return
-        }
-
-        router.push(from)
-        router.refresh()
-      } catch (error) {
-        setError('Erro de conexão. Verifique sua internet.')
-        setLoading(false)
-      }
-    } else {
-      // Login via API
-      try {
+    // Login via API
+    try {
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -156,16 +112,10 @@ function AuthCard() {
 
         router.push(from)
         router.refresh()
-      } catch (error) {
-        setError('Erro de conexão. Verifique sua internet.')
-        setLoading(false)
-      }
+    } catch (error) {
+      setError('Erro de conexão. Verifique sua internet.')
+      setLoading(false)
     }
-  }
-
-  const toggleMode = () => {
-    setMode(mode === 'login' ? 'signup' : 'login')
-    setError('')
   }
 
   return (
@@ -188,12 +138,10 @@ function AuthCard() {
               />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {mode === 'login' ? 'Bem-vindo de volta' : 'Criar conta'}
+              Bem-vindo de volta
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              {mode === 'login' 
-                ? 'Entre com sua conta para continuar' 
-                : 'Preencha seus dados para começar'}
+              Entre com sua conta para continuar
             </p>
           </div>
 
@@ -233,7 +181,7 @@ function AuthCard() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  autoComplete='current-password'
                   className="w-full rounded-xl border border-gray-200 bg-gray-50/50 pl-10 pr-11 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-[#8B7DB8] focus:bg-white focus:ring-2 focus:ring-[#8B7DB8]/20"
                 />
                 <button
@@ -250,17 +198,15 @@ function AuthCard() {
               </div>
             </div>
 
-            {/* Esqueceu a senha (só no login) */}
-            {mode === 'login' && (
-              <div className="flex justify-end">
-                <Link
-                  href="/recuperar-senha"
-                  className="text-xs font-medium text-[#8B7DB8] hover:text-[#46347F] transition-colors"
-                >
-                  Esqueceu a senha?
-                </Link>
-              </div>
-            )}
+            {/* Esqueceu a senha */}
+            <div className="flex justify-end">
+              <Link
+                href="/recuperar-senha"
+                className="text-xs font-medium text-[#8B7DB8] hover:text-[#46347F] transition-colors"
+              >
+                Esqueceu a senha?
+              </Link>
+            </div>
 
             {/* Error */}
             {error && (
@@ -285,26 +231,14 @@ function AuthCard() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  {mode === 'login' ? 'Entrar' : 'Criar conta'}
+                  Entrar
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Toggle Mode */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              {mode === 'login' ? 'Ainda não tem conta?' : 'Já tem uma conta?'}{' '}
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="font-semibold text-[#8B7DB8] hover:text-[#46347F] transition-colors"
-              >
-                {mode === 'login' ? 'Criar conta' : 'Fazer login'}
-              </button>
-            </p>
-          </div>
+
         </div>
 
         {/* Footer */}

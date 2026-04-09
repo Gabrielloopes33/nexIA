@@ -42,33 +42,55 @@ export async function GET(request: NextRequest) {
         where.status = "ACTIVE";
       }
 
-      const [pipelines, totalCount, defaultPipeline] = await Promise.all([
-        tx.pipeline.findMany({
-          where,
-          orderBy: { createdAt: 'asc' },
-          include: {
-            stages: {
-              orderBy: { position: 'asc' },
-              select: {
-                id: true,
-                name: true,
-                position: true,
-                color: true,
-                probability: true,
-                isDefault: true,
-                isClosed: true,
-              },
-            },
-            product: {
-              select: { id: true, name: true, color: true },
-            },
-            _count: {
-              select: { 
-                deals: true,
-              },
+      // Busca pipelines
+      const pipelines = await tx.pipeline.findMany({
+        where,
+        orderBy: { createdAt: 'asc' },
+        include: {
+          product: {
+            select: { id: true, name: true, color: true },
+          },
+          _count: {
+            select: { 
+              deals: true,
             },
           },
-        }),
+        },
+      });
+
+      // Busca stages separadamente para contornar possíveis problemas de RLS
+      const pipelineIds = pipelines.map(p => p.id);
+      const stages = await tx.pipelineStage.findMany({
+        where: {
+          pipelineId: { in: pipelineIds },
+        },
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          position: true,
+          color: true,
+          probability: true,
+          isDefault: true,
+          isClosed: true,
+          pipelineId: true,
+        },
+      });
+
+      // Agrupa stages por pipeline
+      const stagesByPipeline = stages.reduce((acc, stage) => {
+        if (!acc[stage.pipelineId!]) acc[stage.pipelineId!] = [];
+        acc[stage.pipelineId!].push(stage);
+        return acc;
+      }, {} as Record<string, typeof stages>);
+
+      // Adiciona stages aos pipelines
+      const pipelinesWithStages = pipelines.map(p => ({
+        ...p,
+        stages: stagesByPipeline[p.id] || [],
+      }));
+
+      const [totalCount, defaultPipeline] = await Promise.all([
         tx.pipeline.count({ where }),
         tx.pipeline.findFirst({
           where: { organizationId, isDefault: true },
@@ -76,7 +98,7 @@ export async function GET(request: NextRequest) {
         }),
       ]);
 
-      return { pipelines, totalCount, defaultPipelineId: defaultPipeline?.id ?? null };
+      return { pipelines: pipelinesWithStages, totalCount, defaultPipelineId: defaultPipeline?.id ?? null };
     });
 
     // Transforma os dados para o formato esperado
@@ -101,7 +123,11 @@ export async function GET(request: NextRequest) {
       updatedAt: pipeline.updatedAt.toISOString(),
     }));
 
-    console.log('[Pipelines GET] Returning pipelines:', transformedPipelines.map(p => ({ id: p.id, name: p.name })));
+    console.log('[Pipelines GET] Returning pipelines:', transformedPipelines.map(p => ({ 
+      id: p.id, 
+      name: p.name, 
+      stagesCount: p.stages?.length || 0
+    })));
 
     return NextResponse.json({
       success: true,
