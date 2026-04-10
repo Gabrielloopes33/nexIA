@@ -23,6 +23,11 @@ export type CreateInstanceInput = {
   refreshToken?: string;
   tokenExpiresAt?: Date;
   settings?: Record<string, unknown>;
+  status?: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR' | 'SUSPENDED' | 'PENDING_SETUP';
+  qualityRating?: 'GREEN' | 'YELLOW' | 'RED' | 'UNKNOWN';
+  messagingTier?: number;
+  messagingLimit?: number;
+  connectedAt?: Date;
 };
 
 export type UpdateInstanceInput = Partial<Omit<CreateInstanceInput, 'organizationId'>> & {
@@ -120,13 +125,16 @@ export type CreateLogInput = {
  * Cria uma nova instância WhatsApp
  */
 export async function createInstance(data: CreateInstanceInput) {
+  const status = data.status || 'DISCONNECTED';
+
   return prisma.whatsAppInstance.create({
     data: {
       ...data,
-      status: 'DISCONNECTED',
-      qualityRating: 'UNKNOWN',
-      messagingTier: 1,
-      messagingLimit: 250,
+      status,
+      qualityRating: data.qualityRating || 'UNKNOWN',
+      messagingTier: data.messagingTier ?? 1,
+      messagingLimit: data.messagingLimit ?? 250,
+      connectedAt: data.connectedAt || (status === 'CONNECTED' ? new Date() : undefined),
     },
   });
 }

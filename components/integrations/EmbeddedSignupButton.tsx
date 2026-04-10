@@ -84,6 +84,7 @@ export function EmbeddedSignupButton({
   const [isLoading, setIsLoading] = useState(false);
   const [isSdkReady, setIsSdkReady] = useState(false);
   const [config, setConfig] = useState<FacebookConfig | null>(null);
+  const [signupAssets, setSignupAssets] = useState<{ wabaId?: string; phoneNumberId?: string }>({});
 
   /**
    * Load Facebook SDK configuration from backend
@@ -158,6 +159,33 @@ export function EmbeddedSignupButton({
     };
   }, [config, onError]);
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.origin.includes("facebook.com") || typeof event.data !== "string") {
+        return;
+      }
+
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload?.type !== "WA_EMBEDDED_SIGNUP") {
+          return;
+        }
+
+        if (payload?.event === "FINISH" || payload?.event === "FINISH_ONLY_WABA") {
+          setSignupAssets({
+            wabaId: payload?.data?.waba_id || payload?.data?.wabaId,
+            phoneNumberId: payload?.data?.phone_number_id || payload?.data?.phoneNumberId,
+          });
+        }
+      } catch {
+        // Ignore non-JSON messages
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   /**
    * Handle the Facebook login callback
    */
@@ -193,8 +221,11 @@ export function EmbeddedSignupButton({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
+              action: "embedded_signup_complete",
               code: response.authResponse.code,
               organizationId,
+              wabaId: signupAssets.wabaId,
+              phoneNumberId: signupAssets.phoneNumberId,
             }),
           }
         );
@@ -224,7 +255,7 @@ export function EmbeddedSignupButton({
         }
       }
     },
-    [organizationId, onSuccess, onError]
+    [organizationId, onSuccess, onError, signupAssets.phoneNumberId, signupAssets.wabaId]
   );
 
   /**

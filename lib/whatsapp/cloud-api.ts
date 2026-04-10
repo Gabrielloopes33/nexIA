@@ -4,7 +4,7 @@
  * API Version: v18.0
  */
 
-const API_VERSION = 'v22.0';
+const API_VERSION = 'v21.0';
 const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 
 // ============================================================================

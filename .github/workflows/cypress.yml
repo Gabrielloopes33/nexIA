@@ -1,0 +1,87 @@
+name: Cypress Tests - Cloud
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  # Permite rodar manualmente pelo GitHub Actions
+  workflow_dispatch:
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-22.04
+    
+    # Estratégia de matrix para testar em diferentes viewports
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, edge]
+    
+    steps:
+      # Checkout do código
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Configuração do Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      # Instalação do pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      # Instalação de dependências
+      - name: Install dependencies
+        run: pnpm install
+
+      # Build da aplicação (necessário para Next.js)
+      - name: Build application
+        run: pnpm build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+
+      # Execução dos testes Cypress com gravação no Cloud
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          browser: ${{ matrix.browser }}
+          record: true
+          parallel: true
+          build: pnpm build
+          start: pnpm start
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 120
+        env:
+          # Chave de gravação do Cypress Cloud (adicione nos Secrets do GitHub)
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          # ID do projeto (já configurado no cypress.config.ts)
+          CYPRESS_PROJECT_ID: 2y1o7b
+          # Variáveis de ambiente para os testes
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          # Credenciais de teste (opcional, para testes de login)
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
+  # Job para verificar status dos testes
+  test-status:
+    runs-on: ubuntu-22.04
+    needs: cypress-run
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.cypress-run.result }}" == "success" ]; then
+            echo "✅ Todos os testes passaram!"
+            exit 0
+          else
+            echo "❌ Alguns testes falharam"
+            exit 1
+          fi

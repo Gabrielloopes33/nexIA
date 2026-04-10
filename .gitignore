@@ -42,6 +42,12 @@ docs/
 # E2E tests
 e2e/dashboard/
 
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress.env.json
+
 # Database migrations (local/dev only)
 migrations/
 

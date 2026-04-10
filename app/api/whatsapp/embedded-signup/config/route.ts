@@ -26,7 +26,7 @@ export interface EmbeddedSignupConfigResponse {
 const FACEBOOK_CONFIG = {
   configId: process.env.FACEBOOK_EMBEDDED_SIGNUP_CONFIG_ID || process.env.VITE_META_CONFIG_ID || "",
   appId: process.env.FACEBOOK_APP_ID || process.env.VITE_META_APP_ID || process.env.META_APP_ID || "",
-  apiVersion: process.env.FACEBOOK_API_VERSION || "v25.0",
+  apiVersion: process.env.FACEBOOK_API_VERSION || "v21.0",
 }
 
 /**
@@ -69,7 +69,7 @@ export async function GET(
         return NextResponse.json({
           configId: "mock_config_id_for_development",
           appId: "mock_app_id_for_development",
-          apiVersion: "v25.0",
+          apiVersion: "v21.0",
         }, { status: 200 })
       }
 

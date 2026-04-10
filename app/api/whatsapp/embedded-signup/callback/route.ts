@@ -98,7 +98,15 @@ function validateRequestBody(body: unknown): { valid: boolean; data?: CallbackRe
     return { valid: false, error: "Invalid request body" };
   }
 
-  const { action } = body as Record<string, unknown>;
+  const bodyRecord = body as Record<string, unknown>;
+  const inferredAction =
+    typeof bodyRecord.action === "string"
+      ? bodyRecord.action
+      : (typeof bodyRecord.code === "string" && bodyRecord.code.trim())
+        ? "embedded_signup_complete"
+        : undefined;
+
+  const action = inferredAction;
 
   if (typeof action !== "string") {
     return { valid: false, error: "Missing or invalid action" };
@@ -172,6 +180,11 @@ async function buildInstanceData(
   if (wabaId) {
     try {
       const phoneNumbers = await fetchPhoneNumbers(wabaId, accessToken);
+
+      if (providedPhoneNumberId && !phoneNumbers.some((phone) => phone.id === providedPhoneNumberId)) {
+        throw new Error("Provided phone_number_id does not belong to the informed waba_id");
+      }
+
       const phoneInfo = phoneNumbers[0];
 
       if (phoneInfo) {

@@ -6,6 +6,7 @@ import {
   AuthError, 
   createAuthErrorResponse 
 } from '@/lib/auth/helpers';
+import { getAuthSession } from '@/lib/auth/server';
 import { 
   withPermission,
   permissionDeniedResponse,
@@ -115,6 +116,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const organizationId = await getOrganizationId();
+    const session = getAuthSession(request);
+    const userId = session?.userId;
     const { id } = await params;
     const body = await request.json();
     const { stageId, contactId, status, title, description, value, priority, expectedCloseDate, metadata, productId, pipelineId } = body;
@@ -214,9 +217,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       await prisma.dealActivity.create({
         data: {
           dealId: id,
+          user_id: userId || 'system',
           type: ActivityType.STAGE_CHANGE,
-          title: "Mudança de estágio",
-          content: `Movido de '${currentDeal.stage.name}' para '${newStage?.name}'`,
+          description: `Movido de '${currentDeal.stage.name}' para '${newStage?.name}'`,
           metadata: {
             fromStageId: currentDeal.stageId,
             toStageId: stageId,
@@ -244,9 +247,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         await prisma.dealActivity.create({
           data: {
             dealId: id,
+            user_id: userId || 'system',
             type: ActivityType.SYSTEM,
-            title: "Deal ganho",
-            content: "Deal marcado como GANHO",
+            description: "Deal marcado como GANHO",
             metadata: { status: "WON" },
           },
         });
@@ -258,9 +261,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         await prisma.dealActivity.create({
           data: {
             dealId: id,
+            user_id: userId || 'system',
             type: ActivityType.SYSTEM,
-            title: "Deal perdido",
-            content: "Deal marcado como PERDIDO",
+            description: "Deal marcado como PERDIDO",
             metadata: { status: "LOST" },
           },
         });

@@ -52,6 +52,11 @@ export interface UseEmbeddedSignupReturn {
   reset: () => void
 }
 
+interface EmbeddedSignupAssets {
+  wabaId?: string
+  phoneNumberId?: string
+}
+
 // ============================================
 // Facebook SDK Types
 // ============================================
@@ -127,6 +132,7 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
   const sdkLoadedRef = useRef<boolean>(false)
   const processingRef = useRef<boolean>(false)
   const messageHandlerRef = useRef<((event: MessageEvent) => void) | null>(null)
+  const signupAssetsRef = useRef<EmbeddedSignupAssets>({})
 
   /**
    * Fetch configuration from backend
@@ -274,6 +280,14 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
           switch (data.event) {
             case "FINISH":
             case "FINISH_ONLY_WABA":
+              signupAssetsRef.current = {
+                wabaId: data?.data?.waba_id || data?.data?.wabaId || data?.waba_id || data?.wabaId,
+                phoneNumberId:
+                  data?.data?.phone_number_id ||
+                  data?.data?.phoneNumberId ||
+                  data?.phone_number_id ||
+                  data?.phoneNumberId,
+              }
               console.log("[EmbeddedSignup] WhatsApp signup completed:", data.data)
               toast.success("WhatsApp configurado com sucesso!")
               break
@@ -479,7 +493,12 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "embedded_signup_complete", code }),
+        body: JSON.stringify({
+          action: "embedded_signup_complete",
+          code,
+          wabaId: signupAssetsRef.current.wabaId,
+          phoneNumberId: signupAssetsRef.current.phoneNumberId,
+        }),
       })
 
       const data = await response.json()
@@ -551,6 +570,7 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
     setError(null)
     setResult(null)
     processingRef.current = false
+    signupAssetsRef.current = {}
   }, [])
 
   /**

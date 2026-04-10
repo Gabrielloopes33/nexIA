@@ -107,6 +107,8 @@ model WhatsAppInstance {
 
   webhookLogs         MetaWebhookLog[]
 
+  @@unique([organizationId, phoneNumberId], map: "whatsapp_instance_org_phone_id_unique")
+  @@unique([organizationId, wabaId], map: "whatsapp_instance_org_waba_id_unique")
   @@map("whatsapp_cloud_instances")
 }
 
