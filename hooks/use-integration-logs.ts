@@ -4,7 +4,7 @@ import useSWR, { mutate as globalMutate } from 'swr'
 import { useCallback } from 'react'
 
 // Types
-export type IntegrationType = 'WHATSAPP' | 'INSTAGRAM' | 'N8N' | 'MAKE' | 'ZAPIER' | 'WEBHOOK' | 'API'
+export type IntegrationType = 'WHATSAPP' | 'INSTAGRAM' | 'CALENDLY' | 'TYPEBOT' | 'LINKEDIN' | 'N8N' | 'MAKE' | 'ZAPIER' | 'WEBHOOK' | 'API'
 export type IntegrationActivityType = 
   | 'AUTH_CONNECTED' 
   | 'AUTH_DISCONNECTED' 
@@ -330,11 +330,47 @@ export function getRelativeTime(dateString: string): string {
 export const INTEGRATION_TYPE_LABELS: Record<IntegrationType, string> = {
   WHATSAPP: 'WhatsApp',
   INSTAGRAM: 'Instagram',
+  CALENDLY: 'Calendly',
+  TYPEBOT: 'Typebot',
+  LINKEDIN: 'LinkedIn',
   N8N: 'n8n',
   MAKE: 'Make',
   ZAPIER: 'Zapier',
   WEBHOOK: 'Webhook',
   API: 'API',
+}
+
+// Categorias de integração
+export type IntegrationCategory = 'meta' | 'other'
+
+// Mapeamento de tipos para categorias
+export const INTEGRATION_CATEGORIES: Record<IntegrationType, IntegrationCategory> = {
+  WHATSAPP: 'meta',
+  INSTAGRAM: 'meta',
+  CALENDLY: 'other',
+  TYPEBOT: 'other',
+  LINKEDIN: 'other',
+  N8N: 'other',
+  MAKE: 'other',
+  ZAPIER: 'other',
+  WEBHOOK: 'other',
+  API: 'other',
+}
+
+// Opções de categoria para filtro
+export const CATEGORY_OPTIONS = [
+  { value: 'all', label: 'Todas as Integrações' },
+  { value: 'meta', label: 'API Oficial Meta (WhatsApp, Instagram)' },
+  { value: 'other', label: 'Outras Integrações' },
+] as const
+
+// Função para filtrar logs por categoria
+export function filterLogsByCategory(
+  logs: IntegrationActivityLog[],
+  category: IntegrationCategory | 'all'
+): IntegrationActivityLog[] {
+  if (category === 'all') return logs
+  return logs.filter(log => INTEGRATION_CATEGORIES[log.integrationType] === category)
 }
 
 // Labels para tipos de atividade
@@ -370,3 +406,32 @@ export const STATUS_COLORS: Record<IntegrationActivityStatus, string> = {
   FAILED: 'text-red-600 bg-red-50',
   WARNING: 'text-orange-600 bg-orange-50',
 }
+
+// Badge styles para status (para uso com Badge component)
+export const STATUS_BADGE_STYLES: Record<IntegrationActivityStatus, string> = {
+  SUCCESS: 'bg-green-100 text-green-700 border-green-200 hover:bg-green-100',
+  PENDING: 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
+  FAILED: 'bg-red-100 text-red-700 border-red-200 hover:bg-red-100',
+  WARNING: 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100',
+}
+
+// Opções de status para filtro
+export const STATUS_OPTIONS = [
+  { value: 'all', label: 'Todos' },
+  { value: 'SUCCESS', label: 'Sucesso' },
+  { value: 'PENDING', label: 'Pendente' },
+  { value: 'FAILED', label: 'Falhou' },
+  { value: 'WARNING', label: 'Aviso' },
+] as const
+
+// Opções de tipo de integração para filtro
+export const INTEGRATION_TYPE_OPTIONS = [
+  { value: 'all', label: 'Todas' },
+  { value: 'WHATSAPP', label: 'WhatsApp' },
+  { value: 'INSTAGRAM', label: 'Instagram' },
+  { value: 'CALENDLY', label: 'Calendly' },
+  { value: 'TYPEBOT', label: 'Typebot' },
+  { value: 'LINKEDIN', label: 'LinkedIn' },
+  { value: 'N8N', label: 'n8n' },
+  { value: 'WEBHOOK', label: 'Webhook' },
+] as const

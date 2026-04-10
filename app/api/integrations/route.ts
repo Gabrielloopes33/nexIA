@@ -128,9 +128,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
 
-type IntegrationType = 'whatsapp' | 'instagram' | 'linkedin' | 'calendly' | 'n8n' | 'webhook' | 'api';
+type IntegrationType = 'whatsapp' | 'instagram' | 'linkedin' | 'calendly' | 'typebot' | 'n8n' | 'webhook' | 'api';
 
 interface IntegrationItem {
   id: string;
@@ -158,6 +159,24 @@ interface IntegrationItem {
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
+    const prismaAny = prisma as unknown as {
+      instagramInstance?: {
+        findMany: (args: { where: Record<string, unknown>; orderBy: { updatedAt: 'desc' } }) => Promise<Array<{
+          id: string;
+          name: string;
+          status: string;
+          username: string | null;
+          profilePictureUrl: string | null;
+          connectedAt: Date | null;
+          lastSyncAt: Date | null;
+          organizationId: string;
+          createdAt: Date;
+          updatedAt: Date;
+          settings: unknown;
+        }>>;
+      };
+    };
+
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get('organizationId');
     const type = searchParams.get('type') as IntegrationType | null;
@@ -192,25 +211,34 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const calendlyWhere: Record<string, unknown> = { organizationId };
     if (status) calendlyWhere.status = status;
 
+    // Buscar Typebot
+    const typebotWhere: Record<string, unknown> = { organizationId };
+    if (status) typebotWhere.status = status;
+
     // Buscar em paralelo
-    const [whatsappInstances, instagramInstances, linkedInIntegration, calendlyIntegration] = await Promise.all([
+    const [whatsappInstances, instagramInstances, linkedInIntegration, calendlyIntegration, typebotIntegration] = await Promise.all([
       (!type || type === 'whatsapp')
-        ? prisma.whatsappInstance.findMany({
+        ? prisma.whatsAppInstance.findMany({
             where: whatsappWhere,
             orderBy: { updatedAt: 'desc' },
           })
         : [],
       (!type || type === 'instagram')
-        ? prisma.instagramInstance.findMany({
-            where: instagramWhere,
-            orderBy: { updatedAt: 'desc' },
-          })
+        ? (prismaAny.instagramInstance
+            ? prismaAny.instagramInstance.findMany({
+                where: instagramWhere,
+                orderBy: { updatedAt: 'desc' },
+              })
+            : Promise.resolve([]))
         : [],
       (!type || type === 'linkedin')
         ? prisma.linkedInIntegration.findFirst({ where: linkedInWhere })
         : null,
       (!type || type === 'calendly')
         ? prisma.calendlyIntegration.findFirst({ where: calendlyWhere })
+        : null,
+      (!type || type === 'typebot')
+        ? prisma.typebotIntegration.findFirst({ where: typebotWhere })
         : null,
     ]);
 
@@ -245,6 +273,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         settings: {
           adAccountId: linkedInIntegration.adAccountId,
           totalLeads: linkedInIntegration.totalLeads,
+        },
+      } satisfies IntegrationItem] : []),
+      ...(typebotIntegration ? [{
+        id: typebotIntegration.id,
+        type: 'typebot' as IntegrationType,
+        name: 'Typebot',
+        status: typebotIntegration.status === 'ACTIVE' ? 'connected' : 'not_connected',
+        connectedAt: typebotIntegration.createdAt,
+        lastSyncAt: typebotIntegration.lastResponseAt ?? null,
+        organizationId: typebotIntegration.organizationId,
+        createdAt: typebotIntegration.createdAt,
+        updatedAt: typebotIntegration.updatedAt,
+        settings: {
+          totalResponses: typebotIntegration.totalResponses,
+          selectedFlowIds: typebotIntegration.selectedFlowIds,
         },
       } satisfies IntegrationItem] : []),
       ...whatsappInstances.map((w): IntegrationItem => ({
@@ -340,7 +383,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         );
       }
 
-      const instance = await prisma.whatsappInstance.create({
+      const instance = await prisma.whatsAppInstance.create({
         data: {
           organizationId,
           name: name.trim(),
@@ -363,6 +406,37 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         settings: instance.settings as Record<string, unknown> || {},
       };
     } else if (type === 'instagram') {
+      const prismaAny = prisma as unknown as {
+        instagramInstance?: {
+          create: (args: {
+            data: {
+              organizationId: string;
+              name: string;
+              pageId: string;
+              instagramBusinessAccountId: string;
+              status: string;
+            };
+          }) => Promise<{
+            id: string;
+            name: string;
+            status: string;
+            connectedAt: Date | null;
+            lastSyncAt: Date | null;
+            organizationId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            settings: unknown;
+          }>;
+        };
+      };
+
+      if (!prismaAny.instagramInstance) {
+        return NextResponse.json(
+          { success: false, error: 'Instagram integration is not available in the current database schema' },
+          { status: 501 }
+        );
+      }
+
       if (!pageId || !instagramBusinessAccountId) {
         return NextResponse.json(
           { success: false, error: 'pageId and instagramBusinessAccountId are required for Instagram integrations' },
@@ -370,7 +444,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         );
       }
 
-      const instance = await prisma.instagramInstance.create({
+      const instance = await prismaAny.instagramInstance.create({
         data: {
           organizationId,
           name: name.trim(),
@@ -400,17 +474,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Criar log de atividade
-    await prisma.integrationActivityLog.create({
-      data: {
-        organizationId,
-        integrationType: type.toUpperCase() as 'WHATSAPP' | 'INSTAGRAM',
-        instanceId: integration.id,
-        activityType: 'AUTH_CONNECTED',
-        status: 'PENDING',
-        title: `Integração ${type} criada`,
-        description: `Integração ${name} foi criada e está aguardando configuração`,
-      },
-    });
+    try {
+      await prisma.integrationActivityLog.create({
+        data: {
+          id: randomUUID(),
+          organizationId,
+          integrationType: type.toUpperCase() as 'WHATSAPP' | 'INSTAGRAM',
+          instanceId: integration.id,
+          activityType: 'AUTH_CONNECTED',
+          status: 'PENDING',
+          title: `Integração ${type} criada`,
+          description: `Integração ${name} foi criada e está aguardando configuração`,
+        },
+      });
+    } catch (logError) {
+      console.error('Failed to create integration activity log for integration creation:', logError);
+    }
 
     return NextResponse.json({
       success: true,

@@ -1016,6 +1016,7 @@ enum IntegrationType {
   INSTAGRAM
   LINKEDIN
   CALENDLY
+  TYPEBOT
   N8N
   MAKE
   ZAPIER
@@ -1090,6 +1091,79 @@ model CalendlyIntegration {
   @@map("calendly_integrations")
 }
 
+/// TypebotIntegration - Integração Typebot por organização
+model TypebotIntegration {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId  String    @unique @map("organization_id") @db.Uuid
+  apiKey          String?   @map("api_key")
+  webhookSecret   String?   @map("webhook_secret")
+  selectedFlowIds String[]  @default([]) @map("selected_flow_ids")
+  fieldMapping    Json?     @map("field_mapping")
+  status          String    @default("PENDING") @db.VarChar(50)
+  totalResponses  Int       @default(0) @map("total_responses")
+  lastResponseAt  DateTime? @map("last_response_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([organizationId])
+  @@map("typebot_integrations")
+}
+
+/// OutgoingWebhook - Webhooks configurados pelo usuário
+model OutgoingWebhook {
+  id                 String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String                @map("organization_id") @db.Uuid
+  name               String                @db.VarChar(255)
+  url                String                @db.VarChar(500)
+  events             String[]              @default([])
+  headers            Json?                 @default("{}")
+  status             OutgoingWebhookStatus @default(active)
+  lastTriggeredAt    DateTime?             @map("last_triggered_at") @db.Timestamp(6)
+  lastResponseStatus Int?                  @map("last_response_status")
+  retryCount         Int                   @default(3) @map("retry_count")
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("outgoing_webhooks")
+}
+
+/// IntegrationActivityLog - Logs de atividades de integrações
+model IntegrationActivityLog {
+  id              String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId  String                    @map("organization_id") @db.Uuid
+  integrationType String                    @map("integrationType") @db.VarChar(50)
+  instanceId      String?                   @map("instance_id") @db.Uuid
+  activityType    IntegrationActivityType   @map("activity_type")
+  status          IntegrationActivityStatus
+  title           String                    @db.VarChar(255)
+  description     String?
+  requestPayload  Json?                     @map("request_payload")
+  responsePayload Json?                     @map("response_payload")
+  errorMessage    String?                   @map("error_message")
+  errorCode       String?                   @map("error_code") @db.VarChar(100)
+  contactId       String?                   @map("contact_id") @db.Uuid
+  dealId          String?                   @map("deal_id") @db.Uuid
+  messageId       String?                   @map("message_id") @db.Uuid
+  durationMs      Int?                      @map("duration_ms")
+  retryCount      Int?                      @map("retry_count")
+  maxRetries      Int?                      @map("max_retries")
+  webhookUrl      String?                   @map("webhook_url") @db.VarChar(500)
+  httpMethod      String?                   @map("http_method") @db.VarChar(10)
+  httpStatusCode  Int?                      @map("http_status_code")
+  completedAt     DateTime?                 @map("completed_at") @db.Timestamptz(6)
+  createdAt       DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([organizationId])
+  @@index([integrationType])
+  @@index([instanceId])
+  @@index([createdAt])
+  @@map("integration_activity_logs")
+}
+
 enum IntegrationActivityType {
   AUTH_CONNECTED
   AUTH_DISCONNECTED
@@ -1112,6 +1186,12 @@ enum IntegrationActivityStatus {
   PENDING
   FAILED
   WARNING
+}
+
+enum OutgoingWebhookStatus {
+  active
+  paused
+  error
 }
 
 enum PendingFormDeliveryStatus {

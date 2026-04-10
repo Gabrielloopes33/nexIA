@@ -61,7 +61,7 @@ const STATUS_CONFIG = {
 }
 
 export function IntegrationCard({ integration, onConnect, onConfigure }: Props) {
-  const statusConfig = STATUS_CONFIG[integration.status]
+  const statusConfig = STATUS_CONFIG[integration.status] ?? STATUS_CONFIG.not_connected
   const StatusIcon = statusConfig.icon
   const isConnected = integration.status === 'connected' || integration.status === 'syncing'
   const hasError = integration.status === 'error' || integration.status === 'warning'
@@ -184,7 +184,7 @@ export function IntegrationCard({ integration, onConnect, onConfigure }: Props) 
         ) : hasError ? (
           <button 
             onClick={() => onConfigure(integration.id)}
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-sm bg-gradient-to-r from-red-500 to-red-600 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-sm bg-linear-to-r from-red-500 to-red-600 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             <AlertTriangle className="h-4 w-4" />
             Corrigir
@@ -192,7 +192,7 @@ export function IntegrationCard({ integration, onConnect, onConfigure }: Props) 
         ) : (
           <button 
             onClick={() => onConnect(integration.id)}
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-sm bg-gradient-to-r from-[#46347F] to-[#46347F] px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-sm bg-linear-to-r from-[#46347F] to-[#46347F] px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             Conectar
           </button>

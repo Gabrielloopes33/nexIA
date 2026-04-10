@@ -4,6 +4,121 @@ import { useState, useEffect, useCallback } from 'react'
 import { useOrganizationId } from '@/lib/contexts/organization-context'
 import type { Integration, IntegrationSettings } from '@/lib/types/integration'
 
+type ApiIntegration = {
+  id: string
+  type: string
+  name: string
+  status: string
+  description?: string
+  messagesCount?: number
+  connectedAt?: string | Date | null
+  lastSyncAt?: string | Date | null
+  settings?: Record<string, unknown> | null
+  createdAt: string | Date
+  updatedAt: string | Date
+}
+
+const INTEGRATION_UI_META: Record<string, {
+  color: string
+  description: string
+  category: Integration['category']
+  authMethod: Integration['authMethod']
+  features: string[]
+  popular?: boolean
+}> = {
+  whatsapp: {
+    color: '#25D366',
+    description: 'Conecte sua conta oficial do WhatsApp Business para atendimento e automações.',
+    category: 'communication',
+    authMethod: 'oauth',
+    features: ['Mensagens em tempo real', 'Templates', 'Histórico unificado'],
+    popular: true,
+  },
+  instagram: {
+    color: '#E4405F',
+    description: 'Integre Instagram para centralizar DMs e interações comerciais.',
+    category: 'communication',
+    authMethod: 'oauth',
+    features: ['DM unificada', 'Sincronização de contato', 'Atendimento multicanal'],
+  },
+  linkedin: {
+    color: '#0A66C2',
+    description: 'Capture e sincronize leads de formulários do LinkedIn Ads.',
+    category: 'crm',
+    authMethod: 'oauth',
+    features: ['Lead Gen Forms', 'Mapeamento de campos', 'Importação automática'],
+  },
+  calendly: {
+    color: '#006BFF',
+    description: 'Sincronize agendamentos do Calendly com contatos e atividades.',
+    category: 'automation',
+    authMethod: 'api_key',
+    features: ['Sincronização de agendas', 'Criação de atividades', 'Atualização de contatos'],
+  },
+  typebot: {
+    color: '#111827',
+    description: 'Receba respostas de fluxos Typebot e converta em contatos automaticamente.',
+    category: 'automation',
+    authMethod: 'webhook',
+    features: ['Webhook seguro', 'Mapeamento de campos', 'Tag e lista automáticas'],
+  },
+}
+
+function parseDate(value?: string | Date | null): Date | undefined {
+  if (!value) return undefined
+  if (value instanceof Date) return value
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
+function normalizeStatus(rawStatus: string): Integration['status'] {
+  const status = rawStatus.toLowerCase()
+
+  if (status === 'connected' || status === 'active') return 'connected'
+  if (status === 'connecting') return 'connecting'
+  if (status === 'syncing') return 'syncing'
+  if (status === 'error' || status === 'failed') return 'error'
+  if (status === 'warning') return 'warning'
+  if (status === 'paused') return 'paused'
+
+  if (status === 'disconnected' || status === 'not_connected' || status === 'pending' || status === 'pending_setup') {
+    return 'not_connected'
+  }
+
+  return 'not_connected'
+}
+
+function mapApiIntegrationToUi(item: ApiIntegration): Integration {
+  const slug = item.type.toLowerCase()
+  const meta = INTEGRATION_UI_META[slug] ?? {
+    color: '#46347F',
+    description: 'Integração disponível para conectar ao CRM.',
+    category: 'other' as const,
+    authMethod: 'api_key' as const,
+    features: ['Conexão de dados'],
+  }
+
+  return {
+    id: item.id,
+    name: item.name,
+    slug,
+    description: item.description ?? meta.description,
+    logo: '',
+    color: meta.color,
+    category: meta.category,
+    authMethod: meta.authMethod,
+    status: normalizeStatus(item.status),
+    features: meta.features,
+    messagesCount: item.messagesCount,
+    lastSyncAt: parseDate(item.lastSyncAt),
+    settings: (item.settings ?? {}) as IntegrationSettings,
+    popular: Boolean(meta.popular),
+    connectedAt: parseDate(item.connectedAt),
+    createdAt: parseDate(item.createdAt) ?? new Date(),
+    updatedAt: parseDate(item.updatedAt) ?? new Date(),
+  }
+}
+
 export interface UseIntegrationsReturn {
   integrations: Integration[]
   isLoading: boolean
@@ -20,7 +135,8 @@ async function fetchIntegrationsFromAPI(organizationId: string): Promise<Integra
   const response = await fetch(`/api/integrations?organizationId=${organizationId}`)
   const data = await response.json()
   if (!response.ok || !data.success) throw new Error(data.error || 'Erro ao carregar integrações')
-  return data.data
+  const apiIntegrations = Array.isArray(data.data) ? (data.data as ApiIntegration[]) : []
+  return apiIntegrations.map(mapApiIntegrationToUi)
 }
 
 export function useIntegrations(): UseIntegrationsReturn {

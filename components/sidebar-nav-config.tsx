@@ -5,7 +5,6 @@ import {
   BarChart3,
   Calendar,
   Puzzle,
-  Store,
   Settings,
   LucideIcon,
   Headphones,
@@ -140,12 +139,10 @@ export const topNavItems: SidebarNavItem[] = [
       { label: "WhatsApp Não Oficial", href: "/integracoes/whatsapp-nao-oficial", section: "Canais" },
       { label: "LinkedIn Ads", href: "/integracoes/linkedin", section: "Canais" },
       { label: "Calendly", href: "/integracoes/calendly", section: "Canais" },
+      { label: "Typebot", href: "/integracoes/typebot", section: "Canais" },
       { label: "Webhooks", href: "/integracoes/webhooks", section: "Ações" },
       { label: "Logs", href: "/integracoes/logs", section: "Ações" },
       { label: "Sync", href: "/integracoes/sync", section: "Ações" },
-      { label: "Filtros", href: "/integracoes/filters", section: "Ações" },
-      { label: "Token", href: "/integracoes/auth", section: "Configurações" },
-      { label: "Exportar", href: "/integracoes/export", section: "Configurações" },
     ],
   },
   {
@@ -175,13 +172,6 @@ export const topNavItems: SidebarNavItem[] = [
   },
 ]
 
-export const bottomNavItems: SidebarNavItem[] = [
-  {
-    key: "loja",
-    label: "Loja",
-    href: "/loja",
-    icon: Store,
-  },
-]
+export const bottomNavItems: SidebarNavItem[] = []
 
 export const navItems: SidebarNavItem[] = [...topNavItems, ...bottomNavItems]

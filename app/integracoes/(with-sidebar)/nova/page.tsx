@@ -14,6 +14,7 @@ import {
   Instagram, 
   ShoppingCart,
   Globe,
+  Bot,
   Key,
   Link2,
   AlertCircle,
@@ -60,6 +61,14 @@ const integracoesDisponiveis = [
     ),
     cor: "#0A66C2",
     authType: "oauth"
+  },
+  {
+    id: "typebot",
+    nome: "Typebot",
+    descricao: "Capture respostas de fluxos e sincronize contatos automaticamente",
+    icon: Bot,
+    cor: "#46347F",
+    authType: "api_key",
   },
   { 
     id: "hotmart", 
@@ -277,6 +286,13 @@ export default function NovaIntegracaoPage() {
                 <p className="text-xs text-muted-foreground">
                   Você pode encontrar sua API Key no painel de desenvolvedor do {integracao.nome}.
                 </p>
+                {integracao.id === 'typebot' && (
+                  <Link href="/integracoes/typebot" className="inline-block pt-2">
+                    <Button variant="outline" size="sm" className="border-0 shadow-sm">
+                      Abrir configuração do Typebot
+                    </Button>
+                  </Link>
+                )}
               </div>
             )}
 

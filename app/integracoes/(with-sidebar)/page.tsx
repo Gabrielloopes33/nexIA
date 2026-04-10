@@ -9,18 +9,14 @@ import { IntegrationsGrid } from "@/components/integrations-grid"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useIntegrations } from "@/hooks/use-integrations"
-import type { IntegrationCategory } from "@/lib/types/integration"
 
 export default function IntegracoesPage() {
   const router = useRouter()
   const { integrations, isLoading, error, connectIntegration, configureIntegration } = useIntegrations()
   
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterCategory, setFilterCategory] = useState<IntegrationCategory | 'all'>('all')
-  const [filterStatus, setFilterStatus] = useState<'all' | 'connected' | 'not_connected' | 'error'>('all')
-  const [sortBy, setSortBy] = useState<'popular' | 'name' | 'recent'>('popular')
 
-  // Filter and sort integrations
+  // Filter integrations by search term only
   const filteredIntegrations = useMemo(() => {
     let filtered = integrations
 
@@ -33,41 +29,8 @@ export default function IntegracoesPage() {
       )
     }
 
-    // Category filter
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(i => i.category === filterCategory)
-    }
-
-    // Status filter
-    if (filterStatus === 'connected') {
-      filtered = filtered.filter(i => i.status === 'connected' || i.status === 'syncing')
-    } else if (filterStatus === 'not_connected') {
-      filtered = filtered.filter(i => i.status === 'not_connected')
-    } else if (filterStatus === 'error') {
-      filtered = filtered.filter(i => i.status === 'error' || i.status === 'warning')
-    }
-
-    // Sort
-    filtered = [...filtered].sort((a, b) => {
-      if (sortBy === 'popular') {
-        // Popular first, then verified, then alphabetical
-        if (a.popular && !b.popular) return -1
-        if (!a.popular && b.popular) return 1
-        if (a.verified && !b.verified) return -1
-        if (!a.verified && b.verified) return 1
-        return a.name.localeCompare(b.name)
-      } else if (sortBy === 'name') {
-        return a.name.localeCompare(b.name)
-      } else if (sortBy === 'recent') {
-        const aDate = a.lastSyncAt?.getTime() || 0
-        const bDate = b.lastSyncAt?.getTime() || 0
-        return bDate - aDate
-      }
-      return 0
-    })
-
     return filtered
-  }, [integrations, searchTerm, filterCategory, filterStatus, sortBy])
+  }, [integrations, searchTerm])
 
   const handleConnect = async (id: string) => {
     if (id === 'whatsapp-oficial') {
@@ -78,6 +41,10 @@ export default function IntegracoesPage() {
       router.push('/integracoes/calendly')
       return
     }
+    if (id.startsWith('typebot') || integrations.find(i => i.id === id && i.type === 'typebot')) {
+      router.push('/integracoes/typebot')
+      return
+    }
     await connectIntegration(id)
   }
 
@@ -85,6 +52,10 @@ export default function IntegracoesPage() {
     const integration = integrations.find(i => i.id === id)
     if (integration?.type === 'calendly') {
       router.push('/integracoes/calendly')
+      return
+    }
+    if (integration?.type === 'typebot') {
+      router.push('/integracoes/typebot')
       return
     }
     await configureIntegration(id, {})
@@ -99,15 +70,8 @@ export default function IntegracoesPage() {
     console.log('Settings')
   }
 
-  const handleExportLogs = () => {
-    console.log('Export logs')
-  }
-
-  const handleClearFilters = () => {
+  const handleClearSearch = () => {
     setSearchTerm("")
-    setFilterCategory('all')
-    setFilterStatus('all')
-    setSortBy('popular')
   }
 
   // Estado de loading
@@ -208,14 +172,6 @@ export default function IntegracoesPage() {
         <IntegrationsToolbar
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          filterCategory={filterCategory}
-          onFilterCategoryChange={setFilterCategory}
-          filterStatus={filterStatus}
-          onFilterStatusChange={setFilterStatus}
-          sortBy={sortBy}
-          onSortByChange={setSortBy}
-          hasConnectedIntegrations={integrations.some(i => i.status === 'connected' || i.status === 'syncing')}
-          onExportLogs={handleExportLogs}
         />
       </div>
 
@@ -224,7 +180,7 @@ export default function IntegracoesPage() {
           integrations={filteredIntegrations}
           onConnect={handleConnect}
           onConfigure={handleConfigure}
-          onClearFilters={handleClearFilters}
+          onClearFilters={handleClearSearch}
         />
       </div>
     </div>

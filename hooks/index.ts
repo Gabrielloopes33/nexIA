@@ -42,6 +42,14 @@ export {
 
 // Integrations Hooks (Sprint 4)
 export { useIntegrations, type UseIntegrationsReturn } from './use-integrations'
+export {
+  useWebhooks,
+  type Webhook,
+  type CreateWebhookData,
+  type UpdateWebhookData,
+  type TestWebhookResult,
+  VALID_EVENTS,
+} from './use-webhooks'
 
 // Billing Hooks (Sprint 5)
 export { usePlans, type Plan, type BillingInterval, type PlanStatus } from './use-plans'
