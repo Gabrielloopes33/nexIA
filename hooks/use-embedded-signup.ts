@@ -457,6 +457,18 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
             description: "Você precisa autorizar o aplicativo para continuar.",
           })
           processingRef.current = false
+        } else if (response.status === "unknown") {
+          console.log("[EmbeddedSignup] FB login returned status 'unknown' – likely a Facebook App config issue")
+          setError(
+            "O Login do Facebook está indisponível para este app.\n\n" +
+            "Causas mais comuns:\n" +
+            "• App em modo Desenvolvimento – seu usuário precisa ser Testador/Desenvolvedor em developers.facebook.com/apps\n" +
+            "• Produto 'Facebook Login for Business' não configurado com Embedded Signup\n" +
+            "• Domínio não autorizado no painel Meta (Basic Settings → App Domains)\n\n" +
+            "Se você cancelou o popup do Facebook, tente novamente."
+          )
+          setStatus("error")
+          processingRef.current = false
         } else {
           console.log("[EmbeddedSignup] Unexpected response status:", response.status)
           setError("Autenticação cancelada ou falhou. Verifique se você está logado no Facebook.")
@@ -469,12 +481,9 @@ export function useEmbeddedSignup(): UseEmbeddedSignupReturn {
         response_type: "code",
         override_default_response_type: true,
         extras: {
-          feature: "whatsapp_embedded_signup",
-          version: "v4",
-          sessionInfoVersion: 3,
-          setup: {
-            solution: "whatsapp_business_account",
-          },
+          setup: {},
+          featureType: "",
+          sessionInfoVersion: 2,
         },
       }
     )
